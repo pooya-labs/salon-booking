@@ -378,6 +378,45 @@ try {
   ])
   assert.match(expiredRateLimitCheck.stdout, /EXPIRED_ADMIN_LIMIT_CLEARED/)
 
+  // Exercise high-volume owner visibility and schedule-safety guards beyond the old
+  // 200-row cap. All but the final booking fit inside the proposed interval.
+  const overflowDate = addDateKeyDaysForTest(date, 2)
+  const overflowSeedSql = `
+    WITH RECURSIVE seq(x) AS (
+      VALUES (0)
+      UNION ALL
+      SELECT x + 1 FROM seq WHERE x < 200
+    )
+    INSERT INTO bookings (
+      id, reference_code, service_id, client_name, client_phone,
+      starts_at, ends_at, status, client_note
+    )
+    SELECT
+      'overflow-' || x,
+      'SB-' || printf('%07d', x + 1000000),
+      'integration-service',
+      'Synthetic overflow QA',
+      '+491234567899',
+      strftime('%Y-%m-%dT%H:%M:%SZ', '${overflowDate} 09:00:00', '+' || x || ' minutes'),
+      strftime('%Y-%m-%dT%H:%M:%SZ', '${overflowDate} 09:00:00', '+' || (x + 1) || ' minutes'),
+      'pending',
+      ''
+    FROM seq;
+    INSERT INTO bookings (
+      id, reference_code, service_id, client_name, client_phone,
+      starts_at, ends_at, status, client_note
+    ) VALUES (
+      'overflow-late', 'SB-9999999', 'integration-service',
+      'Synthetic overflow QA', '+491234567899',
+      '${overflowDate}T18:00:00.000Z', '${overflowDate}T18:01:00.000Z',
+      'pending', ''
+    );
+  `
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command', overflowSeedSql,
+  ])
+
   const rangeEndDate = new Date(bookingDate)
   rangeEndDate.setUTCDate(rangeEndDate.getUTCDate() + 6)
   const rangeEnd = [
@@ -392,6 +431,8 @@ try {
   ), 200, 'owner booking list')
   assert.equal(ownerBookings.from, date, 'owner booking list should preserve the selected range start')
   assert.equal(ownerBookings.to, rangeEnd, 'owner booking list should preserve the selected range end')
+  assert.equal(ownerBookings.bookings.filter((item) => item.id.startsWith('overflow-')).length, 202,
+    'owner booking list must return every booking beyond the previous 200-row cap')
 
   const invalidOwnerRange = await expectJson(await request(
     baseUrl,
@@ -586,12 +627,30 @@ try {
     { startsAt: '14:00', endsAt: '16:00' },
   ])
 
+  const overflowException = await expectJson(await request(baseUrl, '/api/admin/schedule/exceptions', {
+    method: 'POST',
+    headers: ownerHeaders,
+    body: JSON.stringify({
+      date: overflowDate,
+      isClosed: false,
+      intervals: [{ startsAt: '09:00', endsAt: '17:00' }],
+      note: 'Overflow regression fixture',
+    }),
+  }), 409, 'schedule exception must inspect bookings beyond the old 200-row cap')
+  assert.equal(overflowException.error, 'exception_has_bookings')
+
   const deletedException = await expectJson(await request(
     baseUrl,
     `/api/admin/schedule/exceptions/${savedException.id}`,
     { method: 'DELETE', headers: ownerHeaders },
   ), 200, 'owner deletes date exception')
   assert.equal(deletedException.ok, true)
+
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    "DELETE FROM bookings WHERE id LIKE 'overflow-%'",
+  ])
 
   const auditVerification = await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
