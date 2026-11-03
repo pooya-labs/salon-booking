@@ -18,8 +18,8 @@
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41630262938 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration for public, owner, settings and schedule APIs, TypeScript and Vite production build).
-- Latest Pages deployment: run 41630262994 — success; includes the customer booking-management UI while remaining demo-only.
+- Latest verified standard CI: run 41631396406 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration for public, owner, settings, schedule and browser security headers, TypeScript and Vite production build).
+- Latest Pages deployment: run 41631396317 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
@@ -136,6 +136,16 @@ Use clearly marked placeholders until the owner supplies these details.
 - CI run 41630262938 passed all unit, SQLite migration, typecheck/build and local Worker/D1 integration steps.
 - Pages run 41630262994 passed. Both correspond to implementation/test commit `0762f1ada30fce6833e730c76d3ce07b9e2d50fa`.
 - Remaining test gap: API authorization/lifecycle around admin schedule exception conflicts with bookings, audit-log assertions and broader malformed-input paths; remote Cloudflare D1 and production smoke testing remain owner/launch gates.
+
+## Latest Worker response security checkpoint (2026-11-03)
+
+- Worker responses now pass through a shared security-header layer, including static HTML only on explicitly routed document paths and all API responses.
+- HTML responses receive a restrictive CSP (`default-src 'self'`, same-origin scripts/connects, constrained styles/images/fonts, no objects, same-origin forms and no framing). JSON responses receive `default-src 'none'`, `base-uri 'none'` and `frame-ancestors 'none'`.
+- Baseline headers include `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a restrictive `Permissions-Policy`, `Cross-Origin-Resource-Policy: same-origin` and `Cross-Origin-Opener-Policy: same-origin`. HSTS is added only on HTTPS.
+- Wrangler Static Assets uses selective `run_worker_first` patterns for `/api/*`, `/`, `/admin` and `/admin/`. Hashed JS/CSS/image assets continue to be served directly without routing every static request through the Worker.
+- Integration tests verify security headers on JSON API, public home page and admin entry page. Both CI run 41631396406 and Pages run 41631396317 passed for code/test commit `3def87ec813a8fe5c5813fff5b99c104926e2d2a`.
+- The CSP is a baseline and still needs a full review against any future external analytics, fonts, image hosts or embedded widgets before those are introduced. GitHub Pages preview does not run the production Worker middleware.
+- Browser security headers now have a baseline implementation; production security review, mobile/accessibility QA and remote Cloudflare deployment remain incomplete.
 
 ## Resume instructions for the next assistant/session
 
