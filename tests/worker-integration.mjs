@@ -275,10 +275,8 @@ try {
     `INSERT INTO admin_sessions (id_hash, admin_user_id, expires_at) VALUES ('${expiredSessionHash}', '${bootstrapped.user.id}', '2000-01-01T00:00:00.000Z')`,
   ])
 
-  const ownerMe = await expectJson(await request(baseUrl, '/api/admin/me', {
-    headers: ownerHeaders,
-  }), 200, 'owner session')
-  assert.equal(ownerMe.user.username, 'integration-owner')
+  const anonymousAfterExpirySeed = await expectJson(await request(baseUrl, '/api/admin/services'), 401, 'anonymous request prunes expired owner sessions')
+  assert.equal(anonymousAfterExpirySeed.error, 'unauthorized')
 
   const expiredSessionCheck = await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
@@ -286,6 +284,11 @@ try {
     `SELECT CASE WHEN EXISTS (SELECT 1 FROM admin_sessions WHERE id_hash = '${expiredSessionHash}') THEN 'EXPIRED_SESSION_REMAINS' ELSE 'EXPIRED_SESSION_CLEARED' END AS result`,
   ])
   assert.match(expiredSessionCheck.stdout, /EXPIRED_SESSION_CLEARED/)
+
+  const ownerMe = await expectJson(await request(baseUrl, '/api/admin/me', {
+    headers: ownerHeaders,
+  }), 200, 'owner session')
+  assert.equal(ownerMe.user.username, 'integration-owner')
 
   await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,

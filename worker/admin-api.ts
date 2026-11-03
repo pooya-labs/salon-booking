@@ -715,13 +715,13 @@ const issueSession = async (
 }
 
 const getAdminSession = async (request: Request, env: AdminEnv): Promise<AdminSessionUser | null> => {
-  const token = getSessionCookie(request)
-  if (!token) return null
-
   const now = new Date().toISOString()
   await env.DB.prepare('DELETE FROM admin_sessions WHERE expires_at <= ?')
     .bind(now)
     .run()
+
+  const token = getSessionCookie(request)
+  if (!token) return null
 
   const tokenHash = await sha256Hex(token)
   return env.DB.prepare(
