@@ -9,10 +9,13 @@ import {
 } from './scheduling'
 import { createRateLimitBucketHash, getRateLimitWindow } from './rate-limit'
 import {
-  constantTimeEqual,
+  isBookingCancellable,
+  isValidBookingReference,
+  verifyBookingManagementToken,
+} from './customer-booking-security'
+import {
   createSessionToken,
   isSameOriginRequest,
-  sha256Hex,
 } from './admin-security'
 
 interface Env extends AdminEnv {
@@ -507,11 +510,7 @@ const getManagedBooking = async (
   managementTokenInput: unknown,
 ): Promise<ManagedBookingRow | null> => {
   const reference = typeof referenceInput === 'string' ? referenceInput.trim().toUpperCase() : ''
-  const managementToken = typeof managementTokenInput === 'string' ? managementTokenInput.trim() : ''
-  const validReference = /^SB-[A-HJ-NP-Z2-9]{7}$/.test(reference)
-  const validToken = /^[0-9a-f]{64}$/i.test(managementToken)
-
-  const booking = validReference
+  const booking = isValidBookingReference(reference)
     ? await db.prepare(
       `SELECT bookings.id, bookings.reference_code, bookings.client_manage_token_hash,
               bookings.starts_at, bookings.ends_at, bookings.status,
@@ -523,12 +522,13 @@ const getManagedBooking = async (
     ).bind(reference).first<ManagedBookingRow>()
     : null
 
-  // Always hash and compare a fixed-length value so invalid references and
-  // invalid access tokens share one public error path.
-  const submittedHash = await sha256Hex(validToken ? managementToken.toLowerCase() : '')
-  const expectedHash = booking?.client_manage_token_hash ?? '0'.repeat(64)
-  const tokenMatches = constantTimeEqual(submittedHash, expectedHash)
-  if (!booking || !booking.client_manage_token_hash || !validToken || !tokenMatches) return null
+  // Token verification always hashes and compares a fixed-length value,
+  // even when the reference is missing, to keep one generic public failure.
+  const tokenMatches = await verifyBookingManagementToken(
+    managementTokenInput,
+    booking?.client_manage_token_hash ?? null,
+  )
+  if (!booking || !tokenMatches) return null
   return booking
 }
 
@@ -551,8 +551,7 @@ const getSalonLocalDateTime = (isoTimestamp: string, timezone: string) => {
 
 const managedBookingPayload = (booking: ManagedBookingRow, timezone: string) => {
   const local = getSalonLocalDateTime(booking.starts_at, timezone)
-  const cancellable = ['pending', 'confirmed'].includes(booking.status)
-    && Date.parse(booking.starts_at) > Date.now()
+  const cancellable = isBookingCancellable(booking.status, booking.starts_at)
   return {
     reference: booking.reference_code,
     status: booking.status,
@@ -591,7 +590,7 @@ const handleCustomerBookingManagement = async (
   }
 
   const now = new Date().toISOString()
-  if (!['pending', 'confirmed'].includes(booking.status) || booking.starts_at <= now) {
+  if (!isBookingCancellable(booking.status, booking.starts_at, Date.parse(now))) {
     return errorResponse('booking_not_cancellable', 'این نوبت دیگر از طریق سامانه قابل لغو نیست.', 409)
   }
 
