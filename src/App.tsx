@@ -26,7 +26,7 @@ function App() {
 
   return (
     <div className="site-shell">
-      <div className="announcement"><span className="status-dot" /> رزرو آنلاین؛ هر زمان که برای شما مناسب است <span className="announcement-separator">✳</span> تجربه‌ای با دقت و آرامش</div>
+      <div className="announcement"><span className="status-dot" /> پیش‌نمایش طراحی · سامانه رزرو در حال توسعه است <span className="announcement-separator">✳</span> فرم استودیو</div>
       <header className="site-header">
         <a className="brand" href="#home" aria-label="صفحه اصلی استودیو">
           <span className="brand-mark"><Scissors size={20} strokeWidth={1.5} /></span>
@@ -38,7 +38,7 @@ function App() {
           <a href="#faq" onClick={() => setMenuOpen(false)}>سؤالات متداول</a>
         </nav>
         <div className="header-actions">
-          <a className="owner-link" href="/admin">ورود مدیریت</a>
+          <span className="owner-link owner-link-disabled" aria-label="پنل مدیریت در حال ساخت است">پنل مدیریت · به‌زودی</span>
           <button className="button button-dark button-small header-book" onClick={startBooking}>رزرو نوبت <ArrowLeft size={15} /></button>
           <button className="icon-button menu-toggle" aria-label={menuOpen ? 'بستن منو' : 'باز کردن منو'} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
         </div>
