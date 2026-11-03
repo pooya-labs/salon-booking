@@ -875,6 +875,64 @@ try {
     'cancelling a booking should release its slot',
   )
 
+  console.log('Checking exact elapsed booking duration across spring-forward and fall-back clock changes...')
+  const dstSeedSql = `
+    UPDATE salon_settings SET setting_value = 'Europe/Berlin' WHERE setting_key = 'local_timezone';
+    UPDATE salon_settings SET setting_value = '365' WHERE setting_key = 'booking_window_days';
+    INSERT INTO services (
+      id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order
+    ) VALUES (
+      'dst-integration-service', 'DST integration service', '', 90, 25000, 'EUR', 1, 10
+    );
+    INSERT INTO schedule_exceptions (id, local_date, starts_at, ends_at, is_closed, note)
+    VALUES
+      ('dst-spring-exception', '2027-03-28', '01:00', '04:00', 0, 'Synthetic DST spring-forward QA'),
+      ('dst-fall-exception', '2027-10-31', '01:00', '03:30', 0, 'Synthetic DST fall-back QA');
+    INSERT INTO schedule_exception_intervals (id, exception_id, position, starts_at, ends_at)
+    VALUES
+      ('dst-spring-interval', 'dst-spring-exception', 0, '01:00', '04:00'),
+      ('dst-fall-interval', 'dst-fall-exception', 0, '01:00', '03:30');
+  `
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command', dstSeedSql,
+  ])
+
+  const verifyDstBookingDuration = async (dateKey, idempotencyKey, label) => {
+    const availability = await expectJson(await request(
+      baseUrl,
+      `/api/public/availability?date=${dateKey}&serviceId=dst-integration-service`,
+    ), 200, `${label} availability`)
+    assert.ok(availability.slots.includes('01:30'), `${label} should offer the 01:30 slot`)
+
+    const created = await expectJson(await request(baseUrl, '/api/public/bookings', {
+      method: 'POST',
+      headers: { 'idempotency-key': idempotencyKey },
+      body: JSON.stringify({
+        serviceId: 'dst-integration-service',
+        date: dateKey,
+        time: '01:30',
+        name: 'Synthetic DST Client',
+        phone: '+491234567899',
+        note: '',
+      }),
+    }), 201, `${label} booking creation`)
+
+    const durationCheck = await runWrangler([
+      'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+      '--config', configPath, '--command',
+      `SELECT CASE WHEN
+         CAST(strftime('%s', ends_at) AS INTEGER) - CAST(strftime('%s', starts_at) AS INTEGER) = 5400
+         THEN 'ELAPSED_90_MINUTES' ELSE 'ELAPSED_DURATION_MISMATCH' END AS result
+       FROM bookings WHERE reference_code = '${created.booking.reference}'`,
+    ])
+    assert.match(durationCheck.stdout, /ELAPSED_90_MINUTES/,
+      `${label} booking must occupy exactly 90 real minutes in D1`)
+  }
+
+  await verifyDstBookingDuration('2027-03-28', 'd'.repeat(64), 'spring-forward')
+  await verifyDstBookingDuration('2027-10-31', 'e'.repeat(64), 'fall-back')
+
   const exportConfigPath = join(tempDirectory, 'wrangler-export.toml')
   await writeFile(exportConfigPath, [
     'name = "salon-booking-export-test"',
