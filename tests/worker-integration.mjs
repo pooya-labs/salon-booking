@@ -20,17 +20,31 @@ const appendLogs = (chunk) => {
   workerLogs = (workerLogs + chunk.toString()).slice(-12_000)
 }
 
+const terminateProcessTree = (child, signal) => {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  if (process.platform !== 'win32' && child.pid) {
+    try {
+      process.kill(-child.pid, signal)
+      return
+    } catch {
+      // Fall back to the direct child when the process group is already gone.
+    }
+  }
+  child.kill(signal)
+}
+
 const runWrangler = (args, timeoutMs = 120_000) => new Promise((resolvePromise, rejectPromise) => {
   const executable = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   const child = spawn(executable, ['wrangler', ...args], {
     cwd: root,
     env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
+    detached: process.platform !== 'win32',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   let stdout = ''
   let stderr = ''
   const timer = setTimeout(() => {
-    child.kill('SIGTERM')
+    terminateProcessTree(child, 'SIGTERM')
     rejectPromise(new Error(`Wrangler command timed out: ${args.join(' ')}\n${stderr}`))
   }, timeoutMs)
   child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
@@ -71,7 +85,11 @@ const expectJson = async (response, expectedStatus, label) => {
 const request = (baseUrl, path, options = {}) => {
   const headers = new Headers({ ...baseHeaders, ...(options.headers ?? {}) })
   if (options.body !== undefined) headers.set('content-type', 'application/json')
-  return fetch(new URL(path, baseUrl), { ...options, headers })
+  return fetch(new URL(path, baseUrl), {
+    ...options,
+    headers,
+    signal: options.signal ?? AbortSignal.timeout(15_000),
+  })
 }
 
 const waitForWorker = async (baseUrl) => {
@@ -139,6 +157,7 @@ try {
   ], {
     cwd: root,
     env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
+    detached: process.platform !== 'win32',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   workerProcess.stdout.on('data', appendLogs)
@@ -247,13 +266,13 @@ try {
 } finally {
   if (workerProcess && workerProcess.exitCode === null && workerProcess.signalCode === null) {
     const exited = once(workerProcess, 'exit')
-    workerProcess.kill('SIGTERM')
+    terminateProcessTree(workerProcess, 'SIGTERM')
     await Promise.race([
       exited,
       new Promise((resolvePromise) => setTimeout(resolvePromise, 5_000)),
     ])
     if (workerProcess.exitCode === null && workerProcess.signalCode === null) {
-      workerProcess.kill('SIGKILL')
+      terminateProcessTree(workerProcess, 'SIGKILL')
     }
   }
   await rm(configPath, { force: true })
