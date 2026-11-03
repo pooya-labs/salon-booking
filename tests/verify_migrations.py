@@ -132,6 +132,7 @@ assert {"idempotency_key_hash", "request_hash", "booking_id", "response_json", "
 assert not any(token in column.lower() for column in idempotency_columns for token in ("name", "phone", "note", "email"))
 idempotency_foreign_keys = db.execute("PRAGMA foreign_key_list(booking_idempotency)").fetchall()
 assert any(row[2] == "bookings" and row[6].upper() == "CASCADE" for row in idempotency_foreign_keys)
+insert_booking("booking-b", "SB-BBBBBBB", "2026-11-03T10:00:00.000Z", "2026-11-03T11:00:00.000Z")
 try:
     db.execute(
         """INSERT INTO booking_idempotency
@@ -142,8 +143,6 @@ try:
     raise AssertionError("duplicate idempotency key unexpectedly succeeded")
 except sqlite3.IntegrityError:
     pass
-insert_booking("booking-b", "SB-BBBBBBB", "2026-11-03T10:00:00.000Z", "2026-11-03T11:00:00.000Z")
-
 try:
     insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
     raise AssertionError("overlapping insert unexpectedly succeeded")
