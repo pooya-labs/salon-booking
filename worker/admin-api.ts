@@ -72,6 +72,7 @@ interface AdminRequestBody {
   startsAt?: unknown
   endsAt?: unknown
   note?: unknown
+  isClosed?: unknown
 }
 
 const SESSION_TTL_SECONDS = 12 * 60 * 60
@@ -437,9 +438,13 @@ const getDateWindowUtc = (date: string, timezone: string) => {
   return start && end ? { start, end } : null
 }
 
-const hasActiveBookingsOnDate = async (env: AdminEnv, date: string, timezone: string) => {
+const hasActiveBookingsOnDate = async (
+  env: AdminEnv,
+  date: string,
+  timezone: string,
+): Promise<BookingRow[]> => {
   const window = getDateWindowUtc(date, timezone)
-  if (!window) return true
+  if (!window) throw new Error('invalid_exception_date_window')
   const result = await env.DB.prepare(
     `SELECT starts_at, ends_at FROM bookings
      WHERE status IN ('pending', 'confirmed') AND starts_at < ? AND ends_at > ?
