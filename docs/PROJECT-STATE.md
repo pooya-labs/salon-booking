@@ -16,12 +16,13 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
-- Latest security code commit on `main`: `5a0fc7273cfb35d22e3d1f70df29ad9f71a11eee` — narrowed HTML CSP to same-origin/data resources and added integration assertions against arbitrary HTTPS and unsafe-eval.
-- Latest tooling/local-environment commit on `main`: `1991e11cf778a8d46cab08e1489bca3a6fa5ec66`, with local config guard tests in `44de8c78a40edc3d7feef5fe15350f5cfa7c4ecf`.
-- Latest CI: [run 41649150974](https://github.com/pooya-labs/salon-booking/actions/runs/41649150974) — success: ESLint, 34 unit tests, SQLite migration/privacy/idempotency/CSP/local-config checks, typecheck/build, local Worker+D1 integration and full Chromium responsive/RTL/timezone/accessibility/browser-network checks.
-- Latest GitHub Pages deployment: [run 41649150617](https://github.com/pooya-labs/salon-booking/actions/runs/41649150617) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
-- The automated browser run passed viewport widths 320–1440 px, mobile navigation, full sample booking journey, both dialog focus/keyboard flows, Jalali/Persian dates and local-day boundaries in Tehran/Berlin/Los Angeles, and the demo-only admin gate.
-- Latest static asset sizes: JavaScript 224,547 bytes (65.06 kB gzip); CSS 49,586 bytes (11.38 kB gzip). Browser console/network checks reported no uncaught exceptions, console errors, failed requests, HTTP errors, API requests or third-party requests.
+- Latest feature commit on `main`: `763341ed44f645c33379990804ce851fc804b198` — owner dashboard seven-day date-range navigation, Jalali range label, responsive controls, and a dedicated production-mode Chromium test for range navigation/status filtering.
+- Date arithmetic was corrected and verified in `caf88e932edce0f9176ee2078cdc0a2b365a8c59`; ISO date parsing and UTC month/year/leap-year behavior are covered by unit tests.
+- Latest CI: [run 41652792502](https://github.com/pooya-labs/salon-booking/actions/runs/41652792502) — success: ESLint, 37 unit tests, SQLite migration/privacy/idempotency/local-config/CSP checks, typecheck/build, local Worker+D1 integration, static-preview Chromium QA and production-mode owner dashboard Chromium QA.
+- Latest GitHub Pages deployment: [run 41652792763](https://github.com/pooya-labs/salon-booking/actions/runs/41652792763) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- Static-preview browser QA passed viewport widths 320–1440 px, mobile navigation, full sample booking journey, both dialog focus/keyboard flows, Jalali/Persian dates and local-day boundaries in Tehran/Berlin/Los Angeles, and the demo-only admin gate.
+- Owner dashboard browser QA passed next/previous/reset seven-day navigation, preservation of the selected date range when status filters change, and viewport widths 360, 390, 768, 1024 and 1440 px.
+- Latest static asset sizes: JavaScript 226,328 bytes; CSS 50,256 bytes. Both remain below CI budgets. Browser runtime/network checks found no uncaught exceptions, console errors, failed requests, HTTP errors or third-party requests.
 - Automated browser results represent Chromium viewport emulation, not physical iOS/Android devices or a real screen-reader certification. The local DCL measurement is not a production-network performance benchmark.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
 - Production D1 is not provisioned; migrations 0001–0008 have not been applied remotely; salon timezone remains `unset`; real services, prices, hours and contact details are not configured.
@@ -61,6 +62,20 @@
 - Implementation commits include migration `a2f208c`, Worker `df891ec` / `a66dde0` / `33dcc56`, frontend `7977b61` / `6b68de5`, unit/migration/integration tests and API/deployment docs.
 - Final verified code commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`; final test/docs commit: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
 - CI [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) and Pages [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) both passed.
+
+## Latest owner dashboard date-range checkpoint (2026-11-03)
+
+- Added `src/date-range.ts` with strict ISO calendar-date validation and UTC day arithmetic, avoiding browser-local timezone drift and correctly handling month, year and leap-day boundaries.
+- The owner dashboard now shows the current seven-day range in Persian/Jalali formatting and supports previous week, next week and reset to the default upcoming seven days.
+- The selected date range is sent to `GET /api/admin/bookings`; the current status filter is preserved when navigating and the range is preserved when changing status.
+- The stale dashboard note about service/schedule management being a future feature was corrected; those controls already exist in the owner management section.
+- Added unit tests for month/year boundaries, backward navigation, leap days, invalid dates, unsafe offsets and zero-day shifts.
+- Expanded Worker+D1 integration coverage to assert date-range echo and reject a range beyond the API's 31-day difference limit.
+- Added a dedicated production-mode Playwright test, `tests/admin-browser-smoke.mjs`, with mocked admin APIs. It exercises next/previous/reset, status-filter preservation, localized range output, and responsive viewports at 360, 390, 768, 1024 and 1440 px.
+- The Playwright run is separate from the public Pages demo QA, so the actual production-mode admin React application is exercised without using real owner credentials or customer records.
+- Verification: [CI run 41652792502](https://github.com/pooya-labs/salon-booking/actions/runs/41652792502) passed all 37 unit tests, lint, migration tests, build, Worker+D1 integration, public preview browser QA and owner dashboard browser QA. [Pages run 41652792763](https://github.com/pooya-labs/salon-booking/actions/runs/41652792763) succeeded.
+- Feature commits: `a1f4cf12dfc868bcdc85578268204d71f251fef7` (range navigation), `b4c4a230ac7c561f55304765590432c76d9bf74d` (UTC date arithmetic and date tests), `caf88e932edce0f9176ee2078cdc0a2b365a8c59` (date parser correction), and `763341ed44f645c33379990804ce851fc804b198` (owner browser test and current dashboard copy).
+- Remaining: full month/calendar picker is not implemented; the owner can move through weeks. Production D1/Worker is still not provisioned, so no real-data dashboard acceptance has been performed.
 
 ## Latest lint and local-development checkpoint (2026-11-03)
 
@@ -126,6 +141,8 @@ Use clearly marked placeholders until the owner supplies these details.
 
 | Date | Checkpoint | Result |
 |---|---|---|
+| 2026-11-03 | Owner dashboard seven-day range navigation | Previous/next/reset, filter preservation and responsive UI passed production-mode Chromium QA in CI run 41652792502. |
+| 2026-11-03 | Calendar date arithmetic | 37 unit tests passed, including strict ISO parsing, month/year boundaries, leap days and invalid offsets; Worker+D1 rejects ranges beyond the 31-day difference limit. |
 | 2026-11-03 | Lint and local development environment | ESLint passed, four local-config guard tests passed, and CI run 41649150974 completed the full suite successfully. |
 | 2026-11-03 | Local config separation | The local Worker/D1 example, local-only secrets and gitignore rules passed automated regression checks; production Wrangler config remains unchanged. |
 | 2026-11-03 | CSP hardening | HTML CSP now limits scripts/connections to self and images/fonts to self/data; CI integration assertions passed in run 41647018808. |
