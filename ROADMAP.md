@@ -28,9 +28,9 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Establish durable roadmap and project-state handoff.
 - [x] Bootstrap Vite + React + TypeScript application.
 - [x] Add Tailwind CSS integration and initial design tokens.
-- [~] Add typecheck/build scripts and verify in GitHub Actions (first CI attempt exposed a missing npm lockfile cache assumption; workflow corrected, latest run pending).
+- [x] Add typecheck/build scripts and verify frontend + Worker TypeScript projects in GitHub Actions.
 - [x] Add Cloudflare Worker static asset configuration.
-- [~] Add initial D1 migration structure; production database ID still requires Cloudflare provisioning.
+- [x] Add initial D1 migration structure; production database ID still requires Cloudflare provisioning.
 - [x] Add README, deployment guide, and durable project-state handoff.
 - [ ] Add linting and a documented local environment example.
 
