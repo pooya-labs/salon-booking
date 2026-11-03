@@ -118,7 +118,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Manage service CRUD fields, duration, price, display order and activation.
 - [x] Client contact details are returned only inside the authenticated owner workspace.
 - [x] Responsive admin sign-in and appointment list UI.
-- [~] Status changes create D1 audit entries; destructive confirmation UI and wider audit coverage remain.
+- [x] Booking status changes, service create/update, salon settings, weekly hours and schedule exception create/delete write owner-attributed D1 audit events; local Worker+D1 integration tests verify all seven event types. Cancellation, completion and no-show transitions require explicit confirmation; browser QA verifies that cancelling the prompt sends no mutation.
 
 **Exit criteria:** owner can run the daily schedule without touching GitHub or Cloudflare.
 
@@ -140,18 +140,18 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R07 — Quality and acceptance
 
-- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security, customer-management credential/cancellation helpers, phone normalization, local-config guards and date-range arithmetic (37 tests; latest CI run 41652792502 passed).
+- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security, customer-management credential/cancellation helpers, phone normalization, local-config guards and date-range arithmetic (37 tests; latest CI run 41654596006 passed).
 - [x] Public booking and owner-admin lifecycle/authorization HTTP tests against a local Wrangler Worker + D1 environment: service catalog, availability, booking creation/conflict, customer origin/token/privacy/cancellation/slot release, first-owner bootstrap, secure session, login/logout/revocation, protected owner booking list/status transitions, service CRUD, salon settings, timezone-change conflict protection, split weekly intervals, break-aware availability, overlap rejection and date-exception create/read/delete.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0008 (remote Cloudflare D1 application remains pending).
-- [x] Production build and TypeScript checks (latest CI run 41652792502 passed).
+- [x] Production build and TypeScript checks (latest CI run 41654596006 passed).
 - [x] Automated Chromium responsive QA at 320, 360, 390, 430, 768, 1024, 1280 and 1440 px (mobile, tablet and desktop viewport emulation; not physical-device certification).
 - [x] RTL, Persian digit, Jalali calendar and visitor-local day-boundary checks across Asia/Tehran, Europe/Berlin and America/Los_Angeles.
 - [x] Automated keyboard/accessibility behavior for both booking and customer-management dialogs: accessible dialog name, initial focus, Tab/Shift+Tab containment, Escape close, focus restoration and scroll lock.
 - [ ] Real assistive-technology/screen-reader audit and physical iOS/Android device acceptance (not represented as passed by desktop Chromium emulation).
 - [x] Static asset-size budget review: JavaScript 226,328 bytes and CSS 50,256 bytes, below 1 MiB/256 KiB CI budgets; production network performance/Lighthouse profiling remains separate.
 - [x] Browser runtime/network review on the static preview: zero uncaught exceptions, console errors, failed requests, HTTP errors, API calls or third-party requests in the automated Chromium run.
-- [x] Owner dashboard Chromium QA: seven-day next/previous/reset navigation, status-filter range preservation, and responsive widths 360–1440 px; [CI run 41652792502](https://github.com/pooya-labs/salon-booking/actions/runs/41652792502) passed.
+- [x] Owner dashboard Chromium QA: seven-day range navigation, status-filter range preservation, explicit confirmation for cancellation/completion/no-show, cancelled confirmation sends no mutation, and responsive widths 360–1440 px; [CI run 41654596006](https://github.com/pooya-labs/salon-booking/actions/runs/41654596006) passed.
 - [ ] Owner acceptance checklist completed.
 
 **Exit criteria:** all critical flows pass and all known limitations are recorded.
