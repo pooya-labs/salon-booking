@@ -10,7 +10,7 @@
 - Engineering / creator credit: **Pooya**
 - Default branch: `main`
 - Deployment target: Cloudflare Workers + Static Assets + D1
-- Current release: 0.4.0
+- Current release: 0.5.0
 
 ## Current checkpoint
 
@@ -21,9 +21,9 @@
 - Latest verified standard CI: run 41617819811 — success (16 unit tests, SQLite migration/security checks including interval overlap and legacy backfill, TypeScript and Vite production build).
 - Latest Pages deployment: run 41617819683 — success; includes the updated split-interval schedule UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
-- D1 is not provisioned, migrations 0001–0005 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
+- D1 is not provisioned, migrations 0001–0006 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
-- Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Client lookup/cancellation, public booking rate limits and full security QA remain outstanding.
+- Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Public availability and booking creation now have fixed-window IP-HMAC limits. Client lookup/cancellation and full security QA remain outstanding.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -95,7 +95,7 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0005 (owner action).
+1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0006 (owner action).
 2. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
 3. Confirm salon timezone/content, then enter owner-approved services and split weekly/date-specific hours in the dashboard.
 4. Deploy and smoke-test the D1-backed public API, multi-interval availability and owner dashboard on Cloudflare.
@@ -133,3 +133,14 @@ Use clearly marked placeholders until the owner supplies these details.
 5. Sync deployment guide and then prepare Cloudflare D1 provisioning handoff.
 
 Production blockers and real salon details remain unchanged.
+
+## Latest verified public rate-limit checkpoint (2026-11-03)
+
+- Release line: 0.5.0.
+- Latest feature commit: `a095126aae7e124dcd842e694bfd40e57cb883e7`.
+- Migration 0006 adds `public_rate_limits` plus an expiry index.
+- Public availability is limited to 180 requests per IP per fixed 15-minute window; booking creation is limited to 10 attempts per IP per fixed 15-minute window.
+- Bucket identifiers use HMAC-SHA-256 with scope separation and `SESSION_SECRET`; raw IP is never stored. The Worker fails closed if rate limiting cannot be applied.
+- Latest CI: run 41618574315 — success (19 unit tests, SQLite migration/security checks, TypeScript and Vite build).
+- Latest Pages deployment: run 41618574444 — success. Static Pages remains a demo; Worker rate limiting is not running on Pages.
+- Production D1 still needs migrations 0001–0006 applied remotely. `SESSION_SECRET` must be set before public availability/booking can pass the limiter.

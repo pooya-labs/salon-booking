@@ -42,7 +42,7 @@ Secrets are read through Worker environment bindings and are never committed to 
 
 ## Database setup
 
-Prerequisites: create and bind a Cloudflare D1 database, configure its ID in Wrangler, and apply migrations `0001_initial_schema.sql` through `0005_multi_interval_schedule.sql` in order.
+Prerequisites: create and bind a Cloudflare D1 database, configure its ID in Wrangler, and apply migrations `0001_initial_schema.sql` through `0006_public_rate_limits.sql` in order.
 
 Do not apply migrations to a real database until its ID and target environment have been checked. The project contains no real salon data yet.
 
@@ -64,12 +64,14 @@ Bootstrap is one-time at the database level. An existing owner prevents another 
 - Cookie: `__Host-salon_session`, Secure, HttpOnly, SameSite=Strict, Path=/, 12-hour lifetime.
 - Login rate: 8 attempts per IP-derived HMAC bucket per 15-minute window.
 - Bootstrap rate: 3 attempts per IP-derived HMAC bucket per one-hour window.
+- Public availability: 180 requests per IP per fixed 15-minute window.
+- Public booking creation: 10 attempts per IP per fixed 15-minute window.
+- Public limits use scope-separated HMAC-SHA-256 buckets derived from `SESSION_SECRET`; raw IP addresses are never stored. Expired buckets are pruned during rate-limit checks.
 - Mutating requests require a matching same-origin Origin header.
 - The rate-limit table stores a keyed HMAC of the IP, not the raw address.
 
 ## Remaining release blockers
 
-- Public booking endpoint rate limiting and abuse controls.
 - Customer booking lookup/cancellation with proof of control that prevents phone-number enumeration.
 - Data minimization, retention/export/deletion policy and operational backups.
 - Security headers review, threat model and full security review.

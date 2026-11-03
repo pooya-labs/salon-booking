@@ -117,11 +117,12 @@ Apply every migration in order:
 3. `0003_admin_security.sql`
 4. `0004_admin_service_schedule.sql`
 5. `0005_multi_interval_schedule.sql`
+6. `0006_public_rate_limits.sql`
 
-Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Existing opening-hours and exception columns are retained for compatibility.
+Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Existing opening-hours and exception columns are retained for compatibility.
 
 ## Runtime and preview boundaries
 
 The Cloudflare production build connects to the Worker and D1. GitHub Pages and local Vite development deliberately use sample data and never submit customer information. Pages does not host this API or the owner backend.
 
-The implementation is not production-ready yet: public booking rate limiting, booking lookup/cancellation, notifications, retention/export/deletion policy, backups, full security review, and Cloudflare production provisioning remain incomplete. Do not collect real customer data until those gates pass.
+The implementation is not production-ready yet: booking lookup/cancellation, notifications, retention/export/deletion policy, backups, full security review, and Cloudflare production provisioning remain incomplete. Do not collect real customer data until those gates pass.

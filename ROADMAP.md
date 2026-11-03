@@ -99,7 +99,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Closed dates and one-off opening windows supported through schedule exceptions.
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
-- [ ] Rate limiting and abuse controls.
+- [~] Fixed-window IP-HMAC limits protect public availability (180/15 min) and booking creation (10/15 min); lookup abuse controls and broader anti-automation review remain.
 - [ ] Data retention and export/deletion procedure documented.
 
 **Exit criteria:** booking correctness is enforced by the backend and database under concurrent requests.
@@ -130,19 +130,19 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Phone numbers and personal data are minimized.
 - [x] Secrets are read only from Worker secret bindings; no defaults are committed.
 - [ ] Security headers and input/output handling reviewed.
-- [~] Login/bootstrap rate limits are implemented; public booking and lookup rate limits remain.
-- [~] Initial protections for bootstrap abuse, session theft and booking status mutation are implemented; public booking abuse and a full threat review remain.
+- [x] Login/bootstrap and public availability/booking fixed-window rate limits use HMAC-derived IP buckets; customer lookup rate limits await that feature.
+- [~] Initial protections for bootstrap abuse, session theft, booking status mutation and public booking abuse are implemented; customer lookup protections and a full threat review remain.
 - [x] Tests contain no real client data or credentials.
 
 **Exit criteria:** documented security review with no known critical/high issues.
 
 ## R07 — Quality and acceptance
 
-- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization and admin password/session security (16 tests).
+- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets and admin password/session security (19 tests).
 - [ ] API tests for booking lifecycle and authorization against a Worker/D1 test environment.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [~] Migration test against a clean SQLite database (D1-compatible SQL smoke test; actual Cloudflare D1 migration still pending).
-- [x] Production build and TypeScript checks (latest CI run 41617819811 passed).
+- [x] Production build and TypeScript checks (latest CI run 41618574315 passed).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.
@@ -185,7 +185,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41617819683 succeeded on 2026-11-03 and includes the split-interval management UI. Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41618574444 succeeded on 2026-11-03 and includes the split-interval management UI. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 
