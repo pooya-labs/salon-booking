@@ -14,12 +14,12 @@
 
 ## Current checkpoint
 
-- Phase: **R01 — Visual system and R02 — Public site (initial design)**
-- Status: Premium RTL landing page scaffolded; both standard CI and Pages-specific Vite build pass. GitHub Pages deployment is still blocked at `actions/configure-pages@v5` with 404 (`Get Pages site failed`).
-- Latest Pages workflow: 41606718648 — build passed; Setup Pages failed before artifact upload/deploy.
-- Latest standard CI: 41606718591 — success.
-- Latest Pages failure was reproduced after the owner reported selecting GitHub Actions as the source. This means GitHub's Pages site is still not visible to the workflow; the public preview URL has not been verified live.
-- Preview build output is static-only. It has no working API, D1 database, customer booking or owner authentication.
+- Phase: **R01 — Visual system and R02 — Public site / moving into R03 — Client booking journey**
+- Status: Premium RTL landing page is deployed successfully to GitHub Pages. Standard CI and Pages-specific build/deploy both pass.
+- Public preview: https://pooya16pg-spec.github.io/salon-booking/
+- Latest Pages deployment: run 41607233352 — success; build, Pages setup, artifact upload and deploy all completed successfully.
+- Latest standard CI: run 41607233200 — success.
+- Preview output is static-only. It has no working API, D1 database, real customer booking or owner authentication yet.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -63,21 +63,22 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | Pages preview setup | Added Vite Pages base path, demo-only banner, and automated Pages workflow |
 | 2026-11-03 | Pages build | Pages build passed and generated `dist/`; Setup Pages failed with 404 before artifact upload/deploy |
 | 2026-11-03 | Standard CI | Run 41606497593 passed after Pages workflow and path configuration were added |
-| 2026-11-03 | Pages retry after owner setting | Run 41606718648 reproduced the same Pages API 404; `npm run build:pages` remains successful. Preview URL not live/verified |
+| 2026-11-03 | Pages retry after owner setting | Run 41606718648 reproduced the Pages API 404; build itself passed |
+| 2026-11-03 | Pages enabled and deployment verified | Owner enabled GitHub Actions as Pages source; run 41607233352 passed all deployment steps and published the public preview URL |
+| 2026-11-03 | Standard CI | Run 41607233200 passed |
 
 ## Current blockers / owner actions
 
-- [!] Owner action still required: verify in repository Settings → Pages that **Source = GitHub Actions** is visibly saved (not merely the template-selection cards). GitHub's `GET /repos/{owner}/{repo}/pages` still returns 404 inside the deploy action, so the site has not been provisioned. Do not choose Jekyll; our site is Vite/React. We already provide our own workflow, so do not add the Static HTML template on top of it unless we first replace/update the generated workflow to avoid duplicate deployments.
+- [x] GitHub Pages source is configured as GitHub Actions; no further Pages setup action is required.
 - [ ] Before production: salon content and schedule must be supplied.
 - [ ] Before production: repository owner must connect Cloudflare and provision D1.
 
 ## Next actions
 
-1. Resolve GitHub Pages site provisioning/source setting and confirm a successful `configure-pages` step; then verify the published preview URL.
-2. Refine landing page and brand; keep sample services/prices clearly provisional.
-3. Build complete booking flow, API, D1 schema and conflict-safe scheduling.
-4. Build protected owner dashboard and full security controls.
-5. Finish QA, then switch production deployment to Cloudflare Workers + D1.
+1. Refine landing page and brand; keep sample services/prices clearly provisional.
+2. Implement the real service/availability API and booking flow with D1.
+3. Build protected owner dashboard and full security controls.
+4. Finish QA, then switch production deployment to Cloudflare Workers + D1.
 5. Before production, obtain salon content and owner acceptance.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
