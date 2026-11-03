@@ -15,10 +15,10 @@
 ## Current checkpoint
 
 - Phase: **R01 — Visual system and R02 — Public site (initial design)**
-- Status: Premium RTL landing page scaffolded; Pages-specific Vite build passes; deployment is blocked only because GitHub Pages is not yet enabled/configured for this repository.
-- Latest implementation/config commit: 30636f218b282b4bcc0e28bf136c29a577054586 (Pages workflow).
-- Last verified standard build: 41606497593 — success.
-- Latest Pages workflow: 41606497639 — `npm run build:pages` succeeded; `actions/configure-pages` returned 404 because the repository Pages site/source has not been enabled.
+- Status: Premium RTL landing page scaffolded; both standard CI and Pages-specific Vite build pass. GitHub Pages deployment is still blocked at `actions/configure-pages@v5` with 404 (`Get Pages site failed`).
+- Latest Pages workflow: 41606718648 — build passed; Setup Pages failed before artifact upload/deploy.
+- Latest standard CI: 41606718591 — success.
+- Latest Pages failure was reproduced after the owner reported selecting GitHub Actions as the source. This means GitHub's Pages site is still not visible to the workflow; the public preview URL has not been verified live.
 - Preview build output is static-only. It has no working API, D1 database, customer booking or owner authentication.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
@@ -61,18 +61,19 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | CI correction | Fixed missing lockfile cache assumption and pinned a published Workers Types v5 release after npm registry rejected the initial version |
 | 2026-11-03 | Build verification | GitHub Actions run 41605843217 passed: dependency install, TypeScript project build and Vite production build |
 | 2026-11-03 | Pages preview setup | Added Vite Pages base path, demo-only banner, and automated Pages workflow |
-| 2026-11-03 | Pages build | Pages build passed and generated `dist/`; deploy stopped at Pages setup because the repository has not yet enabled GitHub Pages |
-| 2026-11-03 | Standard CI | Run 41606497593 passed after the Pages workflow and path configuration were added |
+| 2026-11-03 | Pages build | Pages build passed and generated `dist/`; Setup Pages failed with 404 before artifact upload/deploy |
+| 2026-11-03 | Standard CI | Run 41606497593 passed after Pages workflow and path configuration were added |
+| 2026-11-03 | Pages retry after owner setting | Run 41606718648 reproduced the same Pages API 404; `npm run build:pages` remains successful. Preview URL not live/verified |
 
 ## Current blockers / owner actions
 
-- [!] Owner action required: open https://github.com/pooya16pg-spec/salon-booking/settings/pages and set Build and deployment → Source to **GitHub Actions**. The workflow uses the repository's existing Pages-compatible build; after this one-time setting, rerun the failed Pages workflow.
+- [!] Owner action still required: verify in repository Settings → Pages that **Source = GitHub Actions** is visibly saved (not merely the template-selection cards). GitHub's `GET /repos/{owner}/{repo}/pages` still returns 404 inside the deploy action, so the site has not been provisioned. Do not choose Jekyll; our site is Vite/React. We already provide our own workflow, so do not add the Static HTML template on top of it unless we first replace/update the generated workflow to avoid duplicate deployments.
 - [ ] Before production: salon content and schedule must be supplied.
 - [ ] Before production: repository owner must connect Cloudflare and provision D1.
 
 ## Next actions
 
-1. Owner enables GitHub Pages source as GitHub Actions; rerun deployment and verify preview URL.
+1. Resolve GitHub Pages site provisioning/source setting and confirm a successful `configure-pages` step; then verify the published preview URL.
 2. Refine landing page and brand; keep sample services/prices clearly provisional.
 3. Build complete booking flow, API, D1 schema and conflict-safe scheduling.
 4. Build protected owner dashboard and full security controls.
