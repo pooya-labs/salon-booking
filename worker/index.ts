@@ -1,6 +1,5 @@
 import { handleAdminRequest, type AdminEnv } from './admin-api'
 import {
-  addMinutesToTime,
   getLocalDateKey,
   isValidIanaTimeZone,
   localDateTimeToUtc,
@@ -194,6 +193,17 @@ const getSettings = async (db: D1Database): Promise<Settings> => {
   }
 }
 
+const getLocalMinuteOfDay = (instant: Date, timeZone: string): number => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return Number(values.hour) * 60 + Number(values.minute)
+}
+
 const dateDayNumber = (dateKey: string) => {
   const date = parseDateKey(dateKey)
   return date ? Math.floor(Date.UTC(date.year, date.month - 1, date.day) / 86400000) : null
@@ -301,16 +311,21 @@ const getAvailability = async (
 
     for (
       let startMinutes = openMinutes;
-      startMinutes + bookingDuration <= closeMinutes;
+      startMinutes < closeMinutes;
       startMinutes += settings.slotInterval
     ) {
       const time = String(Math.floor(startMinutes / 60)).padStart(2, '0') + ':' + String(startMinutes % 60).padStart(2, '0')
-      const endTime = addMinutesToTime(time, bookingDuration)
-      if (!endTime) continue
-
       const start = localDateTimeToUtc(dateKey, time, settings.timezone)
-      const end = localDateTimeToUtc(dateKey, endTime, settings.timezone)
-      if (!start || !end || start.getTime() < nowWithNotice) continue
+      if (!start || start.getTime() < nowWithNotice) continue
+
+      // Service duration is elapsed time, not wall-clock arithmetic. Resolving
+      // both local endpoints independently would shorten/extend bookings at DST
+      // transitions. Convert the start once, then add the exact UTC duration.
+      const end = new Date(start.getTime() + bookingDuration * 60000)
+      if (
+        getLocalDateKey(end, settings.timezone) !== dateKey ||
+        getLocalMinuteOfDay(end, settings.timezone) > closeMinutes
+      ) continue
 
       const overlaps = occupied.some((booking) =>
         start.getTime() < booking.end && end.getTime() > booking.start,
@@ -524,9 +539,10 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
     return errorResponse('slot_unavailable', 'این زمان دیگر در دسترس نیست؛ زمان دیگری انتخاب کنید.', 409)
   }
 
-  const endsAtTime = addMinutesToTime(time, service.duration_minutes + settings.bufferMinutes)
   const startsAt = localDateTimeToUtc(date, time, settings.timezone)
-  const endsAt = endsAtTime ? localDateTimeToUtc(date, endsAtTime, settings.timezone) : null
+  const endsAt = startsAt
+    ? new Date(startsAt.getTime() + (service.duration_minutes + settings.bufferMinutes) * 60000)
+    : null
   if (!startsAt || !endsAt) {
     return errorResponse('invalid_datetime', 'این ساعت در منطقه زمانی استودیو معتبر نیست.', 400)
   }
