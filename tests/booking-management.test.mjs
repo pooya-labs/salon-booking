@@ -28,14 +28,19 @@ test('management token verifier accepts only the stored one-time secret digest',
   assert.equal(await verifyBookingManagementToken(null, null), false)
 })
 
-test('booking management token is a random 256-bit secret and only its hash is persisted', async () => {
-  const token = createSessionToken()
-  const digest = await sha256Hex(token)
+test('booking management token replays deterministically from a 256-bit idempotency key', async () => {
+  const idempotencyKey = 'a'.repeat(64)
+  const token = await sha256Hex(`salon-booking-management-token:${idempotencyKey}`)
+  const replayedToken = await sha256Hex(`salon-booking-management-token:${idempotencyKey}`)
+  const differentToken = await sha256Hex(`salon-booking-management-token:${'b'.repeat(64)}`)
+  const storedDigest = await sha256Hex(token)
 
   assert.match(token, /^[0-9a-f]{64}$/)
-  assert.match(digest, /^[0-9a-f]{64}$/)
-  assert.notEqual(digest, token)
-  assert.equal(await sha256Hex(token), digest)
+  assert.match(storedDigest, /^[0-9a-f]{64}$/)
+  assert.equal(replayedToken, token)
+  assert.notEqual(differentToken, token)
+  assert.notEqual(storedDigest, token)
+  assert.equal(await verifyBookingManagementToken(token, storedDigest), true)
 })
 
 test('only pending and confirmed future appointments can be cancelled', () => {
