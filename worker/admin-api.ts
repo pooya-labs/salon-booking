@@ -312,7 +312,7 @@ const hasOutOfHoursBookings = async (
   const result = await env.DB.prepare(
     `SELECT starts_at, ends_at FROM bookings
      WHERE status IN ('pending', 'confirmed') AND starts_at >= ?
-     ORDER BY starts_at ASC LIMIT 2000`,
+     ORDER BY starts_at ASC`,
   ).bind(new Date().toISOString()).all<BookingRow>()
 
   return (result.results ?? []).some((booking) => {
@@ -335,13 +335,13 @@ const getAdminSchedule = async (env: AdminEnv) => {
     ).all<WeeklyIntervalRow>(),
     env.DB.prepare(
       `SELECT id, local_date, starts_at, ends_at, is_closed, note
-       FROM schedule_exceptions ORDER BY local_date ASC LIMIT 180`,
+       FROM schedule_exceptions ORDER BY local_date ASC`,
     ).all<ScheduleExceptionRow>(),
     env.DB.prepare(
       `SELECT intervals.exception_id, intervals.starts_at, intervals.ends_at, intervals.position
        FROM schedule_exception_intervals AS intervals
        INNER JOIN schedule_exceptions AS exceptions ON exceptions.id = intervals.exception_id
-       ORDER BY exceptions.local_date, intervals.position LIMIT 1440`,
+       ORDER BY exceptions.local_date, intervals.position`,
     ).all<ExceptionIntervalRow>(),
   ])
 
@@ -520,7 +520,7 @@ const hasActiveBookingsOnDate = async (
   const result = await env.DB.prepare(
     `SELECT starts_at, ends_at FROM bookings
      WHERE status IN ('pending', 'confirmed') AND starts_at < ? AND ends_at > ?
-     LIMIT 200`,
+     ORDER BY starts_at ASC`,
   ).bind(window.end.toISOString(), window.start.toISOString()).all<BookingRow>()
   return result.results ?? []
 }
@@ -793,13 +793,13 @@ const getAdminBookings = async (request: Request, env: AdminEnv) => {
               s.name AS service_name, s.duration_minutes
        FROM bookings AS b INNER JOIN services AS s ON s.id = b.service_id
        WHERE b.starts_at >= ? AND b.starts_at < ?
-       ORDER BY b.starts_at ASC LIMIT 200`
+       ORDER BY b.starts_at ASC`
     : `SELECT b.id, b.reference_code, b.client_name, b.client_phone,
               b.starts_at, b.ends_at, b.status, b.client_note,
               s.name AS service_name, s.duration_minutes
        FROM bookings AS b INNER JOIN services AS s ON s.id = b.service_id
        WHERE b.starts_at >= ? AND b.starts_at < ? AND b.status = ?
-       ORDER BY b.starts_at ASC LIMIT 200`
+       ORDER BY b.starts_at ASC`
 
   const statement = env.DB.prepare(query)
   const result = requestedStatus === 'all'
