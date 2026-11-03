@@ -16,9 +16,9 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core booking, customer self-service, owner workspace, multi-interval scheduling, public rate limits and local D1 backup/restore smoke coverage are implemented. The production service is not deployed.
-- Latest verified implementation commit on `main`: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276` — server-side idempotency, 256-bit request keys and concurrent replay protection.
-- Latest CI: [run 41642193392](https://github.com/pooya-labs/salon-booking/actions/runs/41642193392) — success (unit tests, SQLite migrations, TypeScript/Vite build and Worker+D1 integration including concurrent idempotency replay).
-- Latest GitHub Pages deployment: [run 41642193400](https://github.com/pooya-labs/salon-booking/actions/runs/41642193400) — success.
+- Latest verified code implementation on `main`: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276` — server-side idempotency, 256-bit request keys and concurrent replay protection. Latest test/docs checkpoint: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
+- Latest CI: [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) — success (26 unit tests, SQLite migration/privacy/idempotency checks, TypeScript/Vite build and Worker+D1 integration including concurrent idempotency replay).
+- Latest GitHub Pages deployment: [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) — success.
 - Earlier verified baseline: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a` verified 25 unit tests, privacy checks and local D1 export/restore before idempotency was added.
 - Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
@@ -55,10 +55,10 @@
 - The idempotency ledger stores only domain-separated SHA-256 digests and a non-sensitive response snapshot; it does not duplicate the raw key or request body. The ordinary bookings table continues to hold the client details needed to manage appointments.
 - The customer-management token is deterministically derived from the same 256-bit key with domain separation; only the token's SHA-256 digest is stored on the booking.
 - The booking insert and idempotency ledger insert are committed together through a D1 batch. Replaying the same key and payload returns HTTP 200 with the original reference/token; changing the payload while reusing the key returns HTTP 409 `idempotency_key_reused`.
-- Added unit coverage for key entropy/format, SQLite checks for key uniqueness and erasure cascade, and Worker integration coverage for replay, mismatched payload, missing key and distinct-key slot conflicts.
+- Added unit coverage for key entropy/format and deterministic management-token derivation; SQLite checks for key uniqueness and erasure cascade; Worker integration coverage for replay, mismatched payload, missing key, distinct-key slot conflicts and concurrent same-key delivery.
 - Implementation commits include migration `a2f208c`, Worker `df891ec` / `a66dde0` / `33dcc56`, frontend `7977b61` / `6b68de5`, unit/migration/integration tests and API/deployment docs.
-- Final verified code/test commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`.
-- CI [run 41642193392](https://github.com/pooya-labs/salon-booking/actions/runs/41642193392) and Pages [run 41642193400](https://github.com/pooya-labs/salon-booking/actions/runs/41642193400) both passed.
+- Final verified code commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`; final test/docs commit: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
+- CI [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) and Pages [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) both passed.
 
 ## Decisions made
 
