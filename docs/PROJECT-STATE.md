@@ -15,7 +15,17 @@
 ## Current checkpoint
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
-- Latest owner-facing code change remains `bfdbcd9dadec121401e2e777abe57d5f0320a0d4` (remove result caps); latest expanded integration-test fixture correction is `0424d8c0d229c68cd6375cea68f3cd32a22b2af5`. Both are on `main`, and the latter has a fully green CI run.
+- Latest booking-duration snapshot work is committed on `main`: Worker insert/read `90c97fdde40aa8721fb395017e2c041eef673d83`, owner read `8deef06599c503fe7c9bb051e41d0b657d00eb79`, migration 0009 `7486c802d8c4c41497580391456c048797ab95f4`, Worker+D1 regression `9406f7b535acda85741034995918280e83523243`, and SQLite migration regression `c41a7b512ac2bb6ce7a114f5d72e666029a59883`. Full CI on this checkpoint is pending.
+
+## In-progress service-duration snapshot checkpoint (2026-11-03)
+
+- Owner service edits previously changed the duration shown for old bookings because customer and owner reads joined the current `services.duration_minutes`, while the saved booking `ends_at` did not change.
+- Migration `0009_booking_service_duration_snapshot.sql` adds `bookings.service_duration_minutes` and backfills existing rows from the current service catalog. Historical actual values cannot be reconstructed if the catalog was already edited; the current catalog value is the best available migration-time value.
+- New bookings persist the service duration at creation. Owner booking lists and customer self-service read the saved booking snapshot, so later catalog-duration edits do not rewrite old reservation details.
+- SQLite migration regression checks the backfill and that a later service edit leaves the snapshot unchanged.
+- Worker+D1 integration regression books a 30-minute service, changes its catalog duration to 90 minutes, then requires customer lookup and the owner booking list to continue showing 30 minutes.
+- API, deployment, README, roadmap and this handoff have been updated to reference migration 0009.
+- Verification is pending the full CI run on the latest `main` head. Remote Cloudflare D1 is not provisioned and migration 0009 has not been applied remotely.
 
 ## Latest high-volume scheduling safety checkpoint (2026-11-03)
 
@@ -39,7 +49,7 @@
 - Latest static asset sizes: JavaScript 227,379 bytes; CSS 51,515 bytes. Both remain below CI budgets. Browser runtime/network checks found no uncaught exceptions, console errors, failed requests, HTTP errors or third-party requests.
 - Automated browser results represent Chromium viewport emulation, not physical iOS/Android devices or a real screen-reader certification. The local DCL measurement is not a production-network performance benchmark.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
-- Production D1 is not provisioned; migrations 0001–0008 have not been applied remotely; salon timezone remains `unset`; real services, prices, hours and contact details are not configured.
+- Production D1 is not provisioned; migrations 0001–0009 have not been applied remotely; salon timezone remains `unset`; real services, prices, hours and contact details are not configured.
 - Worker is not deployed to Cloudflare; production secrets are not configured; no real customer data has been processed.
 - Next engineering work: complete the full security/threat-model review, strengthen the operational rollback/runbook, and close remaining technical release gates. Cloudflare production provisioning and salon-owner approval remain external launch prerequisites.
 - Production launch remains blocked on salon-owner decisions (business identity, location/timezone, service menu, schedule, cancellation policy, privacy contact/retention approval) and Cloudflare account/D1/secrets provisioning.
@@ -224,7 +234,7 @@ Use clearly marked placeholders until the owner supplies these details.
 
 1. Confirm the salon owner's cancellation notice period and publish the customer-facing policy.
 2. Complete data-retention, export/deletion, backup, security-header, accessibility and threat-model reviews.
-3. When owner-approved salon details are available, provision Cloudflare D1, configure its ID and apply migrations 0001–0008.
+3. When owner-approved salon details are available, provision Cloudflare D1, configure its ID and apply migrations 0001–0009.
 4. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
 5. Confirm timezone, services, prices, hours and booking horizon; then perform owner/admin API tests and a production smoke test.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
@@ -232,7 +242,7 @@ Use clearly marked placeholders until the owner supplies these details.
 ## Latest Worker + D1 integration checkpoint (2026-11-03)
 
 - Added `tests/worker-integration.mjs` and `npm run test:worker`; CI runs it after the production build.
-- The harness creates a temporary Wrangler config with a syntactically valid local-only D1 identifier and stores D1 state in an isolated OS temp directory. It applies migrations 0001–0008 locally, seeds one synthetic service and one synthetic working day, then launches the actual Worker with a test-only SESSION_SECRET.
+- The harness creates a temporary Wrangler config with a syntactically valid local-only D1 identifier and stores D1 state in an isolated OS temp directory. It applies migrations 0001–0009 locally, seeds one synthetic service and one synthetic working day, then launches the actual Worker with a test-only SESSION_SECRET.
 - HTTP coverage passed for health/config/services, availability, booking creation, duplicate-slot rejection, cross-origin rejection, invalid management token (generic 404), privacy-safe customer lookup, cancellation, repeated cancellation and slot release.
 - CI run 41628055886 passed the new integration step; CI run 41628322387 also passed on the latest main workflow configuration.
 - Latest Pages deployment on current main: run 41628322469 succeeded. Preview is still static and demo-only.
@@ -345,7 +355,7 @@ Production blockers and real salon details remain unchanged.
 - Customer cancellation is permitted for pending/confirmed bookings until the scheduled start. Repeated cancellation is idempotent. A future owner-approved notice period is still undecided.
 - Invalid/missing references and tokens share a generic HTTP 404 response. Lookup and cancellation are limited to 20 combined requests per IP per 15 minutes and require same-origin requests.
 - GitHub Pages remains demo-only and never sends booking or management details.
-- D1 must apply migrations 0001–0008; bookings created before migration 0007 do not have a self-service token.
+- D1 must apply migrations 0001–0009; bookings created before migration 0007 do not have a self-service token.
 
 
 ## Latest verification refinement (2026-11-03)
