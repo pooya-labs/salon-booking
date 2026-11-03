@@ -68,16 +68,20 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R03 — Client booking journey
 
-- [ ] Service selection.
-- [ ] Jalali calendar with past dates disabled.
+- [x] Service selection UI with direct service-card entry into the booking flow.
+- [x] Jalali calendar labels for the next 14 days; past dates are excluded from the preview.
+- [~] Selectable time-slot interface (currently clearly marked sample slots; server availability is not connected yet).
+- [x] Client name and international phone-number format validation in the form.
+- [x] Booking review screen with service, date, time, duration and contact summary.
+- [~] Preview completion state is explicit and does not submit/save personal data; real confirmation and reference code require the production API.
 - [ ] Server-provided available time slots.
-- [ ] Client name and phone validation.
-- [ ] Booking review and confirmation screen.
-- [ ] Booking reference generation.
+- [ ] Booking reference generation from the backend.
 - [ ] Lookup booking by reference + verified contact detail.
-- [ ] Clear cancellation/reschedule policy.
-- [ ] Accessible form errors and retry behavior.
-- [ ] Prevent duplicate submissions and double booking.
+- [ ] Clear cancellation/reschedule policy supplied and displayed.
+- [x] Accessible field labels, validation error message and step navigation.
+- [ ] Prevent duplicate submissions and double booking in the backend/database.
+
+**Preview safety:** GitHub Pages shows the full client-side journey for design review only. It never stores or transmits customer details and must not be used for real appointments.
 
 **Exit criteria:** a client can complete a real booking on a phone without an account.
 
@@ -179,7 +183,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. The deployment workflow completed successfully on 2026-11-03 (run 41607233352). Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static visual preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Deployment workflow 41607233352 published the initial preview and workflow 41607904608 published the interactive booking-flow update successfully on 2026-11-03. Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 
