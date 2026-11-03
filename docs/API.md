@@ -64,6 +64,7 @@ Common errors:
 - `400`: invalid input or date outside the booking window.
 - `404`: service does not exist or is inactive.
 - `409 slot_unavailable`: slot is no longer available or conflicts with another booking.
+- `429 rate_limited`: the public booking IP budget is exhausted; retry after the response's `Retry-After` delay.
 - `503 schedule_not_configured`: salon timezone or schedule is not ready.
 
 ### `POST /api/public/bookings/lookup`

@@ -14,12 +14,12 @@
 
 ## Current checkpoint
 
-- Phase: **R04/R05 — Multi-interval scheduling and owner management (verified build; production D1 setup pending)**
-- Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. The availability engine calculates slots independently inside each opening interval. Responsive owner UI is available at /admin on Cloudflare; Pages shows a demo-only notice.
+- Phase: **R03/R04 — Customer self-service and scheduling security (verified build; production D1 setup pending)**
+- Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41617819811 — success (16 unit tests, SQLite migration/security checks including interval overlap and legacy backfill, TypeScript and Vite production build).
-- Latest Pages deployment: run 41617819683 — success; includes the updated split-interval schedule UI while remaining demo-only.
+- Latest verified standard CI: run 41623386330 — success (20 unit tests, SQLite migration/security checks including interval overlap, status history and legacy backfill, TypeScript and Vite production build).
+- Latest Pages deployment: run 41623386318 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
@@ -99,7 +99,7 @@ Use clearly marked placeholders until the owner supplies these details.
 2. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
 3. Confirm salon timezone/content, then enter owner-approved services and split weekly/date-specific hours in the dashboard.
 4. Deploy and smoke-test the D1-backed public API, multi-interval availability and owner dashboard on Cloudflare.
-5. Add public booking rate limiting, client lookup/cancellation, retention, backups and full security QA.
+5. Confirm the salon's cancellation notice policy, then complete retention/export/deletion, backups, threat review and full security QA.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
 ## Resume instructions for the next assistant/session

@@ -37,7 +37,7 @@ See [ROADMAP.md](./ROADMAP.md) for the full delivery plan and [docs/PROJECT-STAT
 - **Hosting:** Cloudflare Workers Static Assets
 - **Source of truth:** GitHub, `main`
 
-The Worker serves frontend assets and JSON API routes. Initial public endpoints provide active services, timezone-aware availability and conflict-safe booking creation backed by D1. The frontend uses those endpoints in the Cloudflare production build; GitHub Pages and local development intentionally keep sample data only. Cloudflare account setup and D1 provisioning are one-time operator steps; no credentials or secrets belong in Git.
+The Worker serves frontend assets and JSON API routes. Public endpoints provide active services, timezone-aware availability, conflict-safe booking creation, and customer lookup/cancellation guarded by one-time management tokens. The frontend uses those endpoints in the Cloudflare production build; GitHub Pages and local development intentionally keep sample data only. Cloudflare account setup and D1 provisioning are one-time operator steps; no credentials or secrets belong in Git.
 
 ## Local development
 

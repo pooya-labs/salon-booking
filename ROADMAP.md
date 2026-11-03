@@ -74,7 +74,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [~] Production booking step requests server-calculated available slots; demo builds use sample slots.
 - [x] Client name and international phone-number format validation in the form and API.
 - [x] Booking review screen with service, date, time, duration and contact summary.
-- [~] Production confirmation posts to the Worker API and displays the generated booking reference; requires configured D1 and salon schedule.
+- [~] Production confirmation posts to the Worker API and displays the generated reference plus one-time management token; requires configured D1 and salon schedule.
 - [x] Server-provided available time slots API is implemented and connected to the production UI.
 - [x] Booking creation endpoint and random reference generation are implemented; live acceptance is pending D1 setup.
 - [x] Customer booking lookup by reference plus one-time 256-bit management token; token hash only is stored, and invalid references/tokens share a generic response.
@@ -89,7 +89,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R04 — Scheduling and data layer
 
-- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings and normalized weekly/date intervals (migrations 0001–0005; production D1 not yet provisioned).
+- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings, normalized weekly/date intervals, public rate limits and customer management tokens/status history (migrations 0001–0007; production D1 not yet provisioned).
 - [x] Versioned SQL migrations, with SQLite migration/trigger regression tests.
 - [x] No placeholder services or business hours are seeded into production.
 - [x] Public API input validation and normalized error responses.
@@ -139,11 +139,11 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R07 — Quality and acceptance
 
-- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets and admin password/session security (19 tests).
+- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security and customer management token handling (20 tests).
 - [ ] API tests for booking lifecycle and authorization against a Worker/D1 test environment.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [~] Migration test against a clean SQLite database (D1-compatible SQL smoke test; actual Cloudflare D1 migration still pending).
-- [x] Production build and TypeScript checks (latest CI run 41618574315 passed).
+- [x] Production build and TypeScript checks (latest CI run 41623386330 passed).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.
@@ -176,7 +176,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 - [ ] SMS reminders (only after provider and costs are approved).
 - [ ] WhatsApp deep-link contact/reminders (no unofficial automation).
-- [ ] Customer self-service cancellation/rescheduling.
+- [x] Customer self-service lookup and pre-start cancellation delivered in R03. Rescheduling remains optional and out of the first release.
 - [ ] Multiple staff/chairs only if the salon needs them.
 - [ ] Analytics with privacy-conscious, minimal data.
 - [ ] PWA installability if useful.
@@ -186,7 +186,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41618574444 succeeded on 2026-11-03 and includes the split-interval management UI. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41623386318 succeeded on 2026-11-03 and includes the customer booking-management preview UI. The preview remains demo-only. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 
