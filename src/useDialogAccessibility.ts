@@ -60,7 +60,7 @@ export function useDialogAccessibility<T extends HTMLElement>(
       if (event.shiftKey && (active === first || !dialog.contains(active))) {
         event.preventDefault()
         last.focus()
-      } else if (!event.shiftKey && active === last) {
+      } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
         event.preventDefault()
         first.focus()
       }
