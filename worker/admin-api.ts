@@ -853,7 +853,7 @@ const updateBookingStatus = async (
   const auditId = crypto.randomUUID()
   const results = await env.DB.batch([
     env.DB.prepare(
-      'UPDATE bookings SET status = ?, updated_at = ? WHERE id = ? AND status = ?',
+      'UPDATE bookings SET status = ?, updated_at = ? WHERE id = ? AND status = ? RETURNING id',
     ).bind(nextStatus, updatedAt, bookingId, booking.status),
     env.DB.prepare(
       `INSERT INTO admin_audit_log
@@ -868,7 +868,7 @@ const updateBookingStatus = async (
     ),
   ])
 
-  if ((results[0]?.meta.changes ?? 0) !== 1) {
+  if ((results[0]?.results?.length ?? 0) !== 1) {
     return errorResponse('booking_changed', 'این نوبت هم‌زمان تغییر کرده است؛ فهرست را تازه‌سازی کنید.', 409)
   }
 
