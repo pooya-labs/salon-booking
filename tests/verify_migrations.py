@@ -136,9 +136,13 @@ except sqlite3.IntegrityError as error:
     assert "booking_time_conflict" in str(error)
 
 db.execute("UPDATE bookings SET status = 'cancelled' WHERE id = 'booking-a'")
+status_event = db.execute(
+    "SELECT previous_status, new_status FROM booking_status_events WHERE booking_id = 'booking-a'"
+).fetchone()
+assert status_event == ("pending", "cancelled")
 insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
 
-print("PASS: D1 migrations, overlap triggers, rate-limit buckets, audit log and unique schedule exceptions behave as expected.")
+print("PASS: D1 migrations, overlap triggers, rate-limit buckets, booking status history, audit log and unique schedule exceptions behave as expected.")
 
 
 # Migration 0005 preserves legacy one-window weekly schedules and date overrides.

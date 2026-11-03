@@ -532,3 +532,30 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
   .admin-interval-row { gap:6px; }
   .admin-exception-intervals { grid-column:auto; }
 }
+
+
+/* Customer booking management */
+.booking-manage-link { border:0; padding:0; background:none; font:inherit; cursor:pointer; white-space:nowrap; }
+.nav-manage-button { display:none; border:0; padding:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:right; }
+.booking-management-secret strong { font:600 12px ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.06em; overflow-wrap:anywhere; line-height:1.9; }
+.booking-manager-form { display:grid; gap:13px; margin-top:20px; }
+.booking-manager-submit { width:100%; margin-top:5px; }
+.booking-manage-flow .booking-flow-body { max-height:min(68vh,650px); }
+.booking-manager-result { margin-top:16px; }
+.booking-manager-result .booking-review-card { margin-top:16px; }
+.booking-manager-notice { display:flex; align-items:center; gap:7px; color:#58735d; background:#edf2eb; padding:10px 12px; font-size:10px; }
+.booking-manager-confirm { margin-top:17px; padding:14px; border:1px solid #e4d6c7; background:#faf6ef; }
+.booking-manager-confirm p { margin:0 0 12px; color:#6d655a; font-size:11px; line-height:1.9; }
+.booking-manager-confirm>div { display:flex; gap:9px; }
+.booking-manager-secondary,.booking-manager-danger { min-height:37px; padding:0 13px; border:1px solid #ddd4c6; background:#fffefa; color:#75644f; font:10px Tahoma,sans-serif; cursor:pointer; }
+.booking-manager-danger { border-color:#ead3cc; background:#fbf0ec; color:#9a5848; }
+.booking-manager-danger:disabled { opacity:.55; cursor:wait; }
+.booking-manager-cancel { width:100%; margin-top:16px; }
+.booking-manager-reset { margin-top:13px; border:0; border-bottom:1px solid #b8a58f; padding:5px 0; background:transparent; color:#856c51; font:10px Tahoma,sans-serif; cursor:pointer; }
+@media (max-width:820px) {
+  .header-actions { gap:13px; }
+}
+@media (max-width:560px) {
+  .booking-manage-link { display:none; }
+  .nav-manage-button { display:inline-flex; }
+}

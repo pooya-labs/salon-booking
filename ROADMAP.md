@@ -77,8 +77,9 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [~] Production confirmation posts to the Worker API and displays the generated booking reference; requires configured D1 and salon schedule.
 - [x] Server-provided available time slots API is implemented and connected to the production UI.
 - [x] Booking creation endpoint and random reference generation are implemented; live acceptance is pending D1 setup.
-- [ ] Lookup booking by reference + verified contact detail.
-- [ ] Clear cancellation/reschedule policy supplied and displayed.
+- [x] Customer booking lookup by reference plus one-time 256-bit management token; token hash only is stored, and invalid references/tokens share a generic response.
+- [x] Customer cancellation endpoint for pending/confirmed future bookings, with status history and IP-HMAC rate limiting.
+- [ ] Owner-confirmed cancellation notice period and customer-facing policy copy (current behavior permits cancellation before appointment start).
 - [x] Accessible field labels, validation error message and step navigation.
 - [~] Double-booking prevention enforced in SQLite triggers; frontend idempotency/duplicate-submit guard remains.
 
@@ -99,7 +100,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Closed dates and one-off opening windows supported through schedule exceptions.
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
-- [~] Fixed-window IP-HMAC limits protect public availability (180/15 min) and booking creation (10/15 min); lookup abuse controls and broader anti-automation review remain.
+- [x] Fixed-window IP-HMAC limits protect public availability (180/15 min), booking creation (10/15 min), and customer lookup/cancellation (20/15 min).
 - [ ] Data retention and export/deletion procedure documented.
 
 **Exit criteria:** booking correctness is enforced by the backend and database under concurrent requests.
@@ -130,8 +131,8 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Phone numbers and personal data are minimized.
 - [x] Secrets are read only from Worker secret bindings; no defaults are committed.
 - [ ] Security headers and input/output handling reviewed.
-- [x] Login/bootstrap and public availability/booking fixed-window rate limits use HMAC-derived IP buckets; customer lookup rate limits await that feature.
-- [~] Initial protections for bootstrap abuse, session theft, booking status mutation and public booking abuse are implemented; customer lookup protections and a full threat review remain.
+- [x] Login/bootstrap, public availability/booking, and customer lookup/cancellation fixed-window rate limits use HMAC-derived IP buckets.
+- [~] Initial protections for bootstrap abuse, session theft, booking status mutation, public booking abuse and customer booking self-service are implemented; a full threat review remains.
 - [x] Tests contain no real client data or credentials.
 
 **Exit criteria:** documented security review with no known critical/high issues.

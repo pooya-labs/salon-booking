@@ -8,6 +8,7 @@ import {
   getSessionCookie,
   isSameOriginRequest,
   sessionCookie,
+  sha256Hex,
   verifyPasswordHash,
   validAdminUsername,
 } from '../worker/admin-security.ts'
@@ -74,4 +75,14 @@ test('constant-time token comparison and username validation reject malformed va
   assert.equal(validAdminUsername('salon.owner_1'), true)
   assert.equal(validAdminUsername('x'), false)
   assert.equal(validAdminUsername('not a username'), false)
+})
+
+
+test('customer management credentials are random 256-bit secrets stored as one-way digests', async () => {
+  const token = createSessionToken()
+  const digest = await sha256Hex(token)
+  assert.match(token, /^[0-9a-f]{64}$/)
+  assert.match(digest, /^[0-9a-f]{64}$/)
+  assert.notEqual(digest, token)
+  assert.equal(await sha256Hex(token), digest)
 })

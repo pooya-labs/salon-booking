@@ -8,6 +8,12 @@ import {
   parseDateKey,
 } from './scheduling'
 import { createRateLimitBucketHash, getRateLimitWindow } from './rate-limit'
+import {
+  constantTimeEqual,
+  createSessionToken,
+  isSameOriginRequest,
+  sha256Hex,
+} from './admin-security'
 
 interface Env extends AdminEnv {
   ASSETS: { fetch(request: Request): Promise<Response> }
@@ -37,6 +43,19 @@ interface BookingInput {
   name?: unknown
   phone?: unknown
   note?: unknown
+  reference?: unknown
+  managementToken?: unknown
+}
+
+interface ManagedBookingRow {
+  id: string
+  reference_code: string
+  client_manage_token_hash: string | null
+  starts_at: string
+  ends_at: string
+  status: string
+  service_name: string
+  duration_minutes: number
 }
 
 interface OpeningHoursRow {
@@ -80,7 +99,7 @@ const enforcePublicRateLimit = async (
   db: D1Database,
   request: Request,
   secret: string | undefined,
-  scope: 'availability' | 'booking',
+  scope: 'availability' | 'booking' | 'booking_manage',
   limit: number,
   windowSeconds: number,
 ): Promise<Response | null> => {
@@ -445,14 +464,16 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
 
   const id = crypto.randomUUID()
   const reference = makeReference()
+  const managementToken = createSessionToken()
+  const managementTokenHash = await sha256Hex(managementToken)
   try {
     await db
       .prepare(
         `INSERT INTO bookings
-          (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status, client_note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+          (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status, client_note, client_manage_token_hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
       )
-      .bind(id, reference, serviceId, name, phone, startsAt.toISOString(), endsAt.toISOString(), note)
+      .bind(id, reference, serviceId, name, phone, startsAt.toISOString(), endsAt.toISOString(), note, managementTokenHash)
       .run()
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -469,6 +490,7 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
     ok: true,
     booking: {
       reference,
+      managementToken,
       status: 'pending',
       serviceName: service.name,
       date,
@@ -476,6 +498,128 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
       durationMinutes: service.duration_minutes,
     },
   }, 201)
+}
+
+
+const getManagedBooking = async (
+  db: D1Database,
+  referenceInput: unknown,
+  managementTokenInput: unknown,
+): Promise<ManagedBookingRow | null> => {
+  const reference = typeof referenceInput === 'string' ? referenceInput.trim().toUpperCase() : ''
+  const managementToken = typeof managementTokenInput === 'string' ? managementTokenInput.trim() : ''
+  const validReference = /^SB-[A-HJ-NP-Z2-9]{7}$/.test(reference)
+  const validToken = /^[0-9a-f]{64}$/i.test(managementToken)
+
+  const booking = validReference
+    ? await db.prepare(
+      `SELECT bookings.id, bookings.reference_code, bookings.client_manage_token_hash,
+              bookings.starts_at, bookings.ends_at, bookings.status,
+              services.name AS service_name, services.duration_minutes
+       FROM bookings
+       INNER JOIN services ON services.id = bookings.service_id
+       WHERE bookings.reference_code = ?
+       LIMIT 1`,
+    ).bind(reference).first<ManagedBookingRow>()
+    : null
+
+  // Always hash and compare a fixed-length value so invalid references and
+  // invalid access tokens share one public error path.
+  const submittedHash = await sha256Hex(validToken ? managementToken.toLowerCase() : '')
+  const expectedHash = booking?.client_manage_token_hash ?? '0'.repeat(64)
+  const tokenMatches = constantTimeEqual(submittedHash, expectedHash)
+  if (!booking || !booking.client_manage_token_hash || !validToken || !tokenMatches) return null
+  return booking
+}
+
+const getSalonLocalDateTime = (isoTimestamp: string, timezone: string) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(isoTimestamp))
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    time: `${values.hour}:${values.minute}`,
+  }
+}
+
+const managedBookingPayload = (booking: ManagedBookingRow, timezone: string) => {
+  const local = getSalonLocalDateTime(booking.starts_at, timezone)
+  const cancellable = ['pending', 'confirmed'].includes(booking.status)
+    && Date.parse(booking.starts_at) > Date.now()
+  return {
+    reference: booking.reference_code,
+    status: booking.status,
+    serviceName: booking.service_name,
+    date: local.date,
+    time: local.time,
+    durationMinutes: booking.duration_minutes,
+    cancellable,
+  }
+}
+
+const handleCustomerBookingManagement = async (
+  request: Request,
+  db: D1Database,
+  action: 'lookup' | 'cancel',
+) => {
+  const input = await readJsonBody(request)
+  if (!input) return errorResponse('invalid_request', 'درخواست معتبر نیست.', 400)
+
+  const booking = await getManagedBooking(db, input.reference, input.managementToken)
+  if (!booking) {
+    return errorResponse('booking_access_invalid', 'کد پیگیری یا کلید محرمانه معتبر نیست.', 404)
+  }
+
+  const settings = await getSettings(db)
+  if (settings.timezone === 'unset') {
+    return errorResponse('schedule_not_configured', 'منطقه زمانی استودیو هنوز تنظیم نشده است.', 503)
+  }
+
+  if (action === 'lookup') {
+    return json({ ok: true, booking: managedBookingPayload(booking, settings.timezone) })
+  }
+
+  if (booking.status === 'cancelled') {
+    return json({ ok: true, alreadyCancelled: true, booking: managedBookingPayload(booking, settings.timezone) })
+  }
+
+  const now = new Date().toISOString()
+  if (!['pending', 'confirmed'].includes(booking.status) || booking.starts_at <= now) {
+    return errorResponse('booking_not_cancellable', 'این نوبت دیگر از طریق سامانه قابل لغو نیست.', 409)
+  }
+
+  const updated = await db.prepare(
+    `UPDATE bookings
+     SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND status IN ('pending', 'confirmed') AND starts_at > ?`,
+  ).bind(booking.id, now).run()
+
+  if ((updated.meta.changes ?? 0) !== 1) {
+    const refreshed = await db.prepare(
+      `SELECT bookings.id, bookings.reference_code, bookings.client_manage_token_hash,
+              bookings.starts_at, bookings.ends_at, bookings.status,
+              services.name AS service_name, services.duration_minutes
+       FROM bookings
+       INNER JOIN services ON services.id = bookings.service_id
+       WHERE bookings.id = ? LIMIT 1`,
+    ).bind(booking.id).first<ManagedBookingRow>()
+    if (refreshed?.status === 'cancelled') {
+      return json({ ok: true, alreadyCancelled: true, booking: managedBookingPayload(refreshed, settings.timezone) })
+    }
+    return errorResponse('booking_not_cancellable', 'این نوبت دیگر از طریق سامانه قابل لغو نیست.', 409)
+  }
+
+  return json({
+    ok: true,
+    booking: managedBookingPayload({ ...booking, status: 'cancelled' }, settings.timezone),
+  })
 }
 
 export default {
@@ -486,7 +630,7 @@ export default {
     if (adminResponse) return adminResponse
 
     if (url.pathname === '/api/health') {
-      return json({ ok: true, service: 'salon-booking-api', version: '0.5.0' })
+      return json({ ok: true, service: 'salon-booking-api', version: '0.6.0' })
     }
 
     if (url.pathname === '/api/public/config') {
@@ -538,6 +682,23 @@ export default {
         return errorResponse('booking_unavailable', 'ثبت نوبت در حال حاضر ممکن نیست.', 503)
       }
     }
+
+    if (url.pathname === '/api/public/bookings/lookup' || url.pathname === '/api/public/bookings/cancel') {
+      if (request.method !== 'POST') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+      const limitResponse = await enforcePublicRateLimit(env.DB, request, env.SESSION_SECRET, 'booking_manage', 20, 900)
+      if (limitResponse) return limitResponse
+      try {
+        return await handleCustomerBookingManagement(
+          request,
+          env.DB,
+          url.pathname.endsWith('/cancel') ? 'cancel' : 'lookup',
+        )
+      } catch {
+        return errorResponse('booking_management_unavailable', 'مدیریت نوبت در حال حاضر ممکن نیست.', 503)
+      }
+    }
+
 
     if (url.pathname.startsWith('/api/')) {
       return errorResponse('not_found', 'این مسیر پیدا نشد.', 404)

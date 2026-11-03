@@ -13,7 +13,7 @@ The protected owner workspace is served at `/admin` by the Cloudflare Worker. It
 - Booking settings: salon timezone, slot interval, notice period, booking horizon and buffer.
 - Weekly schedule editing, with up to eight separate opening intervals per day (for example morning and afternoon shifts).
 - Date-specific closures or one-off opening intervals, with notes.
-- Audit records for service, schedule, settings and booking-status changes.
+- Audit records for service, schedule and settings changes, plus a database status-history entry for every booking status change (including customer cancellations).
 
 The schedule editor validates intervals on the server and rejects overlap. The database also has overlap triggers for weekly and exception intervals. The system rejects schedule changes that conflict with known pending/confirmed bookings. Existing single-interval schedules are backfilled by migration 0005.
 
@@ -42,7 +42,7 @@ Secrets are read through Worker environment bindings and are never committed to 
 
 ## Database setup
 
-Prerequisites: create and bind a Cloudflare D1 database, configure its ID in Wrangler, and apply migrations `0001_initial_schema.sql` through `0006_public_rate_limits.sql` in order.
+Prerequisites: create and bind a Cloudflare D1 database, configure its ID in Wrangler, and apply migrations `0001_initial_schema.sql` through `0007_customer_booking_access.sql` in order.
 
 Do not apply migrations to a real database until its ID and target environment have been checked. The project contains no real salon data yet.
 
@@ -66,13 +66,14 @@ Bootstrap is one-time at the database level. An existing owner prevents another 
 - Bootstrap rate: 3 attempts per IP-derived HMAC bucket per one-hour window.
 - Public availability: 180 requests per IP per fixed 15-minute window.
 - Public booking creation: 10 attempts per IP per fixed 15-minute window.
+- Customer lookup and cancellation combined: 20 requests per IP per fixed 15-minute window.
 - Public limits use scope-separated HMAC-SHA-256 buckets derived from `SESSION_SECRET`; raw IP addresses are never stored. Expired buckets are pruned during rate-limit checks.
 - Mutating requests require a matching same-origin Origin header.
 - The rate-limit table stores a keyed HMAC of the IP, not the raw address.
 
 ## Remaining release blockers
 
-- Customer booking lookup/cancellation with proof of control that prevents phone-number enumeration.
+- Confirm the salon's customer cancellation policy and any desired notice period. The current endpoint allows cancellation before the appointment starts.
 - Data minimization, retention/export/deletion policy and operational backups.
 - Security headers review, threat model and full security review.
 - Production Cloudflare deployment, real D1, secrets, actual salon services, timezone, hours and owner acceptance.

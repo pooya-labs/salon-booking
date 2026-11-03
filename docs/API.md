@@ -56,13 +56,34 @@ Content type: `application/json`.
 }
 ```
 
-Success returns HTTP 201 with a random booking reference and `pending` status. The endpoint does not expose a client list or return phone numbers. Name, phone and note are validated; Persian and Arabic-Indic phone digits are normalized.
+Success returns HTTP 201 with a random booking reference, a one-time 256-bit management token, and `pending` status. The management token is shown to the client only in this response; D1 stores only its SHA-256 digest. The token is a bearer credential: anyone holding both it and the booking reference can view or cancel that booking. The endpoint does not expose a client list or return phone numbers. Name, phone and note are validated; Persian and Arabic-Indic phone digits are normalized.
+
+Keep both returned values. The management token cannot be recovered or displayed again. Bookings created before migration 0007 have no management token and cannot use customer self-service.
 
 Common errors:
 - `400`: invalid input or date outside the booking window.
 - `404`: service does not exist or is inactive.
 - `409 slot_unavailable`: slot is no longer available or conflicts with another booking.
 - `503 schedule_not_configured`: salon timezone or schedule is not ready.
+
+### `POST /api/public/bookings/lookup`
+
+Requires a same-origin request and the following JSON body:
+
+```json
+{
+  "reference": "SB-ABCDEFG",
+  "managementToken": "64-character-random-hex-token"
+}
+```
+
+Returns only the booking reference, service name, salon-local date and time, duration and status. It never returns customer name, phone number or notes. A missing reference and an invalid token share the same HTTP 404 response to reduce booking enumeration.
+
+### `POST /api/public/bookings/cancel`
+
+Uses the same body and proof of possession as lookup. It cancels a booking only while its status is `pending` or `confirmed` and its start time is still in the future. A repeated cancellation returns the already-cancelled state. Started, completed or no-show appointments cannot be cancelled through this endpoint.
+
+Both customer-management endpoints share a separate limit of 20 requests per IP per fixed 15-minute window. Failed and successful lookup/cancel attempts count toward the limit. Requests must include a matching same-origin `Origin` header.
 
 ## Owner endpoints
 
@@ -118,11 +139,12 @@ Apply every migration in order:
 4. `0004_admin_service_schedule.sql`
 5. `0005_multi_interval_schedule.sql`
 6. `0006_public_rate_limits.sql`
+7. `0007_customer_booking_access.sql`
 
-Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Existing opening-hours and exception columns are retained for compatibility.
+Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Migration 0007 adds the customer-management token hash, a minimal booking status history and an automatic status-change trigger. Existing bookings remain intact, but only bookings created after migration 0007 receive a customer management token.
 
 ## Runtime and preview boundaries
 
 The Cloudflare production build connects to the Worker and D1. GitHub Pages and local Vite development deliberately use sample data and never submit customer information. Pages does not host this API or the owner backend.
 
-The implementation is not production-ready yet: booking lookup/cancellation, notifications, retention/export/deletion policy, backups, full security review, and Cloudflare production provisioning remain incomplete. Do not collect real customer data until those gates pass.
+The implementation is not production-ready yet: notifications, retention/export/deletion policy, backups, full security review, a confirmed cancellation policy, and Cloudflare production provisioning remain incomplete. Do not collect real customer data until those gates pass.

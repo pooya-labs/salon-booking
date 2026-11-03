@@ -10,7 +10,7 @@
 - Engineering / creator credit: **Pooya**
 - Default branch: `main`
 - Deployment target: Cloudflare Workers + Static Assets + D1
-- Current release: 0.5.0
+- Current release: 0.6.0
 
 ## Current checkpoint
 
@@ -21,9 +21,9 @@
 - Latest verified standard CI: run 41617819811 — success (16 unit tests, SQLite migration/security checks including interval overlap and legacy backfill, TypeScript and Vite production build).
 - Latest Pages deployment: run 41617819683 — success; includes the updated split-interval schedule UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
-- D1 is not provisioned, migrations 0001–0006 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
+- D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
-- Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Public availability and booking creation now have fixed-window IP-HMAC limits. Client lookup/cancellation and full security QA remain outstanding.
+- Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Public availability/booking and customer lookup/cancellation are IP-HMAC rate-limited. New bookings issue a one-time 256-bit management token; the database stores only its SHA-256 digest. Customers can view a minimal booking summary and cancel pending/confirmed appointments before their start time. Full security QA remains outstanding.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -95,7 +95,7 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0006 (owner action).
+1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0007 (owner action).
 2. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
 3. Confirm salon timezone/content, then enter owner-approved services and split weekly/date-specific hours in the dashboard.
 4. Deploy and smoke-test the D1-backed public API, multi-interval availability and owner dashboard on Cloudflare.
@@ -144,3 +144,15 @@ Production blockers and real salon details remain unchanged.
 - Latest CI: run 41618574315 — success (19 unit tests, SQLite migration/security checks, TypeScript and Vite build).
 - Latest Pages deployment: run 41618574444 — success. Static Pages remains a demo; Worker rate limiting is not running on Pages.
 - Production D1 still needs migrations 0001–0006 applied remotely. `SESSION_SECRET` must be set before public availability/booking can pass the limiter.
+
+
+## Latest customer self-service checkpoint (2026-11-03)
+
+- Release line: 0.6.0.
+- Migration 0007 adds `client_manage_token_hash` to bookings and a minimal status-event history with an automatic status-change trigger.
+- New bookings receive an independent random 256-bit management token. Only its SHA-256 hash is stored; the plaintext token is returned once to the creating browser and is not included in owner API responses.
+- Customer lookup requires both booking reference and management token. Only service name, local date/time, duration and status are returned; customer name, phone and notes are not exposed.
+- Customer cancellation is permitted for pending/confirmed bookings until the scheduled start. Repeated cancellation is idempotent. A future owner-approved notice period is still undecided.
+- Invalid/missing references and tokens share a generic HTTP 404 response. Lookup and cancellation are limited to 20 combined requests per IP per 15 minutes and require same-origin requests.
+- GitHub Pages remains demo-only and never sends booking or management details.
+- D1 must apply migrations 0001–0007; bookings created before migration 0007 do not have a self-service token.

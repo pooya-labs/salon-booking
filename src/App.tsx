@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AdminApp } from './Admin'
+import { BookingManagement } from './BookingManagement'
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
   Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
@@ -96,6 +97,7 @@ function BookingWizard({
   const [slotsMessage, setSlotsMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [bookingReference, setBookingReference] = useState<string | null>(null)
+  const [bookingManagementToken, setBookingManagementToken] = useState<string | null>(null)
 
   const dates = useMemo(() => {
     const timezone = salonTimezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -216,13 +218,14 @@ function BookingWizard({
         }),
       })
       const payload = await response.json() as {
-        booking?: { reference?: string }
+        booking?: { reference?: string; managementToken?: string }
         message?: string
       }
-      if (!response.ok || !payload.booking?.reference) {
+      if (!response.ok || !payload.booking?.reference || !payload.booking.managementToken) {
         throw new Error(payload.message ?? 'ثبت نوبت انجام نشد. دوباره تلاش کنید.')
       }
       setBookingReference(payload.booking.reference)
+      setBookingManagementToken(payload.booking.managementToken)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'ثبت نوبت انجام نشد.')
     } finally {
@@ -337,13 +340,18 @@ function BookingWizard({
               <div className="booking-success-icon"><Check size={28} /></div>
               <div className="eyebrow"><span className="eyebrow-line" /> BOOKING REQUESTED</div>
               <h2 id="booking-flow-title">درخواست نوبت ثبت شد.</h2>
-              <p className="booking-step-intro">کد پیگیری را نگه دارید تا بعداً بتوانید نوبت خود را بررسی کنید.</p>
+              <p className="booking-step-intro">برای بررسی یا لغو رزرو در آینده، هر دو مورد زیر را نگه دارید.</p>
               <div className="booking-reference-card">
                 <small>کد پیگیری رزرو</small>
                 <strong dir="ltr">{bookingReference}</strong>
-                <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingReference) }}>کپی کد</button>
+                <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingReference) }}>کپی کد پیگیری</button>
               </div>
-              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>وضعیت درخواست: در انتظار تأیید</strong><small>این درخواست در سامانه ثبت شده است. جزئیات تأیید نهایی باید از پنل مدیریت پیگیری شود.</small></span></div>
+              {bookingManagementToken && <div className="booking-reference-card booking-management-secret">
+                <small>کلید محرمانه مدیریت رزرو · فقط همین یک‌بار نمایش داده می‌شود</small>
+                <strong dir="ltr">{bookingManagementToken}</strong>
+                <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingManagementToken) }}>کپی کلید محرمانه</button>
+              </div>}
+              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>کلید محرمانه را نگه دارید و به کسی ندهید.</strong><small>هر فردی که هم کد پیگیری و هم این کلید را داشته باشد می‌تواند جزئیات همین رزرو را ببیند یا آن را لغو کند. وضعیت اولیه: در انتظار تأیید.</small></span></div>
             </div>
           )}
 
@@ -366,6 +374,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
   const [bookingOpen, setBookingOpen] = useState(false)
+  const [bookingManagementOpen, setBookingManagementOpen] = useState(false)
   const [initialServiceId, setInitialServiceId] = useState<string | undefined>()
   const [services, setServices] = useState<Service[]>(DEMO_MODE ? demoServices : [])
   const [salonTimezone, setSalonTimezone] = useState<string | null>(null)
@@ -425,8 +434,10 @@ function App() {
           <a href="#services" onClick={() => setMenuOpen(false)}>خدمات</a>
           <a href="#about" onClick={() => setMenuOpen(false)}>درباره استودیو</a>
           <a href="#faq" onClick={() => setMenuOpen(false)}>سؤالات متداول</a>
+          <button type="button" className="nav-manage-button" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
         </nav>
         <div className="header-actions">
+          <button type="button" className="owner-link booking-manage-link" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
           <a className="owner-link" href={DEMO_MODE ? '?admin=1' : '/admin'}>پنل مدیریت</a>
           <button className="button button-dark button-small header-book" onClick={() => startBooking()}>رزرو نوبت <ArrowLeft size={15} /></button>
           <button className="icon-button menu-toggle" aria-label={menuOpen ? 'بستن منو' : 'باز کردن منو'} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
@@ -475,6 +486,7 @@ function App() {
       <footer className="site-footer"><a className="footer-brand" href="#home"><span className="brand-mark"><Scissors size={18} /></span><strong>فُرم</strong></a><span className="footer-note">یک تجربه شخصی، با دقت و سلیقه.</span><span className="footer-credit">Crafted with care by <strong>Pooya</strong> <span>© ۲۰۲۶</span></span></footer>
 
       {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} services={services} demoMode={DEMO_MODE} salonTimezone={salonTimezone} />}
+      {bookingManagementOpen && <BookingManagement onClose={() => setBookingManagementOpen(false)} demoMode={DEMO_MODE} />}
       <div className="mobile-book-bar"><span><strong>وقت خودت رو رزرو کن</strong><small>سریع، ساده، آنلاین</small></span><button className="button button-dark" onClick={() => startBooking()}>رزرو نوبت <ChevronLeft size={17} /></button></div>
     </div>
   )
