@@ -18,11 +18,12 @@
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41624696511 — success (25 unit tests, SQLite migration/security checks including interval overlap, status history and legacy backfill, TypeScript and Vite production build).
-- Latest Pages deployment: run 41624696397 — success; includes the customer booking-management UI while remaining demo-only.
+- Latest verified standard CI: run 41628322387 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration, TypeScript and Vite production build).
+- Latest Pages deployment: run 41628322469 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
+- The new integration harness applies migrations 0001–0007 to an isolated temporary D1 database using Wrangler's local Worker runtime, then tests the real HTTP routes. It does not connect to or change the owner's Cloudflare account or production database.
 - Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Public availability/booking and customer lookup/cancellation are IP-HMAC rate-limited. New bookings issue a one-time 256-bit management token; the database stores only its SHA-256 digest. Customers can view a minimal booking summary and cancel pending/confirmed appointments before their start time. Full security QA remains outstanding.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
@@ -95,12 +96,23 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0007 (owner action).
-2. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
-3. Confirm salon timezone/content, then enter owner-approved services and split weekly/date-specific hours in the dashboard.
-4. Deploy and smoke-test the D1-backed public API, multi-interval availability and owner dashboard on Cloudflare.
-5. Confirm the salon's cancellation notice policy, then complete retention/export/deletion, backups, threat review and full security QA.
+1. Confirm the salon owner's cancellation notice period and publish the customer-facing policy.
+2. Complete data-retention, export/deletion, backup, security-header, accessibility and threat-model reviews.
+3. When owner-approved salon details are available, provision Cloudflare D1, configure its ID and apply migrations 0001–0007.
+4. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
+5. Confirm timezone, services, prices, hours and booking horizon; then perform owner/admin API tests and a production smoke test.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
+
+## Latest Worker + D1 integration checkpoint (2026-11-03)
+
+- Added `tests/worker-integration.mjs` and `npm run test:worker`; CI runs it after the production build.
+- The harness creates a temporary Wrangler config with a syntactically valid local-only D1 identifier and stores D1 state in an isolated OS temp directory. It applies migrations 0001–0007 locally, seeds one synthetic service and one synthetic working day, then launches the actual Worker with a test-only SESSION_SECRET.
+- HTTP coverage passed for health/config/services, availability, booking creation, duplicate-slot rejection, cross-origin rejection, invalid management token (generic 404), privacy-safe customer lookup, cancellation, repeated cancellation and slot release.
+- CI run 41628055886 passed the new integration step; CI run 41628322387 also passed on the latest main workflow configuration.
+- Latest Pages deployment on current main: run 41628322469 succeeded. Preview is still static and demo-only.
+- Integration is against local Wrangler D1/workerd only. Owner/admin API end-to-end tests, remote Cloudflare D1 migration smoke testing, production deployment and live salon acceptance remain incomplete.
+- CI now uses a versioned concurrency group and an 8-minute job ceiling; the test harness applies request timeouts and terminates Wrangler process groups so failed tests cannot leave a local Worker behind.
+- Current main commit at this checkpoint: 07b9b2de50bcd0533a449faa6dcec5ec92bec84f.
 
 ## Resume instructions for the next assistant/session
 

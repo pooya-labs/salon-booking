@@ -140,10 +140,10 @@ This document is the durable source of truth for scope, completion, test evidenc
 ## R07 — Quality and acceptance
 
 - [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security and customer-management credential/cancellation helpers (25 tests).
-- [~] Public booking lifecycle and customer authorization HTTP tests against a local Wrangler Worker + D1 environment (CI implementation added; verification pending).
+- [x] Public booking lifecycle and customer authorization HTTP tests against a local Wrangler Worker + D1 environment: config/services, availability, booking creation, duplicate rejection, same-origin protection, invalid-token rejection, privacy-safe lookup, cancellation, idempotency and slot release.
 - [x] SQLite regression test for overlapping insert/update protection.
-- [~] Migration regression on clean SQLite plus automated Wrangler local-D1 migration application (CI implementation added; remote Cloudflare D1 remains pending).
-- [x] Production build and TypeScript checks (latest CI run 41624696511 passed).
+- [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0007 (remote Cloudflare D1 application remains pending).
+- [x] Production build and TypeScript checks (latest CI run 41628322387 passed).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.
@@ -186,7 +186,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41624696397 succeeded on 2026-11-03 and includes the customer booking-management preview UI. The preview remains demo-only. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41628322469 succeeded on 2026-11-03 and includes the customer booking-management preview UI. The preview remains demo-only. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 
