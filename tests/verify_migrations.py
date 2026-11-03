@@ -109,11 +109,14 @@ db.execute(
 
 
 def insert_booking(identifier, reference, starts_at, ends_at, status="pending"):
+    service_duration = db.execute(
+        "SELECT duration_minutes FROM services WHERE id = 'service-test'"
+    ).fetchone()[0]
     db.execute(
         """INSERT INTO bookings
-           (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (identifier, reference, "service-test", "Test Client", "+491234567890", starts_at, ends_at, status),
+           (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status, service_duration_minutes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (identifier, reference, "service-test", "Test Client", "+491234567890", starts_at, ends_at, status, service_duration),
     )
 
 
@@ -183,6 +186,35 @@ assert db.execute("SELECT COUNT(*) FROM booking_status_events WHERE booking_id =
 assert db.execute("SELECT COUNT(*) FROM booking_idempotency WHERE booking_id = 'booking-a'").fetchone()[0] == 0
 
 print("PASS: D1 migrations, overlap triggers, rate-limit buckets, privacy-minimal status history, cascading booking erasure, audit log and unique schedule exceptions behave as expected.")
+
+
+# Migration 0009 backfills a duration snapshot and later service edits do not rewrite it.
+snapshot_db = sqlite3.connect(":memory:")
+snapshot_db.execute("PRAGMA foreign_keys = ON")
+for migration in sorted(MIGRATIONS.glob("*.sql")):
+    if migration.name == "0009_booking_service_duration_snapshot.sql":
+        continue
+    snapshot_db.executescript(migration.read_text(encoding="utf-8"))
+snapshot_db.execute(
+    "INSERT INTO services (id, name, duration_minutes, price_amount) VALUES (?, ?, ?, ?)",
+    ("snapshot-service", "Snapshot service", 45, 250),
+)
+snapshot_db.execute(
+    """INSERT INTO bookings
+       (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+    ("snapshot-booking", "SB-SNAP000", "snapshot-service", "Test Client", "+491234567890",
+     "2027-02-01T09:00:00.000Z", "2027-02-01T09:45:00.000Z", "pending"),
+)
+snapshot_db.executescript((MIGRATIONS / "0009_booking_service_duration_snapshot.sql").read_text(encoding="utf-8"))
+assert snapshot_db.execute(
+    "SELECT service_duration_minutes FROM bookings WHERE id = 'snapshot-booking'"
+).fetchone()[0] == 45
+snapshot_db.execute("UPDATE services SET duration_minutes = 90 WHERE id = 'snapshot-service'")
+assert snapshot_db.execute(
+    "SELECT service_duration_minutes FROM bookings WHERE id = 'snapshot-booking'"
+).fetchone()[0] == 45
+snapshot_db.close()
 
 
 # Migration 0005 preserves legacy one-window weekly schedules and date overrides.
