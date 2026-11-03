@@ -15,6 +15,7 @@
 ## Current checkpoint
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
+- Latest inspected `main` head: `f3bfc847d83e2233e241d104d6c2b1c8a6f236a4` — final decorative booking-banner contrast adjustment; accessibility/contrast follow-up is recorded below.
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
 - Latest verified owner-dashboard commit on `main`: `2178056a13e4f06298a63392c5d56a032b30be69` — explicit confirmation for cancellation, completion and no-show transitions, with dedicated browser assertions.
 - Latest audit-test commit: `269d6667fcfec33b5e07037d882d5e5c49cdc288` — the local Worker+D1 integration test reads back and verifies all seven owner audit event types.
@@ -31,6 +32,17 @@
 - Worker is not deployed to Cloudflare; production secrets are not configured; no real customer data has been processed.
 - Next engineering work: complete the full security/threat-model review, strengthen the operational rollback/runbook, and close remaining technical release gates. Cloudflare production provisioning and salon-owner approval remain external launch prerequisites.
 - Production launch remains blocked on salon-owner decisions (business identity, location/timezone, service menu, schedule, cancellation policy, privacy contact/retention approval) and Cloudflare account/D1/secrets provisioning.
+- Do not enable real bookings or claim production readiness until all release gates and owner acceptance are complete.
+
+## Latest automated accessibility and contrast checkpoint (2026-11-03)
+
+- Added automated `axe-core` scans tagged for WCAG 2.0/2.1/2.2 A and AA across the public homepage, booking dialog, customer booking-management dialog, owner dashboard, service editor, schedule-management tab, owner cancellation confirmation and owner login page.
+- Added a keyboard-focus dual ring and a reduced-motion browser assertion; decorative booking-banner lettering is explicitly hidden from assistive technology.
+- Contrast refinements were committed through `f3bfc847d83e2233e241d104d6c2b1c8a6f236a4` (current inspected `main` head), including public copy, owner controls/statuses, muted/success states and the decorative banner mark.
+- Related test/implementation commits: `00f7e0de4d814d50bcbd1dc4b7e532626a8d84c6`, `fad4fcec857838ddd4572c3a7a94a2d8d842c1f9`, `f1667c3071aac7d6d3965624d258a6ed9cb42bd5`, `02151a89d9b3f9220a5e3fe7a194e797bf6a0e84`, `4519370d96d79d73cf3cdc171b97562f16fa821e`, and `087a01ad6d6ee41c1493fa72f1124616d36c189d`.
+- The last confirmed green full CI remains [run 41654596006](https://github.com/pooya-labs/salon-booking/actions/runs/41654596006), which predates the axe scans and contrast-refinement commits. The connected GitHub tools did not expose workflow-run/check results for the current head; do not claim these new scans passed until a green run for the current `main` head is confirmed.
+- A green automated scan will still not replace a real screen-reader/assistive-technology audit or physical iOS/Android acceptance.
+
 - Do not enable real bookings or claim production readiness until all release gates and owner acceptance are complete.
 
 ## Latest accessibility checkpoint (2026-11-03)
