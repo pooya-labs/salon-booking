@@ -164,3 +164,32 @@ assert legacy_db.execute(
     "SELECT starts_at, ends_at FROM schedule_exception_intervals WHERE exception_id = 'legacy-date'"
 ).fetchone() == ("10:00", "14:00")
 legacy_db.close()
+
+
+# Public booking rate-limit buckets are separate and support atomic fixed-window increments.
+public_attempts = db.execute(
+    """INSERT INTO public_rate_limits (bucket_hash, window_started_at, attempts, expires_at)
+       VALUES (?, ?, 1, ?)
+       ON CONFLICT(bucket_hash) DO UPDATE SET
+         attempts = CASE WHEN public_rate_limits.window_started_at = excluded.window_started_at
+                         THEN public_rate_limits.attempts + 1 ELSE 1 END,
+         window_started_at = excluded.window_started_at,
+         expires_at = excluded.expires_at
+       RETURNING attempts""",
+    ("public-hmac-bucket", 900, 2700),
+).fetchone()[0]
+assert public_attempts == 1
+public_attempts = db.execute(
+    """INSERT INTO public_rate_limits (bucket_hash, window_started_at, attempts, expires_at)
+       VALUES (?, ?, 1, ?)
+       ON CONFLICT(bucket_hash) DO UPDATE SET
+         attempts = CASE WHEN public_rate_limits.window_started_at = excluded.window_started_at
+                         THEN public_rate_limits.attempts + 1 ELSE 1 END,
+         window_started_at = excluded.window_started_at,
+         expires_at = excluded.expires_at
+       RETURNING attempts""",
+    ("public-hmac-bucket", 900, 2700),
+).fetchone()[0]
+assert public_attempts == 2
+db.execute("DELETE FROM public_rate_limits WHERE expires_at <= ?", (2700,))
+assert db.execute("SELECT COUNT(*) FROM public_rate_limits").fetchone()[0] == 0

@@ -7,6 +7,7 @@ import {
   minutesBetweenTimes,
   parseDateKey,
 } from './scheduling'
+import { createRateLimitBucketHash, getRateLimitWindow } from './rate-limit'
 
 interface Env extends AdminEnv {
   ASSETS: { fetch(request: Request): Promise<Response> }
@@ -56,7 +57,7 @@ interface BookingRow {
   ends_at: string
 }
 
-const json = (data: unknown, status = 200) =>
+const json = (data: unknown, status = 200, extraHeaders?: Record<string, string>) =>
   new Response(JSON.stringify(data), {
     status,
     headers: {
@@ -64,11 +65,73 @@ const json = (data: unknown, status = 200) =>
       'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
+      ...extraHeaders,
     },
   })
 
-const errorResponse = (error: string, message: string, status: number) =>
-  json({ ok: false, error, message }, status)
+const errorResponse = (
+  error: string,
+  message: string,
+  status: number,
+  extraHeaders?: Record<string, string>,
+) => json({ ok: false, error, message }, status, extraHeaders)
+
+const enforcePublicRateLimit = async (
+  db: D1Database,
+  request: Request,
+  secret: string | undefined,
+  scope: 'availability' | 'booking',
+  limit: number,
+  windowSeconds: number,
+): Promise<Response | null> => {
+  if (!secret || secret.length < 32) {
+    return errorResponse('rate_limit_not_configured', 'تنظیمات امنیتی محدودسازی درخواست آماده نیست.', 503)
+  }
+
+  const ip = request.headers.get('cf-connecting-ip')?.trim()
+  if (!ip || ip.length > 64) {
+    return errorResponse('rate_limit_unavailable', 'اطلاعات لازم برای کنترل درخواست در دسترس نیست.', 503)
+  }
+
+  try {
+    const now = Math.floor(Date.now() / 1000)
+    const window = getRateLimitWindow(now, windowSeconds)
+    const bucketHash = await createRateLimitBucketHash(secret, `public:${scope}`, ip)
+
+    // Expiry is indexed; prune stale buckets so the table does not grow forever.
+    await db.prepare('DELETE FROM public_rate_limits WHERE expires_at <= ?')
+      .bind(now)
+      .run()
+
+    const result = await db.prepare(
+      `INSERT INTO public_rate_limits (bucket_hash, window_started_at, attempts, expires_at)
+       VALUES (?, ?, 1, ?)
+       ON CONFLICT(bucket_hash) DO UPDATE SET
+         attempts = CASE
+           WHEN public_rate_limits.window_started_at = excluded.window_started_at
+           THEN public_rate_limits.attempts + 1
+           ELSE 1
+         END,
+         window_started_at = excluded.window_started_at,
+         expires_at = excluded.expires_at
+       RETURNING attempts`,
+    ).bind(bucketHash, window.startedAt, window.expiresAt).first<{ attempts: number }>()
+
+    if (!result) return errorResponse('rate_limit_unavailable', 'کنترل تعداد درخواست‌ها ممکن نیست.', 503)
+    if (result.attempts > limit) {
+      return errorResponse(
+        'rate_limited',
+        'تعداد درخواست‌ها بیش از حد مجاز است. کمی بعد دوباره تلاش کنید.',
+        429,
+        { 'retry-after': String(window.retryAfter) },
+      )
+    }
+    return null
+  } catch {
+    // Fail closed: never bypass abuse controls when the limiter/database fails.
+    return errorResponse('rate_limit_unavailable', 'کنترل تعداد درخواست‌ها در حال حاضر ممکن نیست.', 503)
+  }
+}
 
 const normalizeDigits = (value: string) =>
   value
@@ -453,6 +516,8 @@ export default {
 
     if (url.pathname === '/api/public/availability') {
       if (request.method !== 'GET') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      const limitResponse = await enforcePublicRateLimit(env.DB, request, env.SESSION_SECRET, 'availability', 180, 900)
+      if (limitResponse) return limitResponse
       try {
         return await handleAvailability(request, env.DB)
       } catch (error) {
@@ -465,6 +530,8 @@ export default {
 
     if (url.pathname === '/api/public/bookings') {
       if (request.method !== 'POST') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      const limitResponse = await enforcePublicRateLimit(env.DB, request, env.SESSION_SECRET, 'booking', 10, 900)
+      if (limitResponse) return limitResponse
       try {
         return await handleCreateBooking(request, env.DB)
       } catch {
