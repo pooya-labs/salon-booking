@@ -1,5 +1,5 @@
 -- Server-side replay protection for customer booking creation.
--- Only keyed hashes are stored; no idempotency key or customer payload is persisted.
+-- Only one-way hashes are stored; no idempotency key or customer payload is persisted.
 
 CREATE TABLE IF NOT EXISTS booking_idempotency (
   idempotency_key_hash TEXT PRIMARY KEY,
