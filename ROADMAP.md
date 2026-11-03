@@ -140,9 +140,9 @@ This document is the durable source of truth for scope, completion, test evidenc
 ## R07 — Quality and acceptance
 
 - [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security and customer-management credential/cancellation helpers (25 tests).
-- [ ] API tests for booking lifecycle and authorization against a Worker/D1 test environment.
+- [~] Public booking lifecycle and customer authorization HTTP tests against a local Wrangler Worker + D1 environment (CI implementation added; verification pending).
 - [x] SQLite regression test for overlapping insert/update protection.
-- [~] Migration test against a clean SQLite database (D1-compatible SQL smoke test; actual Cloudflare D1 migration still pending).
+- [~] Migration regression on clean SQLite plus automated Wrangler local-D1 migration application (CI implementation added; remote Cloudflare D1 remains pending).
 - [x] Production build and TypeScript checks (latest CI run 41624696511 passed).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.

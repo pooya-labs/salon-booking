@@ -31,3 +31,5 @@ jobs:
         run: npm run test:migrations
       - name: Typecheck and build
         run: npm run build
+      - name: Cloudflare Worker + local D1 integration tests
+        run: npm run test:worker
