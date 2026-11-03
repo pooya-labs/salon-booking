@@ -1,0 +1,31 @@
+{
+  "name": "salon-booking",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty",
+    "deploy": "npm run build && wrangler deploy",
+    "db:local": "wrangler d1 migrations apply salon-booking --local",
+    "db:remote": "wrangler d1 migrations apply salon-booking --remote"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20261103.0",
+    "@tailwindcss/vite": "^4.1.17",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.1.17",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.7",
+    "wrangler": "^4.45.0"
+  }
+}
