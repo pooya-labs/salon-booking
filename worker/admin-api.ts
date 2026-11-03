@@ -16,6 +16,8 @@ import {
   localDateTimeToUtc,
   parseDateKey,
   isValidIanaTimeZone,
+  normalizeClockIntervals,
+  type ClockInterval,
 } from './scheduling'
 
 export interface AdminEnv {
@@ -73,6 +75,7 @@ interface AdminRequestBody {
   endsAt?: unknown
   note?: unknown
   isClosed?: unknown
+  intervals?: unknown
 }
 
 const SESSION_TTL_SECONDS = 12 * 60 * 60
@@ -104,12 +107,43 @@ interface ScheduleExceptionRow {
   note: string
 }
 
+interface WeeklyIntervalRow {
+  weekday: number
+  starts_at: string
+  ends_at: string
+  position: number
+}
+
+interface ExceptionIntervalRow {
+  exception_id: string
+  starts_at: string
+  ends_at: string
+  position: number
+}
+
 const WEEKDAY_NAMES = [
   'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه',
 ]
 const WEEKDAY_ORDER = [6, 0, 1, 2, 3, 4, 5]
 
 const validClockTime = (value: unknown): value is string =>
+
+const readScheduleIntervals = (
+  input: AdminRequestBody,
+  legacyStart: unknown,
+  legacyEnd: unknown,
+): ClockInterval[] | null => {
+  const source = Array.isArray(input.intervals)
+    ? input.intervals
+    : [{ startsAt: legacyStart, endsAt: legacyEnd }]
+  const mapped: Array<{ start: unknown; end: unknown }> = []
+  for (const item of source) {
+    if (!item || typeof item !== 'object') return null
+    const row = item as Record<string, unknown>
+    mapped.push({ start: row.startsAt, end: row.endsAt })
+  }
+  return normalizeClockIntervals(mapped)
+}
   typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 
 const readServiceValues = (
@@ -276,9 +310,7 @@ const hasOutOfHoursBookings = async (
   env: AdminEnv,
   timezone: string,
   weekday: number,
-  isClosed: boolean,
-  opensAt: string | null,
-  closesAt: string | null,
+  intervals: ClockInterval[],
 ) => {
   const result = await env.DB.prepare(
     `SELECT starts_at, ends_at FROM bookings
@@ -288,49 +320,86 @@ const hasOutOfHoursBookings = async (
 
   return (result.results ?? []).some((booking) => {
     if (localWeekday(booking.starts_at, timezone) !== weekday) return false
-    if (isClosed || !opensAt || !closesAt) return true
+    if (intervals.length === 0) return true
     const start = localBookingClock(booking.starts_at, timezone)
     const end = localBookingClock(booking.ends_at, timezone)
-    return start < opensAt || end > closesAt
+    return !intervals.some((interval) => start >= interval.start && end <= interval.end)
   })
 }
 
 const getAdminSchedule = async (env: AdminEnv) => {
-  const [settings, weekly, exceptions] = await Promise.all([
+  const [settings, weekly, weeklyIntervals, exceptions, exceptionIntervals] = await Promise.all([
     readSettings(env),
     env.DB.prepare(
       'SELECT weekday, opens_at, closes_at, is_closed FROM opening_hours ORDER BY weekday',
     ).all<WeeklyHoursRow>(),
     env.DB.prepare(
+      'SELECT weekday, starts_at, ends_at, position FROM opening_hour_intervals ORDER BY weekday, position',
+    ).all<WeeklyIntervalRow>(),
+    env.DB.prepare(
       `SELECT id, local_date, starts_at, ends_at, is_closed, note
        FROM schedule_exceptions ORDER BY local_date ASC LIMIT 180`,
     ).all<ScheduleExceptionRow>(),
+    env.DB.prepare(
+      `SELECT intervals.exception_id, intervals.starts_at, intervals.ends_at, intervals.position
+       FROM schedule_exception_intervals AS intervals
+       INNER JOIN schedule_exceptions AS exceptions ON exceptions.id = intervals.exception_id
+       ORDER BY exceptions.local_date, intervals.position LIMIT 1440`,
+    ).all<ExceptionIntervalRow>(),
   ])
 
   const byWeekday = new Map((weekly.results ?? []).map((row) => [row.weekday, row]))
+  const intervalsByWeekday = new Map<number, ClockInterval[]>()
+  for (const row of weeklyIntervals.results ?? []) {
+    const current = intervalsByWeekday.get(row.weekday) ?? []
+    current.push({ start: row.starts_at, end: row.ends_at })
+    intervalsByWeekday.set(row.weekday, current)
+  }
+
+  const intervalsByException = new Map<string, ClockInterval[]>()
+  for (const row of exceptionIntervals.results ?? []) {
+    const current = intervalsByException.get(row.exception_id) ?? []
+    current.push({ start: row.starts_at, end: row.ends_at })
+    intervalsByException.set(row.exception_id, current)
+  }
+
   return json({
     ok: true,
     settings,
     weeklyHours: WEEKDAY_ORDER.map((weekday) => {
       const name = WEEKDAY_NAMES[weekday]
       const row = byWeekday.get(weekday)
+      const legacyIntervals = row && row.opens_at && row.closes_at
+        ? [{ start: row.opens_at, end: row.closes_at }]
+        : []
+      const intervals = intervalsByWeekday.get(weekday) ?? legacyIntervals
       return {
         weekday,
         name,
-        opensAt: row?.opens_at ?? '09:00',
-        closesAt: row?.closes_at ?? '17:00',
-        isClosed: row ? row.is_closed === 1 : true,
+        intervals: row?.is_closed === 1 ? [] : intervals.map((interval) => ({
+          startsAt: interval.start, endsAt: interval.end,
+        })),
+        isClosed: row ? row.is_closed === 1 : intervals.length === 0,
         configured: Boolean(row),
       }
     }),
-    exceptions: (exceptions.results ?? []).map((row) => ({
-      id: row.id,
-      date: row.local_date,
-      startsAt: row.starts_at,
-      endsAt: row.ends_at,
-      isClosed: row.is_closed === 1,
-      note: row.note,
-    })),
+    exceptions: (exceptions.results ?? []).map((row) => {
+      const legacyIntervals = row.starts_at && row.ends_at
+        ? [{ start: row.starts_at, end: row.ends_at }]
+        : []
+      const intervals = intervalsByException.get(row.id) ?? legacyIntervals
+      return {
+        id: row.id,
+        date: row.local_date,
+        startsAt: row.starts_at,
+        endsAt: row.ends_at,
+        intervals: row.is_closed === 1 ? [] : intervals.map((interval) => ({
+          startsAt: interval.start, endsAt: interval.end,
+        })),
+        isClosed: row.is_closed === 1,
+        note: row.note,
+      }
+    }),
   })
 }
 
@@ -400,12 +469,10 @@ const updateWeeklyHours = async (
   if (!input || typeof input.isClosed !== 'boolean') {
     return errorResponse('invalid_request', 'وضعیت روز کاری معتبر نیست.', 400)
   }
-  const isClosed = input.isClosed
-  const opensAt = isClosed ? null : input.opensAt
-  const closesAt = isClosed ? null : input.closesAt
 
-  if (!isClosed && (!validClockTime(opensAt) || !validClockTime(closesAt) || opensAt >= closesAt)) {
-    return errorResponse('invalid_hours', 'ساعت شروع و پایان معتبر نیست.', 400)
+  const intervals = input.isClosed ? [] : readScheduleIntervals(input, input.opensAt, input.closesAt)
+  if (!intervals || (!input.isClosed && intervals.length === 0)) {
+    return errorResponse('invalid_hours', 'بازه‌های کاری معتبر نیستند؛ حداکثر ۸ بازه بدون هم‌پوشانی ثبت کنید.', 400)
   }
 
   const settings = await readSettings(env)
@@ -413,23 +480,29 @@ const updateWeeklyHours = async (
     return errorResponse('schedule_not_configured', 'ابتدا منطقه زمانی استودیو را در تنظیمات ذخیره کنید.', 409)
   }
 
-  if (await hasOutOfHoursBookings(env, settings.timezone, weekday, isClosed, opensAt as string | null, closesAt as string | null)) {
+  if (await hasOutOfHoursBookings(env, settings.timezone, weekday, intervals)) {
     return errorResponse('hours_conflict', 'این تغییر با نوبت‌های فعال آینده تداخل دارد؛ ابتدا نوبت‌های مربوط را مدیریت کنید.', 409)
   }
 
-  const id = crypto.randomUUID()
-  await env.DB.batch([
+  const first = intervals[0] ?? null
+  const statements = [
     env.DB.prepare(
       `INSERT INTO opening_hours (id, weekday, opens_at, closes_at, is_closed)
        VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(weekday) DO UPDATE SET
          opens_at = excluded.opens_at, closes_at = excluded.closes_at,
          is_closed = excluded.is_closed`,
-    ).bind(id, weekday, opensAt, closesAt, isClosed ? 1 : 0),
+    ).bind(crypto.randomUUID(), weekday, first?.start ?? null, first?.end ?? null, input.isClosed ? 1 : 0),
+    env.DB.prepare('DELETE FROM opening_hour_intervals WHERE weekday = ?').bind(weekday),
+    ...intervals.map((interval, position) => env.DB.prepare(
+      `INSERT INTO opening_hour_intervals (id, weekday, position, starts_at, ends_at)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), weekday, position, interval.start, interval.end)),
     writeAudit(env, user, 'schedule.weekday_updated', 'opening_hours', String(weekday), {
-      weekday, isClosed, opensAt, closesAt,
+      weekday, isClosed: input.isClosed, intervals,
     }),
-  ])
+  ]
+  await env.DB.batch(statements)
   return json({ ok: true })
 }
 
@@ -469,41 +542,53 @@ const createScheduleException = async (request: Request, env: AdminEnv, user: Ad
     return errorResponse('date_out_of_range', 'تاریخ استثنا باید از امروز تا یک سال آینده باشد.', 400)
   }
 
-  const isClosed = input.isClosed
-  const startsAt = isClosed ? null : input.startsAt
-  const endsAt = isClosed ? null : input.endsAt
+  const intervals = input.isClosed ? [] : readScheduleIntervals(input, input.startsAt, input.endsAt)
+  if (!intervals || (!input.isClosed && intervals.length === 0)) {
+    return errorResponse('invalid_exception_hours', 'بازه‌های ساعت استثنا معتبر نیستند؛ حداکثر ۸ بازه بدون هم‌پوشانی ثبت کنید.', 400)
+  }
   const note = typeof input.note === 'string' ? input.note.trim() : ''
   if (note.length > 160) return errorResponse('invalid_note', 'توضیحات حداکثر ۱۶۰ نویسه است.', 400)
-  if (!isClosed && (!validClockTime(startsAt) || !validClockTime(endsAt) || startsAt >= endsAt)) {
-    return errorResponse('invalid_exception_hours', 'بازه ساعات استثنا معتبر نیست.', 400)
-  }
 
   const bookings = await hasActiveBookingsOnDate(env, date, settings.timezone)
   const conflicts = bookings.some((booking) => {
-    if (isClosed || !startsAt || !endsAt) return true
-    return localBookingClock(booking.starts_at, settings.timezone) < startsAt
-      || localBookingClock(booking.ends_at, settings.timezone) > endsAt
+    if (input.isClosed || intervals.length === 0) return true
+    const start = localBookingClock(booking.starts_at, settings.timezone)
+    const end = localBookingClock(booking.ends_at, settings.timezone)
+    return !intervals.some((interval) => start >= interval.start && end <= interval.end)
   })
   if (conflicts) return errorResponse('exception_has_bookings', 'این تغییر با نوبت‌های فعال این روز تداخل دارد.', 409)
 
+  const first = intervals[0] ?? null
   const id = crypto.randomUUID()
+  const statements = [
+    env.DB.prepare(
+      `INSERT INTO schedule_exceptions (id, local_date, starts_at, ends_at, is_closed, note)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(local_date) DO UPDATE SET
+         starts_at = excluded.starts_at, ends_at = excluded.ends_at,
+         is_closed = excluded.is_closed, note = excluded.note`,
+    ).bind(id, date, first?.start ?? null, first?.end ?? null, input.isClosed ? 1 : 0, note),
+    env.DB.prepare(
+      'DELETE FROM schedule_exception_intervals WHERE exception_id = (SELECT id FROM schedule_exceptions WHERE local_date = ?)',
+    ).bind(date),
+    ...intervals.map((interval, position) => env.DB.prepare(
+      `INSERT INTO schedule_exception_intervals (id, exception_id, position, starts_at, ends_at)
+       VALUES (?, (SELECT id FROM schedule_exceptions WHERE local_date = ?), ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), date, position, interval.start, interval.end)),
+    writeAudit(env, user, 'schedule.exception_saved', 'schedule_exception', date, {
+      date, isClosed: input.isClosed, intervals, note,
+    }),
+  ]
+
   try {
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO schedule_exceptions (id, local_date, starts_at, ends_at, is_closed, note)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(local_date) DO UPDATE SET
-           starts_at = excluded.starts_at, ends_at = excluded.ends_at,
-           is_closed = excluded.is_closed, note = excluded.note`,
-      ).bind(id, date, startsAt, endsAt, isClosed ? 1 : 0, note),
-      writeAudit(env, user, 'schedule.exception_saved', 'schedule_exception', date, {
-        date, isClosed, startsAt, endsAt, note,
-      }),
-    ])
+    await env.DB.batch(statements)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (message.toLowerCase().includes('unique')) {
       return errorResponse('exception_conflict', 'برای این تاریخ قبلاً استثنا ثبت شده است.', 409)
+    }
+    if (message.includes('schedule_interval_overlap')) {
+      return errorResponse('invalid_exception_hours', 'بازه‌های ساعت هم‌پوشانی دارند.', 400)
     }
     throw error
   }
