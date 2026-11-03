@@ -58,7 +58,7 @@ Content type: `application/json`. The `Idempotency-Key` header is required and m
 
 Success returns HTTP 201 with a booking reference, a one-time 256-bit management token, and `pending` status. The management token is derived from the high-entropy idempotency key using domain-separated SHA-256; D1 stores only its SHA-256 digest. The token is a bearer credential: anyone holding both it and the booking reference can view or cancel that booking. The endpoint does not expose a client list or return phone numbers. Name, phone and note are validated; Persian and Arabic-Indic phone digits are normalized.
 
-A retry with the same idempotency key and the same normalized request returns HTTP 200, `replayed: true`, and the original booking reference and management token. The booking and idempotency record are committed in one D1 transaction, so a failed partial write cannot leave an untracked reservation. Reusing a key with a different request returns HTTP 409 `idempotency_key_reused`. Only keyed hashes and non-sensitive response metadata are stored; the raw idempotency key and request payload are not persisted.
+A retry with the same idempotency key and the same normalized request returns HTTP 200, `replayed: true`, and the original booking reference and management token. The booking and idempotency record are committed in one D1 transaction, so a failed partial write cannot leave an untracked reservation. Reusing a key with a different request returns HTTP 409 `idempotency_key_reused`. Only one-way, domain-separated SHA-256 hashes and non-sensitive response metadata are stored; the raw idempotency key and request payload are not persisted.
 
 Keep both returned values. The management token cannot be recovered from the database; a same-key retry can reproduce it. Bookings created before migration 0007 have no management token and cannot use customer self-service.
 
@@ -146,7 +146,7 @@ Apply every migration in order:
 7. `0007_customer_booking_access.sql`
 8. `0008_booking_idempotency.sql`
 
-Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Migration 0007 adds the customer-management token hash, a minimal booking status history and an automatic status-change trigger. Migration 0008 adds a one-key-per-booking idempotency ledger with an erasure cascade. The ledger stores keyed hashes and response metadata only, not the raw key or customer payload. Existing bookings remain intact; bookings created before migration 0007 have no customer management token, and bookings created before migration 0008 have no idempotency record.
+Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Migration 0007 adds the customer-management token hash, a minimal booking status history and an automatic status-change trigger. Migration 0008 adds a one-key-per-booking idempotency ledger with an erasure cascade. The ledger stores one-way, domain-separated SHA-256 hashes and response metadata only, not the raw key or customer payload. Existing bookings remain intact; bookings created before migration 0007 have no customer management token, and bookings created before migration 0008 have no idempotency record.
 
 ## Runtime and preview boundaries
 
