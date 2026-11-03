@@ -15,8 +15,9 @@
 ## Current checkpoint
 
 - Phase: **R00 — Foundation**
-- Status: Bootstrap documentation and first application scaffold.
-- Last verified commit: pending initial implementation.
+- Status: Initial scaffold and first visual pass committed to main; automated CI build is pending.
+- Last code commit: ce4fc3e11fdf87c106a722cc66da81466085b45e.
+- Last verified commit: none yet; CI has not completed successfully.
 - Production deployment: not configured.
 - Production database: not provisioned.
 - Real client data: must not be entered until security and launch gates pass.
@@ -52,6 +53,9 @@ Use clearly marked placeholders until the owner supplies these details.
 | Date | Checkpoint | Result |
 |---|---|---|
 | 2026-11-03 | Repository discovery | Empty repository confirmed; default branch `main` |
+| 2026-11-03 | Bootstrap | React/Vite app, Worker entry, initial D1 schema, docs and CI workflow committed to `main` |
+| 2026-11-03 | First CI attempt | Failed before dependency install because setup-node npm cache expected a lockfile; workflow corrected |
+| 2026-11-03 | Current CI | Latest run pending; build result not yet verified |
 
 ## Current blockers / owner actions
 
@@ -61,9 +65,9 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Bootstrap application and design system.
-2. Build the first responsive public landing/booking interface using clearly identified demo content.
-3. Add API and D1 migrations.
+1. Finish CI verification and fix any real build/type errors.
+2. Refine public landing page and brand system; keep sample services/prices clearly provisional.
+3. Implement real service and availability API backed by D1 migrations.
 4. Build protected owner dashboard.
 5. Test, harden and document.
 6. Deploy only after Cloudflare account/database setup and owner acceptance.
