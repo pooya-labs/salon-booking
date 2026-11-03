@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdminApp } from './Admin'
 import { BookingManagement } from './BookingManagement'
 import { useDialogAccessibility } from './useDialogAccessibility'
@@ -98,6 +98,7 @@ function BookingWizard({
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [slotsMessage, setSlotsMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const submissionLock = useRef(false)
   const [bookingReference, setBookingReference] = useState<string | null>(null)
   const [bookingManagementToken, setBookingManagementToken] = useState<string | null>(null)
 
@@ -204,7 +205,8 @@ function BookingWizard({
       onClose()
       return
     }
-    if (submitting || bookingReference) return
+    if (submissionLock.current || bookingReference) return
+    submissionLock.current = true
     setSubmitting(true)
     setError('')
     try {
@@ -216,7 +218,7 @@ function BookingWizard({
           date: draft.date,
           time: draft.time,
           name: draft.name.trim(),
-          phone: normalizeDigits(draft.phone).replace(/[\\s()-]/g, ''),
+          phone: normalizeDigits(draft.phone).replace(/[\s()-]/g, ''),
         }),
       })
       const payload = await response.json() as {
@@ -231,6 +233,7 @@ function BookingWizard({
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'ثبت نوبت انجام نشد.')
     } finally {
+      submissionLock.current = false
       setSubmitting(false)
     }
   }
