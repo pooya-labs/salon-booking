@@ -267,7 +267,7 @@ try {
   assert.equal(ownerBooking.phone, '+491234567890')
   assert.equal(ownerBooking.status, 'pending')
 
-  const confirmed = await expectJson(await request(
+  const confirmResponse = await request(
     baseUrl,
     `/api/admin/bookings/${ownerBooking.id}/status`,
     {
@@ -275,7 +275,23 @@ try {
       headers: ownerHeaders,
       body: JSON.stringify({ status: 'confirmed' }),
     },
-  ), 200, 'owner confirms booking')
+  )
+  const confirmed = await confirmResponse.json()
+  if (confirmResponse.status !== 200) {
+    const stateAfterConfirm = await expectJson(await request(
+      baseUrl,
+      `/api/admin/bookings?from=${date}&to=${date}`,
+      { headers: ownerHeaders },
+    ), 200, 'diagnostic owner booking list')
+    const observed = stateAfterConfirm.bookings.find((item) => item.id === ownerBooking.id)
+    console.error('Owner status diagnostic:', {
+      responseStatus: confirmResponse.status,
+      response: confirmed,
+      observedDatabaseStatus: observed?.status,
+      bookingId: ownerBooking.id,
+    })
+  }
+  assert.equal(confirmResponse.status, 200, `owner confirms booking: ${JSON.stringify(confirmed)}`)
   assert.equal(confirmed.status, 'confirmed')
 
   const invalidTransition = await expectJson(await request(
