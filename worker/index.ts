@@ -45,6 +45,7 @@ interface OpeningHoursRow {
 }
 
 interface ExceptionRow {
+  id: string
   starts_at: string | null
   ends_at: string | null
   is_closed: number
@@ -112,33 +113,52 @@ const dateDayNumber = (dateKey: string) => {
   return date ? Math.floor(Date.UTC(date.year, date.month - 1, date.day) / 86400000) : null
 }
 
-const getScheduleWindow = async (
+const getScheduleWindows = async (
   db: D1Database,
   dateKey: string,
-): Promise<{ start: string; end: string } | null> => {
+): Promise<Array<{ start: string; end: string }> | null> => {
   const exception = await db
-    .prepare('SELECT starts_at, ends_at, is_closed FROM schedule_exceptions WHERE local_date = ?')
+    .prepare('SELECT id, starts_at, ends_at, is_closed FROM schedule_exceptions WHERE local_date = ?')
     .bind(dateKey)
     .first<ExceptionRow>()
 
   if (exception) {
-    if (exception.is_closed === 1 || !exception.starts_at || !exception.ends_at) return null
-    if (minutesBetweenTimes(exception.starts_at, exception.ends_at) === null) return null
-    return { start: exception.starts_at, end: exception.ends_at }
+    if (exception.is_closed === 1) return null
+    const intervals = await db
+      .prepare('SELECT starts_at, ends_at FROM schedule_exception_intervals WHERE exception_id = ? ORDER BY position')
+      .bind(exception.id)
+      .all<{ starts_at: string; ends_at: string }>()
+    const valid = (intervals.results ?? [])
+      .filter((row) => minutesBetweenTimes(row.starts_at, row.ends_at) !== null)
+      .map((row) => ({ start: row.starts_at, end: row.ends_at }))
+    if (valid.length) return valid
+    if (exception.starts_at && exception.ends_at && minutesBetweenTimes(exception.starts_at, exception.ends_at) !== null) {
+      return [{ start: exception.starts_at, end: exception.ends_at }]
+    }
+    return null
   }
 
   const parts = parseDateKey(dateKey)
   if (!parts) return null
   const weekday = new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()
-
   const hours = await db
     .prepare('SELECT opens_at, closes_at, is_closed FROM opening_hours WHERE weekday = ?')
     .bind(weekday)
     .first<OpeningHoursRow>()
 
-  if (!hours || hours.is_closed === 1 || !hours.opens_at || !hours.closes_at) return null
-  if (minutesBetweenTimes(hours.opens_at, hours.closes_at) === null) return null
-  return { start: hours.opens_at, end: hours.closes_at }
+  if (!hours || hours.is_closed === 1) return null
+  const intervals = await db
+    .prepare('SELECT starts_at, ends_at FROM opening_hour_intervals WHERE weekday = ? ORDER BY position')
+    .bind(weekday)
+    .all<{ starts_at: string; ends_at: string }>()
+  const valid = (intervals.results ?? [])
+    .filter((row) => minutesBetweenTimes(row.starts_at, row.ends_at) !== null)
+    .map((row) => ({ start: row.starts_at, end: row.ends_at }))
+  if (valid.length) return valid
+  if (hours.opens_at && hours.closes_at && minutesBetweenTimes(hours.opens_at, hours.closes_at) !== null) {
+    return [{ start: hours.opens_at, end: hours.closes_at }]
+  }
+  return null
 }
 
 const getAvailability = async (
@@ -158,8 +178,8 @@ const getAvailability = async (
   const daysAhead = requestedNumber - todayNumber
   if (daysAhead < 0 || daysAhead > settings.maxDaysAhead) throw new Error('date_out_of_range')
 
-  const window = await getScheduleWindow(db, dateKey)
-  if (!window) return { slots: [], date: dateKey, timezone: settings.timezone }
+  const windows = await getScheduleWindows(db, dateKey)
+  if (!windows?.length) return { slots: [], date: dateKey, timezone: settings.timezone }
 
   const dayStart = localDateTimeToUtc(dateKey, '00:00', settings.timezone)
   const nextDate = new Date(Date.UTC(parsedDate.year, parsedDate.month - 1, parsedDate.day + 1))
@@ -185,32 +205,36 @@ const getAvailability = async (
     end: Date.parse(booking.ends_at),
   }))
 
-  const openMinutes = Number(window.start.slice(0, 2)) * 60 + Number(window.start.slice(3, 5))
-  const closeMinutes = Number(window.end.slice(0, 2)) * 60 + Number(window.end.slice(3, 5))
   const bookingDuration = service.duration_minutes + settings.bufferMinutes
   const nowWithNotice = Date.now() + settings.minNotice * 60000
-  const slots: string[] = []
+  const slotSet = new Set<string>()
 
-  for (
-    let startMinutes = openMinutes;
-    startMinutes + bookingDuration <= closeMinutes;
-    startMinutes += settings.slotInterval
-  ) {
-    const time = `${String(Math.floor(startMinutes / 60)).padStart(2, '0')}:${String(startMinutes % 60).padStart(2, '0')}`
-    const endTime = addMinutesToTime(time, bookingDuration)
-    if (!endTime) continue
+  for (const window of windows) {
+    const openMinutes = Number(window.start.slice(0, 2)) * 60 + Number(window.start.slice(3, 5))
+    const closeMinutes = Number(window.end.slice(0, 2)) * 60 + Number(window.end.slice(3, 5))
 
-    const start = localDateTimeToUtc(dateKey, time, settings.timezone)
-    const end = localDateTimeToUtc(dateKey, endTime, settings.timezone)
-    if (!start || !end || start.getTime() < nowWithNotice) continue
+    for (
+      let startMinutes = openMinutes;
+      startMinutes + bookingDuration <= closeMinutes;
+      startMinutes += settings.slotInterval
+    ) {
+      const time = String(Math.floor(startMinutes / 60)).padStart(2, '0') + ':' + String(startMinutes % 60).padStart(2, '0')
+      const endTime = addMinutesToTime(time, bookingDuration)
+      if (!endTime) continue
 
-    const overlaps = occupied.some((booking) =>
-      start.getTime() < booking.end && end.getTime() > booking.start,
-    )
-    if (!overlaps) slots.push(time)
+      const start = localDateTimeToUtc(dateKey, time, settings.timezone)
+      const end = localDateTimeToUtc(dateKey, endTime, settings.timezone)
+      if (!start || !end || start.getTime() < nowWithNotice) continue
+
+      const overlaps = occupied.some((booking) =>
+        start.getTime() < booking.end && end.getTime() > booking.start,
+      )
+      if (!overlaps) slotSet.add(time)
+    }
   }
 
-  return { slots, date: dateKey, timezone: settings.timezone }
+  const slots = [...slotSet].sort()
+  return { slots, date: dateKey, timezone: settings.timezone }  return { slots, date: dateKey, timezone: settings.timezone }
 }
 
 const makeReference = () => {
