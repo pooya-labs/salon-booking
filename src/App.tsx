@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AdminApp } from './Admin'
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
   Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
@@ -359,6 +360,8 @@ function BookingWizard({
 }
 
 function App() {
+  const isAdminRoute = window.location.pathname.replace(/\\/+$/, '') === '/admin'
+    || new URLSearchParams(window.location.search).get('admin') === '1'
   const [menuOpen, setMenuOpen] = useState(false)
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
   const [bookingOpen, setBookingOpen] = useState(false)
@@ -368,7 +371,7 @@ function App() {
   const [catalogMessage, setCatalogMessage] = useState('')
 
   useEffect(() => {
-    if (DEMO_MODE) return
+    if (DEMO_MODE || isAdminRoute) return
     const controller = new AbortController()
 
     const loadPublicData = async () => {
@@ -400,7 +403,9 @@ function App() {
 
     void loadPublicData()
     return () => controller.abort()
-  }, [])
+  }, [isAdminRoute])
+
+  if (isAdminRoute) return <AdminApp demoMode={DEMO_MODE} />
 
   const startBooking = (serviceId?: string) => {
     setInitialServiceId(serviceId)
@@ -421,7 +426,7 @@ function App() {
           <a href="#faq" onClick={() => setMenuOpen(false)}>سؤالات متداول</a>
         </nav>
         <div className="header-actions">
-          <span className="owner-link owner-link-disabled" aria-label="پنل مدیریت در حال ساخت است">پنل مدیریت · به‌زودی</span>
+          <a className="owner-link" href={DEMO_MODE ? '?admin=1' : '/admin'}>پنل مدیریت</a>
           <button className="button button-dark button-small header-book" onClick={() => startBooking()}>رزرو نوبت <ArrowLeft size={15} /></button>
           <button className="icon-button menu-toggle" aria-label={menuOpen ? 'بستن منو' : 'باز کردن منو'} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
         </div>

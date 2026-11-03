@@ -453,6 +453,9 @@ export default {
     }
 
     if (url.pathname === '/admin' || url.pathname === '/admin/') {
+      if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405, headers: { allow: 'GET' } })
+      }
       const target = new URL(request.url)
       target.pathname = '/'
       target.searchParams.set('admin', '1')
