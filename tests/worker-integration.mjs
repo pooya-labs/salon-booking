@@ -726,7 +726,7 @@ try {
     SELECT
       'bulk-exception-' || x,
       strftime('%Y-%m-%d', '${bulkExceptionStartDate}', '+' || x || ' days'),
-      NULL, NULL, 0, 'Synthetic schedule overflow QA'
+      '00:00', '00:30', 0, 'Synthetic schedule overflow QA'
     FROM days;
 
     WITH RECURSIVE days(x) AS (
