@@ -252,6 +252,28 @@ try {
   }), 409, 'different idempotency key cannot double-book a slot')
   assert.equal(conflict.error, 'slot_unavailable')
 
+  // Two simultaneous deliveries of the same logical attempt must still
+  // create one booking and return the same one-time management credential.
+  const concurrentKey = 'c'.repeat(64)
+  const concurrentOptions = {
+    method: 'POST',
+    headers: { 'idempotency-key': concurrentKey },
+    body: JSON.stringify({ ...bookingInput, time: '09:30' }),
+  }
+  const concurrentResponses = await Promise.all([
+    request(baseUrl, '/api/public/bookings', concurrentOptions),
+    request(baseUrl, '/api/public/bookings', concurrentOptions),
+  ])
+  assert.deepEqual(
+    concurrentResponses.map((response) => response.status).sort((left, right) => left - right),
+    [200, 201],
+    'concurrent same-key requests should produce one creation and one replay',
+  )
+  const concurrentBodies = await Promise.all(concurrentResponses.map((response) => response.json()))
+  assert.equal(concurrentBodies[0].booking.reference, concurrentBodies[1].booking.reference)
+  assert.equal(concurrentBodies[0].booking.managementToken, concurrentBodies[1].booking.managementToken)
+  assert.equal(concurrentBodies.filter((body) => body.replayed === true).length, 1)
+
   const origin = new URL(baseUrl).origin
   const managementHeaders = { origin }
 
