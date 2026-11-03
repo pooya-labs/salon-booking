@@ -140,7 +140,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 ## R07 — Quality and acceptance
 
 - [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security and customer-management credential/cancellation helpers (25 tests).
-- [x] Public booking lifecycle and customer authorization HTTP tests against a local Wrangler Worker + D1 environment: config/services, availability, booking creation, duplicate rejection, same-origin protection, invalid-token rejection, privacy-safe lookup, cancellation, idempotency and slot release.
+- [x] Public booking and owner-admin lifecycle/authorization HTTP tests against a local Wrangler Worker + D1 environment: service catalog, availability, booking creation/conflict, customer origin/token/privacy/cancellation/slot release, first-owner bootstrap, secure session, login/logout/revocation, protected owner booking list/status transitions and service CRUD.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0007 (remote Cloudflare D1 application remains pending).
 - [x] Production build and TypeScript checks (latest CI run 41628322387 passed).

@@ -18,8 +18,8 @@
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41628322387 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration, TypeScript and Vite production build).
-- Latest Pages deployment: run 41628322469 — success; includes the customer booking-management UI while remaining demo-only.
+- Latest verified standard CI: run 41629668032 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration for public and owner APIs, TypeScript and Vite production build).
+- Latest Pages deployment: run 41629667782 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
@@ -112,7 +112,19 @@ Use clearly marked placeholders until the owner supplies these details.
 - Latest Pages deployment on current main: run 41628322469 succeeded. Preview is still static and demo-only.
 - Integration is against local Wrangler D1/workerd only. Owner/admin API end-to-end tests, remote Cloudflare D1 migration smoke testing, production deployment and live salon acceptance remain incomplete.
 - CI now uses a versioned concurrency group and an 8-minute job ceiling; the test harness applies request timeouts and terminates Wrangler process groups so failed tests cannot leave a local Worker behind.
-- Current main commit at this checkpoint: 07b9b2de50bcd0533a449faa6dcec5ec92bec84f.
+- Verified public-integration workflow checkpoint: 07b9b2de50bcd0533a449faa6dcec5ec92bec84f. The later owner API verification and response fix are recorded below.
+
+## Latest owner API integration checkpoint (2026-11-03)
+
+- Extended `tests/worker-integration.mjs` to exercise the actual owner API routes after public booking setup, using only synthetic local records and test-only credentials.
+- Verified first-owner bootstrap is same-origin and protected by the bootstrap token; setup becomes initialized after the single first-owner creation.
+- Verified secure session cookie flags, authenticated `/api/admin/me`, owner booking-list PII access, unauthenticated rejection, booking confirmation, invalid status transition rejection, service create/update/deactivate, logout revocation and a fresh login.
+- The owner status-change integration test exposed a real response bug: the database row changed to `confirmed`, but checking `batch()[0].meta.changes` reported a false conflict in local D1. The Worker now uses `UPDATE ... RETURNING id` and confirms the returned row count. The complete integration test now passes.
+- CI run 41629668032 passed; the Worker+D1 integration test log ends with the explicit PASS summary for both public and owner flows.
+- Pages deployment run 41629667782 passed. Both runs are for code commit `f36495ca4aa453b0455c1751985973accc8df378`.
+- Integration remains local Wrangler D1/workerd only. It does not prove remote Cloudflare D1 behavior or deploy the Worker to production.
+- Owner/admin API coverage now includes authentication, booking list/status, and service CRUD. Schedule settings/weekly hours/date exceptions still need dedicated authenticated HTTP integration coverage.
+- The test fixture bootstrap password and token are synthetic CI-only values and must never be reused in production.
 
 ## Resume instructions for the next assistant/session
 
