@@ -49,7 +49,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Build responsive navigation and footer.
 - [ ] Build reusable buttons, fields, cards, badges, dialogs and empty states.
 - [ ] Add loading, success, error and offline states.
-- [ ] Validate contrast, keyboard focus and reduced-motion behavior.
+- [~] Validate contrast, keyboard focus and reduced-motion behavior: visible dual-ring focus styling, reduced-motion checks, and automated axe-core WCAG 2.2 A/AA/2.2 AA scans have been added; the latest contrast refinements are committed, but the current `main` head still needs a confirmed green CI run.
 
 **Exit criteria:** consistent, premium visual language on narrow phones, tablets and desktop.
 
@@ -148,6 +148,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Automated Chromium responsive QA at 320, 360, 390, 430, 768, 1024, 1280 and 1440 px (mobile, tablet and desktop viewport emulation; not physical-device certification).
 - [x] RTL, Persian digit, Jalali calendar and visitor-local day-boundary checks across Asia/Tehran, Europe/Berlin and America/Los_Angeles.
 - [x] Automated keyboard/accessibility behavior for both booking and customer-management dialogs: accessible dialog name, initial focus, Tab/Shift+Tab containment, Escape close, focus restoration and scroll lock.
+- [~] Add axe-core automated WCAG 2.2 A/AA scans for the public homepage, booking/customer dialogs, owner dashboard, service editor, schedule tab, owner login and destructive-action confirmation; contrast refinements are committed, pending a verified green run on the current `main` head.
 - [ ] Real assistive-technology/screen-reader audit and physical iOS/Android device acceptance (not represented as passed by desktop Chromium emulation).
 - [x] Static asset-size budget review: JavaScript 226,328 bytes and CSS 50,256 bytes, below 1 MiB/256 KiB CI budgets; production network performance/Lighthouse profiling remains separate.
 - [x] Browser runtime/network review on the static preview: zero uncaught exceptions, console errors, failed requests, HTTP errors, API calls or third-party requests in the automated Chromium run.
