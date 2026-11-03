@@ -11,8 +11,11 @@ A polished, mobile-first appointment booking platform for an independent hair sa
 **Current phase:** R00 — Foundation & project governance  
 **Current release:** 0.1.0 — Bootstrap  
 **Default branch:** `main`  
-**Deployment target:** Cloudflare Workers + Static Assets + D1  
+**Preview:** GitHub Pages (static visual preview)  
+**Production target:** Cloudflare Workers + Static Assets + D1  
 **Frontend:** React, TypeScript, Vite, Tailwind CSS
+
+Preview URL: https://pooya16pg-spec.github.io/salon-booking/ (available after the Pages workflow publishes successfully).
 
 See [ROADMAP.md](./ROADMAP.md) for the full delivery plan and [docs/PROJECT-STATE.md](./docs/PROJECT-STATE.md) for the exact handoff checkpoint.
 
@@ -52,9 +55,15 @@ npm run typecheck
 npm run build
 ```
 
+## Preview vs production
+
+GitHub Pages is used temporarily to review the visual frontend. It does not run the Worker API or D1 database; booking and owner management are intentionally non-functional in this preview. Do not submit real customer information there.
+
+The production deployment will move to Cloudflare Workers + D1 after booking, admin, security and QA work is complete.
+
 ## Deployment
 
-Deployment is intentionally documented but not activated until a Cloudflare account is connected and a D1 database is provisioned.
+Production deployment is intentionally documented but not activated until a Cloudflare account is connected and a D1 database is provisioned.
 
 1. Create a Cloudflare D1 database.
 2. Put its database ID in the local/deployment Wrangler configuration (never commit API tokens).
