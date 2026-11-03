@@ -15,9 +15,9 @@
 ## Current checkpoint
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
-- Latest booking-duration snapshot work is committed on `main`: Worker insert/read `90c97fdde40aa8721fb395017e2c041eef673d83`, owner read `8deef06599c503fe7c9bb051e41d0b657d00eb79`, migration 0009 `7486c802d8c4c41497580391456c048797ab95f4`, Worker+D1 regression `9406f7b535acda85741034995918280e83523243`, and SQLite migration regression `c41a7b512ac2bb6ce7a114f5d72e666029a59883`. Full CI on this checkpoint is pending.
+- Latest booking-duration snapshot work is committed on `main`: Worker insert/read `90c97fdde40aa8721fb395017e2c041eef673d83`, owner read `8deef06599c503fe7c9bb051e41d0b657d00eb79`, migration 0009 `7486c802d8c4c41497580391456c048797ab95f4`, Worker+D1 regression `9406f7b535acda85741034995918280e83523243`, SQLite migration regression `c41a7b512ac2bb6ce7a114f5d72e666029a59883`, and UUID fixture correction `71b47cb3d3f0526331d3bf9d0c12fae82b8c26cc`. [CI run 41673140817](https://github.com/pooya-labs/salon-booking/actions/runs/41673140817) and [Pages run 41673140699](https://github.com/pooya-labs/salon-booking/actions/runs/41673140699) passed for the same `main` head.
 
-## In-progress service-duration snapshot checkpoint (2026-11-03)
+## Latest verified service-duration snapshot checkpoint (2026-11-03)
 
 - Owner service edits previously changed the duration shown for old bookings because customer and owner reads joined the current `services.duration_minutes`, while the saved booking `ends_at` did not change.
 - Migration `0009_booking_service_duration_snapshot.sql` adds `bookings.service_duration_minutes` and backfills existing rows from the current service catalog. Historical actual values cannot be reconstructed if the catalog was already edited; the current catalog value is the best available migration-time value.
@@ -25,7 +25,7 @@
 - SQLite migration regression checks the backfill and that a later service edit leaves the snapshot unchanged.
 - Worker+D1 integration regression books a 30-minute service, changes its catalog duration to 90 minutes, then requires customer lookup and the owner booking list to continue showing 30 minutes.
 - API, deployment, README, roadmap and this handoff have been updated to reference migration 0009.
-- Verification is pending the full CI run on the latest `main` head. Remote Cloudflare D1 is not provisioned and migration 0009 has not been applied remotely.
+- **Verified:** [CI run 41673140817](https://github.com/pooya-labs/salon-booking/actions/runs/41673140817) passed lint, 37 unit tests, SQLite migration/backfill regression, TypeScript/build, local Worker+D1 integration (including customer and owner snapshot assertions, both DST transitions, scheduling caps, audit checks and local backup/restore), responsive RTL/keyboard/browser QA, axe-core WCAG 2.2 AA scans and owner-dashboard QA. [Pages run 41673140699](https://github.com/pooya-labs/salon-booking/actions/runs/41673140699) deployed the same code head successfully.
 
 ## Latest high-volume scheduling safety checkpoint (2026-11-03)
 
@@ -41,8 +41,8 @@
 - Latest verified owner-dashboard commit on `main`: `2178056a13e4f06298a63392c5d56a032b30be69` — explicit confirmation for cancellation, completion and no-show transitions, with dedicated browser assertions.
 - Latest audit-test commit: `269d6667fcfec33b5e07037d882d5e5c49cdc288` — the local Worker+D1 integration test reads back and verifies all seven owner audit event types.
 - Date-range navigation and UTC date arithmetic are implemented in `a1f4cf12dfc868bcdc85578268204d71f251fef7`, corrected and verified in `caf88e932edce0f9176ee2078cdc0a2b365a8c59`, and browser-covered in the owner workspace.
-- Latest CI: [run 41668286672](https://github.com/pooya-labs/salon-booking/actions/runs/41668286672) — success on current code head: ESLint, 37 unit tests, SQLite migration/privacy/idempotency/local-config/CSP checks, TypeScript/build, Worker+D1 integration including high-volume schedule regressions and audit readback, static-preview Chromium + axe WCAG 2.2 AA QA and production-mode owner dashboard + axe QA.
-- Latest GitHub Pages deployment: [run 41668286869](https://github.com/pooya-labs/salon-booking/actions/runs/41668286869) — success for current code head. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- Latest CI: [run 41673140817](https://github.com/pooya-labs/salon-booking/actions/runs/41673140817) — success on current code head: ESLint, 37 unit tests, SQLite migration/privacy/idempotency/local-config/CSP plus migration 0009 snapshot/backfill checks, TypeScript/build, Worker+D1 integration including snapshot, DST and high-volume schedule regressions, static-preview Chromium + axe WCAG 2.2 AA QA and production-mode owner dashboard + axe QA.
+- Latest GitHub Pages deployment: [run 41673140699](https://github.com/pooya-labs/salon-booking/actions/runs/41673140699) — success for current code head. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - Static-preview browser QA passed viewport widths 320–1440 px, mobile navigation, full sample booking journey, both dialog focus/keyboard flows, Jalali/Persian dates and local-day boundaries in Tehran/Berlin/Los Angeles, and the demo-only admin gate.
 - Owner dashboard browser QA passed next/previous/reset seven-day navigation, preservation of the selected date range when status filters change, confirmation of cancellation/completion/no-show, no mutation when confirmation is cancelled, and responsive widths 360, 390, 768, 1024 and 1440 px.
 - The D1 audit readback test verified booking status change, service create/update, salon settings update, weekly-hours update, and schedule-exception create/delete.
