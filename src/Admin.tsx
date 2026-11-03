@@ -384,7 +384,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
           )}
         </section>
 
-        <div className="admin-next-step"><Clock3 size={17} /><span><strong>مدیریت خدمات و ساعات کاری</strong><small>بخش ویرایش خدمات، برنامه هفتگی و تعطیلات در مرحله بعدی پنل اضافه می‌شود.</small></span></div>
+        <div className="admin-next-step"><Clock3 size={17} /><span><strong>تنظیمات استودیو</strong><small>خدمات، برنامه هفتگی، فاصله‌های کاری و تعطیلات را از بخش مدیریت بالاتر همین صفحه به‌روزرسانی کنید.</small></span></div>
       </section>
       <footer className="admin-footer">Crafted with care by <strong>Pooya</strong></footer>
     </main>

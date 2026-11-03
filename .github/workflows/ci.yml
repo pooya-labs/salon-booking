@@ -44,3 +44,7 @@ jobs:
         run: npm run build:pages
       - name: Responsive, RTL, keyboard and browser QA
         run: npm run test:browser
+      - name: Build production assets for owner dashboard QA
+        run: npm run build
+      - name: Owner dashboard date-range browser QA
+        run: npm run test:browser:admin
