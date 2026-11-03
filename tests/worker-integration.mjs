@@ -268,10 +268,42 @@ try {
   const anonymousAdmin = await expectJson(await request(baseUrl, '/api/admin/services'), 401, 'anonymous admin services')
   assert.equal(anonymousAdmin.error, 'unauthorized')
 
+  const expiredSessionHash = 'expired-session-integration-hash'
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    `INSERT INTO admin_sessions (id_hash, admin_user_id, expires_at) VALUES ('${expiredSessionHash}', '${bootstrapped.user.id}', '2000-01-01T00:00:00.000Z')`,
+  ])
+
   const ownerMe = await expectJson(await request(baseUrl, '/api/admin/me', {
     headers: ownerHeaders,
   }), 200, 'owner session')
   assert.equal(ownerMe.user.username, 'integration-owner')
+
+  const expiredSessionCheck = await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    `SELECT CASE WHEN EXISTS (SELECT 1 FROM admin_sessions WHERE id_hash = '${expiredSessionHash}') THEN 'EXPIRED_SESSION_REMAINS' ELSE 'EXPIRED_SESSION_CLEARED' END AS result`,
+  ])
+  assert.match(expiredSessionCheck.stdout, /EXPIRED_SESSION_CLEARED/)
+
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    "INSERT INTO admin_rate_limits (bucket_hash, window_started_at, attempts, expires_at) VALUES ('expired-admin-limit-integration', 1, 1, 1)",
+  ])
+  const expiredLimitLogin = await expectJson(await request(baseUrl, '/api/admin/login', {
+    method: 'POST',
+    headers: { origin },
+    body: JSON.stringify({ username: 'missing-owner', password: 'Not-a-real-password-2026' }),
+  }), 401, 'invalid admin login')
+  assert.equal(expiredLimitLogin.error, 'invalid_credentials')
+  const expiredRateLimitCheck = await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    "SELECT CASE WHEN EXISTS (SELECT 1 FROM admin_rate_limits WHERE bucket_hash = 'expired-admin-limit-integration') THEN 'EXPIRED_ADMIN_LIMIT_REMAINS' ELSE 'EXPIRED_ADMIN_LIMIT_CLEARED' END AS result",
+  ])
+  assert.match(expiredRateLimitCheck.stdout, /EXPIRED_ADMIN_LIMIT_CLEARED/)
 
   const ownerBookings = await expectJson(await request(
     baseUrl,

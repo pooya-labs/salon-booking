@@ -140,9 +140,25 @@ status_event = db.execute(
     "SELECT previous_status, new_status FROM booking_status_events WHERE booking_id = 'booking-a'"
 ).fetchone()
 assert status_event == ("pending", "cancelled")
-insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
 
-print("PASS: D1 migrations, overlap triggers, rate-limit buckets, booking status history, audit log and unique schedule exceptions behave as expected.")
+# Status history intentionally contains no customer identity/contact fields and cascades on booking erasure.
+event_columns = {row[1] for row in db.execute("PRAGMA table_info(booking_status_events)")}
+assert {"id", "booking_id", "previous_status", "new_status", "created_at"} <= event_columns
+assert not any(token in column.lower() for column in event_columns for token in ("name", "phone", "note", "email", "address"))
+event_foreign_keys = db.execute("PRAGMA foreign_key_list(booking_status_events)").fetchall()
+assert any(row[2] == "bookings" and row[6].upper() == "CASCADE" for row in event_foreign_keys)
+
+# The sample audit detail stores only a state transition, never client contact or note data.
+audit_details = db.execute("SELECT details_json FROM admin_audit_log WHERE id = 'audit-test'").fetchone()[0]
+assert "Test Client" not in audit_details
+assert "+491234567890" not in audit_details
+assert "private client note" not in audit_details
+
+insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
+db.execute("DELETE FROM bookings WHERE id = 'booking-a'")
+assert db.execute("SELECT COUNT(*) FROM booking_status_events WHERE booking_id = 'booking-a'").fetchone()[0] == 0
+
+print("PASS: D1 migrations, overlap triggers, rate-limit buckets, privacy-minimal status history, cascading booking erasure, audit log and unique schedule exceptions behave as expected.")
 
 
 # Migration 0005 preserves legacy one-window weekly schedules and date overrides.

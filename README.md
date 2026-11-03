@@ -71,7 +71,7 @@ Production deployment is intentionally documented but not activated until a Clou
 4. Connect this GitHub repository to Cloudflare Workers Builds, or deploy with Wrangler.
 5. Set production secrets through Cloudflare's dashboard/CLI.
 
-See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) and the [public API contract](./docs/API.md).
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md), the [public API contract](./docs/API.md), and the [privacy operations guide](./docs/PRIVACY-OPERATIONS.md).
 
 ## Ownership and credits
 

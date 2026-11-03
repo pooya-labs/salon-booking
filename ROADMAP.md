@@ -101,7 +101,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
 - [x] Fixed-window IP-HMAC limits protect public availability (180/15 min), booking creation (10/15 min), and customer lookup/cancellation (20/15 min).
-- [ ] Data retention and export/deletion procedure documented.
+- [~] Data inventory, owner-controlled retention schedule template, private export/backup, subject export, deletion preview and cascade-aware deletion procedure drafted in `docs/PRIVACY-OPERATIONS.md`; pending CI verification.
 
 **Exit criteria:** booking correctness is enforced by the backend and database under concurrent requests.
 
@@ -128,7 +128,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] HttpOnly, Secure, SameSite=Strict host-only cookie and same-origin checks on mutations.
 - [x] Every implemented owner mutation checks the authenticated owner server-side.
 - [x] Public APIs do not expose owner booking lists or admin records.
-- [ ] Phone numbers and personal data are minimized.
+- [~] Personal-data minimization documented and regression checks added for minimal status history, no direct identity fields and booking-erasure cascade; pending CI verification.
 - [x] Secrets are read only from Worker secret bindings; no defaults are committed.
 - [~] Baseline Worker security headers, HTML/API CSP, and anti-framing controls are implemented and integration-tested on API, home and admin entry responses; complete CSP/source audit and input/output review remain.
 - [x] Login/bootstrap, public availability/booking, and customer lookup/cancellation fixed-window rate limits use HMAC-derived IP buckets.

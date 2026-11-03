@@ -8,3 +8,7 @@ dist/
 .DS_Store
 coverage/
 *.log
+private-backups/
+*.sqlite
+*.sqlite3
+*.db

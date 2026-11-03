@@ -71,6 +71,8 @@ Bootstrap is one-time at the database level. An existing owner prevents another 
 - Mutating requests require a matching same-origin Origin header.
 - The rate-limit table stores a keyed HMAC of the IP, not the raw address.
 
+Personal-data export, backup, retention and deletion safeguards are documented in [PRIVACY-OPERATIONS.md](./PRIVACY-OPERATIONS.md). Do not apply its destructive SQL procedures until the salon owner has approved a retention schedule and a fresh backup has been verified.
+
 ## Remaining release blockers
 
 - Confirm the salon's customer cancellation policy and any desired notice period. The current endpoint allows cancellation before the appointment starts.

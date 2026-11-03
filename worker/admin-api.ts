@@ -659,7 +659,13 @@ const rateLimit = async (
 
   const now = Math.floor(Date.now() / 1000)
   const windowStart = Math.floor(now / windowSeconds) * windowSeconds
-  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown'
+  const ip = request.headers.get('cf-connecting-ip')?.trim()
+  if (!ip || ip.length > 64) throw new Error('rate_limit_unavailable')
+
+  await env.DB.prepare('DELETE FROM admin_rate_limits WHERE expires_at <= ?')
+    .bind(now)
+    .run()
+
   const key = await hmacHex(env.SESSION_SECRET, `${scope}:${ip}`)
   const result = await env.DB.prepare(
     `INSERT INTO admin_rate_limits (bucket_hash, window_started_at, attempts, expires_at)
@@ -712,6 +718,11 @@ const getAdminSession = async (request: Request, env: AdminEnv): Promise<AdminSe
   const token = getSessionCookie(request)
   if (!token) return null
 
+  const now = new Date().toISOString()
+  await env.DB.prepare('DELETE FROM admin_sessions WHERE expires_at <= ?')
+    .bind(now)
+    .run()
+
   const tokenHash = await sha256Hex(token)
   return env.DB.prepare(
     `SELECT users.id, users.username
@@ -720,7 +731,7 @@ const getAdminSession = async (request: Request, env: AdminEnv): Promise<AdminSe
      WHERE sessions.id_hash = ? AND sessions.expires_at > ? AND users.is_active = 1
      LIMIT 1`,
   )
-    .bind(tokenHash, new Date().toISOString())
+    .bind(tokenHash, now)
     .first<AdminSessionUser>()
 }
 
