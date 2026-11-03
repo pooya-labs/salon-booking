@@ -153,6 +153,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Static asset-size budget review: JavaScript 226,328 bytes and CSS 50,256 bytes, below 1 MiB/256 KiB CI budgets; production network performance/Lighthouse profiling remains separate.
 - [x] Browser runtime/network review on the static preview: zero uncaught exceptions, console errors, failed requests, HTTP errors, API calls or third-party requests in the automated Chromium run.
 - [x] Owner dashboard Chromium QA: seven-day range navigation, status-filter range preservation, explicit confirmation for cancellation/completion/no-show, cancelled confirmation sends no mutation, and responsive widths 360–1440 px; [CI run 41654596006](https://github.com/pooya-labs/salon-booking/actions/runs/41654596006) passed.
+- [~] Remove silent row caps from owner booking lists, schedule exception reads and booking-versus-schedule conflict guards; add a 202-booking Worker+D1 regression covering the prior 200-row truncation. Awaiting green CI on the new main head before marking complete.
 - [ ] Owner acceptance checklist completed.
 
 **Exit criteria:** all critical flows pass and all known limitations are recorded.
