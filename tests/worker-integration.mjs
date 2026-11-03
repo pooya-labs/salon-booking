@@ -168,8 +168,20 @@ try {
   await waitForWorker(baseUrl)
   console.log('Worker is running. Exercising public booking and customer-management routes...')
 
-  const health = await expectJson(await request(baseUrl, '/api/health'), 200, 'health')
+  const healthResponse = await request(baseUrl, '/api/health')
+  const health = await expectJson(healthResponse, 200, 'health')
   assert.equal(health.service, 'salon-booking-api')
+  assert.equal(healthResponse.headers.get('x-content-type-options'), 'nosniff')
+  assert.equal(healthResponse.headers.get('x-frame-options'), 'DENY')
+  assert.equal(healthResponse.headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()')
+  assert.equal(healthResponse.headers.get('cross-origin-resource-policy'), 'same-origin')
+  assert.equal(healthResponse.headers.get('content-security-policy'), "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")
+
+  const publicPage = await request(baseUrl, '/')
+  assert.equal(publicPage.status, 200, 'Worker should serve its static entry page')
+  assert.match(publicPage.headers.get('content-security-policy') ?? '', /script-src 'self'/)
+  assert.match(publicPage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/)
+  assert.equal(publicPage.headers.get('x-frame-options'), 'DENY')
 
   const config = await expectJson(await request(baseUrl, '/api/public/config'), 200, 'public config')
   assert.equal(config.configured, true)

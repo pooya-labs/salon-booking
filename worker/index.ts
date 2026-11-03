@@ -622,8 +622,7 @@ const handleCustomerBookingManagement = async (
   })
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+const handleWorkerRequest = async (request: Request, env: Env): Promise<Response> => {
     const url = new URL(request.url)
 
     const adminResponse = await handleAdminRequest(request, env)
@@ -715,5 +714,41 @@ export default {
     }
 
     return env.ASSETS.fetch(request)
+}
+
+const withSecurityHeaders = (response: Response, request: Request): Response => {
+  const headers = new Headers(response.headers)
+  headers.set('x-content-type-options', 'nosniff')
+  headers.set('x-frame-options', 'DENY')
+  headers.set('referrer-policy', 'no-referrer')
+  headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()')
+  headers.set('cross-origin-resource-policy', 'same-origin')
+  headers.set('cross-origin-opener-policy', 'same-origin')
+
+  if (new URL(request.url).protocol === 'https:') {
+    headers.set('strict-transport-security', 'max-age=31536000')
+  }
+
+  const contentType = headers.get('content-type') ?? ''
+  if (contentType.toLowerCase().includes('text/html')) {
+    headers.set(
+      'content-security-policy',
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    )
+  } else if (contentType.toLowerCase().includes('application/json')) {
+    headers.set('content-security-policy', "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const response = await handleWorkerRequest(request, env)
+    return withSecurityHeaders(response, request)
   },
 }
