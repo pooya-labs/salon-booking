@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDialogAccessibility } from './useDialogAccessibility'
 import type { FormEvent } from 'react'
 import { CalendarDays, Check, Search, ShieldCheck, X } from 'lucide-react'
 
@@ -33,6 +34,7 @@ const formatJalaliDate = (date: string) => {
 }
 
 export function BookingManagement({ onClose, demoMode }: { onClose: () => void; demoMode: boolean }) {
+  const dialogRef = useDialogAccessibility<HTMLElement>(onClose)
   const [reference, setReference] = useState('')
   const [managementToken, setManagementToken] = useState('')
   const [booking, setBooking] = useState<ManagedBooking | null>(null)
@@ -100,7 +102,7 @@ export function BookingManagement({ onClose, demoMode }: { onClose: () => void; 
     <div className="booking-flow-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose()
     }}>
-      <section className="booking-flow booking-manage-flow" role="dialog" aria-modal="true" aria-labelledby="booking-manage-title">
+      <section ref={dialogRef} tabIndex={-1} className="booking-flow booking-manage-flow" role="dialog" aria-modal="true" aria-labelledby="booking-manage-title">
         <header className="booking-flow-header">
           <div className="booking-flow-brand">
             <span className="brand-mark"><CalendarDays size={18} /></span>
