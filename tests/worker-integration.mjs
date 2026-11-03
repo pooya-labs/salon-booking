@@ -10,7 +10,7 @@ const root = process.cwd()
 const runId = `${process.pid}-${Date.now()}`
 const tempDirectory = await mkdtemp(join(tmpdir(), 'salon-booking-worker-'))
 const configPath = join(root, `.wrangler.integration-${runId}.toml`)
-const persistPath = join(tempDirectory, 'd1-state')
+const persistPath = join(tempDirectory, '.wrangler', 'state')
 const sessionSecret = 'local-worker-integration-secret-'.padEnd(64, 'x')
 const baseHeaders = { 'cf-connecting-ip': '203.0.113.42' }
 let workerProcess
@@ -582,10 +582,21 @@ try {
     'cancelling a booking should release its slot',
   )
 
+  const exportConfigPath = join(tempDirectory, 'wrangler-export.toml')
+  await writeFile(exportConfigPath, [
+    'name = "salon-booking-export-test"',
+    '',
+    '[[d1_databases]]',
+    'binding = "DB"',
+    'database_name = "salon-booking"',
+    'database_id = "00000000-0000-4000-8000-000000000001"',
+    '',
+  ].join('\\n'), 'utf8')
+
   const backupPath = join(tempDirectory, 'salon-booking-local-backup.sql')
   await runWrangler([
-    'd1', 'export', 'salon-booking', '--local', '--persist-to', persistPath,
-    '--config', configPath, '--output', backupPath,
+    'd1', 'export', 'salon-booking', '--local',
+    '--config', exportConfigPath, '--output', backupPath,
   ])
   const backupSql = await readFile(backupPath, 'utf8')
   assert.match(backupSql, /CREATE TABLE.*bookings/i, 'D1 export should include the bookings schema')
@@ -593,11 +604,11 @@ try {
   const restorePath = join(tempDirectory, 'restored-d1-state')
   await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', restorePath,
-    '--config', configPath, '--file', backupPath,
+    '--config', exportConfigPath, '--file', backupPath,
   ])
   const restoreVerification = await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', restorePath,
-    '--config', configPath, '--command',
+    '--config', exportConfigPath, '--command',
     `SELECT CASE WHEN EXISTS (SELECT 1 FROM bookings WHERE reference_code = '${booking.reference}' AND status = 'cancelled') AND EXISTS (SELECT 1 FROM admin_users WHERE username = 'integration-owner') THEN 'RESTORE_VERIFIED' ELSE 'RESTORE_MISMATCH' END AS result`,
   ])
   assert.match(restoreVerification.stdout, /RESTORE_VERIFIED/)
