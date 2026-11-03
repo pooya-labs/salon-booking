@@ -4,6 +4,7 @@ import { createSessionToken, sha256Hex, isSameOriginRequest } from '../worker/ad
 import {
   isBookingCancellable,
   isValidBookingReference,
+  isValidIdempotencyKey,
   verifyBookingManagementToken,
 } from '../worker/customer-booking-security.ts'
 
@@ -65,4 +66,13 @@ test('customer management mutations require same-origin requests', () => {
   assert.equal(isSameOriginRequest(same), true)
   assert.equal(isSameOriginRequest(cross), false)
   assert.equal(isSameOriginRequest(missing), false)
+})
+
+test('booking idempotency accepts UUID v4 keys and rejects malformed or low-entropy values', () => {
+  assert.equal(isValidIdempotencyKey('550e8400-e29b-41d4-a716-446655440000'), true)
+  assert.equal(isValidIdempotencyKey('550E8400-E29B-41D4-A716-446655440000'), true)
+  assert.equal(isValidIdempotencyKey('booking-attempt-1'), false)
+  assert.equal(isValidIdempotencyKey('550e8400-e29b-11d4-a716-446655440000'), false)
+  assert.equal(isValidIdempotencyKey('550e8400-e29b-41d4-c716-446655440000'), false)
+  assert.equal(isValidIdempotencyKey(null), false)
 })
