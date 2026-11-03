@@ -15,7 +15,8 @@
     "preview:pages": "vite preview --base /salon-booking/",
     "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:migrations": "python tests/verify_migrations.py",
-    "test:worker": "node tests/worker-integration.mjs"
+    "test:worker": "node tests/worker-integration.mjs",
+    "test:browser": "node tests/browser-smoke.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

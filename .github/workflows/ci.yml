@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,3 +34,11 @@ jobs:
         run: npm run build
       - name: Cloudflare Worker + local D1 integration tests
         run: npm run test:worker
+      - name: Install pinned browser-test tooling
+        run: npm install --no-save --package-lock=false playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build static demo for browser QA
+        run: npm run build:pages
+      - name: Responsive, RTL, keyboard and browser QA
+        run: npm run test:browser

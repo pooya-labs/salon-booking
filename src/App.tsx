@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdminApp } from './Admin'
 import { BookingManagement } from './BookingManagement'
 import { useDialogAccessibility } from './useDialogAccessibility'
+import { normalizePhoneNumber } from './phone'
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
   Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
@@ -67,9 +68,6 @@ const faqs = [
 const timeSlots = ['09:00', '09:45', '10:30', '11:15', '12:00', '12:45', '14:00', '14:45', '15:30', '16:15', '17:00', '17:45']
 const unavailableSlots = new Set(['10:30', '12:45'])
 
-const normalizeDigits = (value: string) =>
-  value.replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
 
 const createIdempotencyKey = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(32))
@@ -187,7 +185,7 @@ function BookingWizard({
       return
     }
     if (step === 2) {
-      const phone = normalizeDigits(draft.phone).replace(/[\s()-]/g, '')
+      const phone = normalizePhoneNumber(draft.phone)
       if (draft.name.trim().length < 2) {
         setError('لطفاً نام و نام خانوادگی را وارد کنید.')
         return
@@ -221,7 +219,7 @@ function BookingWizard({
       date: draft.date,
       time: draft.time,
       name: draft.name.trim(),
-      phone: normalizeDigits(draft.phone).replace(/[\\s()-]/g, ''),
+      phone: normalizePhoneNumber(draft.phone),
     }
       const fingerprint = JSON.stringify(bookingPayload)
       if (!submissionAttempt.current || submissionAttempt.current.fingerprint !== fingerprint) {
@@ -303,7 +301,7 @@ function BookingWizard({
               <div className="booking-date-heading"><strong>انتخاب روز</strong><span>۱۴ روز آینده</span></div>
               <div className="booking-date-list">
                 {dates.map((date, index) => (
-                  <button type="button" key={date.key} className={draft.date === date.key ? 'booking-date-option is-selected' : 'booking-date-option'} onClick={() => { updateDraft('date', date.key); updateDraft('time', '') }}>
+                  <button type="button" key={date.key} data-date-key={date.key} className={draft.date === date.key ? 'booking-date-option is-selected' : 'booking-date-option'} onClick={() => { updateDraft('date', date.key); updateDraft('time', '') }}>
                     <small>{index === 0 ? 'امروز' : date.weekday}</small>
                     <strong>{date.day}</strong>
                     <small>{date.month}</small>
