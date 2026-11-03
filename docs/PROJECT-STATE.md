@@ -14,11 +14,12 @@
 
 ## Current checkpoint
 
-- Phase: **R00 — Foundation**
-- Status: Initial scaffold, responsive visual pass, D1 schema and Worker entry committed to main; CI build passes.
-- Last code commit: bf435c1577a12a05642d5148f96183911149c021.
-- Last verified commit: bf435c1577a12a05642d5148f96183911149c021 (GitHub Actions CI success, run #6).
-- Frontend and Worker TypeScript projects are included in `tsc -b`; Vite production build succeeds.
+- Phase: **R01 — Visual system and R02 — Public site (initial design)**
+- Status: Premium RTL landing page scaffolded; GitHub Pages preview workflow added; regular Cloudflare-root build remains unchanged.
+- Last implementation commit: 30636f218b282b4bcc0e28bf136c29a577054586.
+- Last verified standard build: bf435c1577a12a05642d5148f96183911149c021 (GitHub Actions CI success).
+- Pages deployment run: 41606411700 (in progress at checkpoint; verify current run before claiming URL is live).
+- Frontend and Worker TypeScript projects are included in `tsc -b`; standard Vite production build passed. Pages-specific build is being checked separately.
 - Production deployment: not configured.
 - Production database: not provisioned.
 - Real client data: must not be entered until security and launch gates pass.
@@ -58,22 +59,23 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | First CI attempt | Failed before dependency install because setup-node npm cache expected a lockfile; workflow corrected |
 | 2026-11-03 | CI correction | Fixed missing lockfile cache assumption and pinned a published Workers Types v5 release after npm registry rejected the initial version |
 | 2026-11-03 | Build verification | GitHub Actions run 41605843217 passed: dependency install, TypeScript project build and Vite production build |
+| 2026-11-03 | Pages preview setup | Added Vite Pages base path, demo-only banner, and automated Pages workflow; build/deploy run 41606411700 started |
 
 ## Current blockers / owner actions
 
-- [ ] None required for initial code scaffold.
+- [!] One-time GitHub Pages setting may be required: repository Settings → Pages → Build and deployment → Source → GitHub Actions. Check the Pages workflow outcome first.
 - [ ] Before production: salon content and schedule must be supplied.
 - [ ] Before production: repository owner must connect Cloudflare and provision D1.
 
 ## Next actions
 
-1. Refine public landing page and brand system; keep sample services/prices clearly provisional.
-2. Implement real service and availability API backed by D1 migrations.
-3. Build client booking flow and protected owner dashboard.
-4. Provision Cloudflare D1/Workers only when ready for deployment.
-4. Build protected owner dashboard.
-5. Test, harden and document.
-6. Deploy only after Cloudflare account/database setup and owner acceptance.
+1. Verify GitHub Pages build and deployment; give owner the preview URL once live.
+2. Refine landing page and brand; keep sample services/prices clearly provisional.
+3. Build complete booking flow, API, D1 schema and conflict-safe scheduling.
+4. Build protected owner dashboard and full security controls.
+5. Finish QA, then switch production deployment to Cloudflare Workers + D1.
+5. Before production, obtain salon content and owner acceptance.
+6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
 ## Resume instructions for the next assistant/session
 
