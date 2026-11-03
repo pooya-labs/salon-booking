@@ -107,6 +107,7 @@ interface ScheduleExceptionRow {
 const WEEKDAY_NAMES = [
   'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه',
 ]
+const WEEKDAY_ORDER = [6, 0, 1, 2, 3, 4, 5]
 
 const validClockTime = (value: unknown): value is string =>
   typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
@@ -116,11 +117,11 @@ const readServiceValues = (
   current?: AdminServiceRow,
 ): Omit<AdminServiceRow, 'id'> | null => {
   const name = input.name === undefined ? current?.name : input.name
-  const description = input.description === undefined ? current?.description : input.description
+  const description = input.description === undefined ? (current?.description ?? '') : input.description
   const duration = input.durationMinutes === undefined ? current?.duration_minutes : input.durationMinutes
   const price = input.priceAmount === undefined ? current?.price_amount : input.priceAmount
   const currency = input.priceCurrency === undefined ? current?.price_currency : input.priceCurrency
-  const isActive = input.isActive === undefined ? current?.is_active === 1 : input.isActive
+  const isActive = input.isActive === undefined ? (current ? current.is_active === 1 : true) : input.isActive
   const sortOrder = input.sortOrder === undefined ? current?.sort_order ?? 0 : input.sortOrder
 
   if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80) return null
@@ -310,7 +311,8 @@ const getAdminSchedule = async (env: AdminEnv) => {
   return json({
     ok: true,
     settings,
-    weeklyHours: WEEKDAY_NAMES.map((name, weekday) => {
+    weeklyHours: WEEKDAY_ORDER.map((weekday) => {
+      const name = WEEKDAY_NAMES[weekday]
       const row = byWeekday.get(weekday)
       return {
         weekday,
