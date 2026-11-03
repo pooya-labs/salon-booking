@@ -16,6 +16,7 @@ import {
 import {
   createSessionToken,
   isSameOriginRequest,
+  sha256Hex,
 } from './admin-security'
 
 interface Env extends AdminEnv {
