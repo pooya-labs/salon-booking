@@ -183,6 +183,11 @@ try {
   assert.match(publicPage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/)
   assert.equal(publicPage.headers.get('x-frame-options'), 'DENY')
 
+  const adminPage = await request(baseUrl, '/admin')
+  assert.equal(adminPage.status, 200, 'admin route should serve the protected entry shell')
+  assert.match(adminPage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/)
+  assert.equal(adminPage.headers.get('x-frame-options'), 'DENY')
+
   const config = await expectJson(await request(baseUrl, '/api/public/config'), 200, 'public config')
   assert.equal(config.configured, true)
   assert.equal(config.timezone, 'UTC')
