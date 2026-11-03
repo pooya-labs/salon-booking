@@ -8,8 +8,8 @@ A polished, mobile-first appointment booking platform for an independent hair sa
 
 ## Project status
 
-**Current phase:** R04/R05 — Multi-interval scheduling and owner management  
-**Current release:** 0.6.0 — Customer booking lookup and cancellation  
+**Current phase:** R07/R08 — Quality assurance and production readiness  
+**Current release:** 0.6.0 — Customer booking lookup and cancellation (core implementation complete; production launch gates remain)  
 **Default branch:** `main`  
 **Preview:** GitHub Pages (static visual preview)  
 **Production target:** Cloudflare Workers + Static Assets + D1  
