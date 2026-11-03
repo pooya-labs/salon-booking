@@ -208,20 +208,48 @@ try {
     phone: '+491234567890',
     note: 'Automated integration fixture',
   }
-  const created = await expectJson(await request(baseUrl, '/api/public/bookings', {
+  const idempotencyKey = '550e8400-e29b-41d4-a716-446655440000'
+  const bookingRequestOptions = {
     method: 'POST',
+    headers: { 'idempotency-key': idempotencyKey },
     body: JSON.stringify(bookingInput),
-  }), 201, 'create booking')
+  }
+  const created = await expectJson(await request(
+    baseUrl, '/api/public/bookings', bookingRequestOptions,
+  ), 201, 'create booking')
 
   const booking = created.booking
   assert.match(booking.reference, /^SB-[A-HJ-NP-Z2-9]{7}$/)
   assert.match(booking.managementToken, /^[0-9a-f]{64}$/i, 'management token must contain 256 bits')
   assert.equal(booking.status, 'pending')
 
-  const conflict = await expectJson(await request(baseUrl, '/api/public/bookings', {
+  // Simulate a lost HTTP response: the same key and same normalized request
+  // must return the original reference and management token, not make a new row.
+  const replay = await expectJson(await request(
+    baseUrl, '/api/public/bookings', bookingRequestOptions,
+  ), 200, 'replay idempotent booking')
+  assert.equal(replay.replayed, true)
+  assert.equal(replay.booking.reference, booking.reference)
+  assert.equal(replay.booking.managementToken, booking.managementToken)
+
+  const reusedKey = await expectJson(await request(baseUrl, '/api/public/bookings', {
+    method: 'POST',
+    headers: { 'idempotency-key': idempotencyKey },
+    body: JSON.stringify({ ...bookingInput, note: 'Different customer intent' }),
+  }), 409, 'reject idempotency key with changed payload')
+  assert.equal(reusedKey.error, 'idempotency_key_reused')
+
+  const missingIdempotencyKey = await expectJson(await request(baseUrl, '/api/public/bookings', {
     method: 'POST',
     body: JSON.stringify(bookingInput),
-  }), 409, 'duplicate booking')
+  }), 400, 'require booking idempotency key')
+  assert.equal(missingIdempotencyKey.error, 'idempotency_key_required')
+
+  const conflict = await expectJson(await request(baseUrl, '/api/public/bookings', {
+    method: 'POST',
+    headers: { 'idempotency-key': '550e8400-e29b-41d4-a716-446655440001' },
+    body: JSON.stringify(bookingInput),
+  }), 409, 'different idempotency key cannot double-book a slot')
   assert.equal(conflict.error, 'slot_unavailable')
 
   const origin = new URL(baseUrl).origin
