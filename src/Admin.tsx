@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AdminManagement } from './AdminManagement'
 import type { FormEvent } from 'react'
 import {
   ArrowLeft, CalendarDays, Check, Clock3, LogOut, RefreshCw,
@@ -303,6 +304,8 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
           <article><span>نوبت‌های تأییدشده</span><strong>{toPersianDigits(confirmedCount)}</strong><small>برنامه قطعی</small></article>
           <article><span>انجام‌شده</span><strong>{toPersianDigits(finishedCount)}</strong><small>نوبت‌های تکمیل‌شده</small></article>
         </div>
+
+        <AdminManagement />
 
         <section className="admin-bookings-panel">
           <div className="admin-bookings-heading"><div><h2>نوبت‌ها</h2><p>نمایش ۷ روز آینده · منطقه زمانی {timezone}</p></div><label className="admin-filter"><span>فیلتر</span><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">همه وضعیت‌ها</option><option value="pending">در انتظار تأیید</option><option value="confirmed">تأییدشده</option><option value="cancelled">لغوشده</option><option value="completed">انجام‌شده</option><option value="no_show">عدم مراجعه</option></select></label></div>

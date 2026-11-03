@@ -428,3 +428,89 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
   .admin-topbar-actions { gap:8px; }
   .admin-user-chip { font-size:9px; }
 }
+
+/* Owner management: services, weekly schedule and date exceptions */
+.admin-management { margin:0 0 22px; padding:22px; border:1px solid #e0dbd1; background:#fbfaf6; }
+.admin-management-top { display:flex; align-items:end; justify-content:space-between; gap:18px; margin-bottom:19px; }
+.admin-management-top .eyebrow { margin-bottom:8px; }
+.admin-management-top h2 { margin:0; font-size:18px; font-weight:500; }
+.admin-management-top p { margin:5px 0 0; color:#969084; font-size:9px; }
+.admin-manage-tabs { display:flex; gap:5px; padding:4px; background:#f0eee8; }
+.admin-manage-tab { min-height:35px; padding:0 13px; display:flex; align-items:center; gap:7px; border:0; background:transparent; color:#80796d; font:10px Tahoma,sans-serif; cursor:pointer; }
+.admin-manage-tab.is-active { color:#fffaf1; background:#292820; }
+.admin-inline-success { display:flex; align-items:center; gap:8px; margin:0 0 15px; padding:10px 12px; border:1px solid #d4e1d3; background:#eff4ed; color:#55735b; font-size:10px; }
+.admin-manage-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,.85fr); gap:13px; align-items:start; }
+.admin-manage-panel { min-width:0; padding:17px; border:1px solid #e6e0d6; background:#fffefa; }
+.admin-manage-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:15px; }
+.admin-manage-panel-heading h3 { margin:0; color:#3e3b33; font-size:12px; font-weight:500; }
+.admin-manage-panel-heading p { margin:5px 0 0; color:#999286; font-size:9px; line-height:1.8; }
+.admin-manage-panel-heading>svg { flex:0 0 auto; color:#977653; }
+.admin-light-button,.admin-icon-button { min-height:33px; padding:0 10px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid #ded6ca; background:#f8f5ee; color:#76634d; font:9px Tahoma,sans-serif; cursor:pointer; }
+.admin-icon-button { width:32px; padding:0; }
+.admin-service-list { display:grid; }
+.admin-service-row { min-height:76px; display:flex; align-items:center; gap:11px; padding:11px 0; border-top:1px solid #eee9e1; }
+.admin-service-row.is-inactive { opacity:.58; }
+.admin-service-icon { width:33px; height:33px; flex:0 0 33px; display:grid; place-items:center; border:1px solid #e6ddd0; border-radius:50%; color:#927653; }
+.admin-service-info { min-width:0; flex:1; }
+.admin-service-info strong,.admin-service-info small { display:block; }
+.admin-service-info strong { color:#514a3e; font-size:11px; font-weight:500; }
+.admin-service-info small { margin-top:4px; color:#918a7e; font-size:9px; }
+.admin-service-actions { display:flex; align-items:center; gap:7px; }
+.admin-service-actions button { display:flex; align-items:center; justify-content:center; gap:4px; border:0; padding:5px; color:#8b795f; background:none; font:9px Tahoma,sans-serif; cursor:pointer; }
+.admin-service-actions button.is-on { color:#57805e; }
+.admin-manage-empty { min-height:105px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#9a9387; font-size:9px; text-align:center; }
+.admin-manage-empty strong { color:#645e53; font-size:11px; font-weight:500; }
+.admin-manage-empty svg { color:#a18463; }
+.admin-manage-form,.admin-exception-form { display:grid; gap:12px; }
+.admin-manage-form label>span,.admin-exception-form label>span { display:block; margin-bottom:6px; color:#746d61; font-size:9px; }
+.admin-manage-form input:not([type=checkbox]),.admin-manage-form textarea,.admin-exception-form input:not([type=checkbox]) { width:100%; min-height:39px; padding:0 10px; outline:0; border:1px solid #e1dbd0; background:#fffefa; color:#38352e; font:10px Tahoma,sans-serif; }
+.admin-manage-form textarea { min-height:63px; padding:10px; resize:vertical; line-height:1.8; }
+.admin-manage-form input:focus,.admin-manage-form textarea:focus,.admin-exception-form input:focus { border-color:#9d7b59; box-shadow:0 0 0 3px #9d7b5919; }
+.admin-form-two-cols { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.admin-check-line { display:flex; align-items:center; gap:8px; }
+.admin-check-line input { width:15px; height:15px; accent-color:#8a6b4c; }
+.admin-check-line>span { margin:0!important; }
+.admin-manage-submit { min-height:41px; width:100%; margin-top:4px; font-size:10px; }
+.admin-schedule-layout { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; align-items:start; }
+.admin-form-hint { margin:-5px 0 0; color:#958d81; font-size:9px; line-height:1.9; }
+.admin-weekly-list { display:grid; }
+.admin-weekday-row { display:grid; grid-template-columns:90px minmax(0,1fr) 70px; align-items:center; gap:9px; min-height:59px; padding:7px 0; border-top:1px solid #eee9e1; }
+.admin-weekday-name strong { display:block; color:#514a3e; font-size:10px; font-weight:500; }
+.admin-weekday-name label { display:flex; align-items:center; gap:5px; margin-top:5px; color:#989184; font-size:8px; }
+.admin-weekday-name input { width:12px; height:12px; accent-color:#8b704f; }
+.admin-weekday-hours { display:flex; align-items:center; gap:6px; }
+.admin-weekday-hours input { width:calc(50% - 13px); min-width:0; min-height:32px; padding:0 4px; border:1px solid #e2dcd1; background:#fffefa; color:#5f574a; font:10px Tahoma,sans-serif; }
+.admin-weekday-hours input:disabled { opacity:.4; }
+.admin-weekday-hours span { color:#aaa296; font-size:8px; }
+.admin-save-day { min-height:31px; padding:0 6px; display:flex; justify-content:center; align-items:center; gap:4px; border:1px solid #e1dacf; background:#f7f4ed; color:#79664f; font:8px Tahoma,sans-serif; cursor:pointer; }
+.admin-save-day:disabled { opacity:.6; }
+.admin-exceptions-panel { grid-column:1/-1; }
+.admin-exception-form { grid-template-columns:1fr 1fr; align-items:end; padding-bottom:15px; border-bottom:1px solid #eee9e1; }
+.admin-exception-form .admin-check-line { align-self:center; padding-top:20px; }
+.admin-exception-form .admin-manage-submit { grid-column:1/-1; }
+.admin-exception-list { display:grid; }
+.admin-exception-row { min-height:52px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid #f0ece5; }
+.admin-exception-row>div { min-width:0; }
+.admin-exception-row strong,.admin-exception-row small { display:block; }
+.admin-exception-row strong { color:#655642; font:11px Georgia,serif; }
+.admin-exception-row small { margin-top:4px; color:#938b7f; font-size:9px; overflow-wrap:anywhere; }
+.admin-exception-row button { width:31px; height:31px; flex:0 0 31px; display:grid; place-items:center; border:1px solid #eaded8; color:#9b604e; background:#fbf2ee; cursor:pointer; }
+.admin-exception-row button:disabled { opacity:.5; }
+@media (max-width:820px) {
+  .admin-manage-grid,.admin-schedule-layout { grid-template-columns:1fr; }
+  .admin-exceptions-panel { grid-column:auto; }
+}
+@media (max-width:560px) {
+  .admin-management { padding:13px; }
+  .admin-management-top { align-items:flex-start; flex-direction:column; }
+  .admin-manage-tabs { width:100%; }
+  .admin-manage-tab { flex:1; justify-content:center; }
+  .admin-manage-panel { padding:13px; }
+  .admin-weekday-row { grid-template-columns:75px minmax(0,1fr) 56px; gap:5px; }
+  .admin-weekday-hours { gap:3px; }
+  .admin-weekday-hours input { font-size:9px; }
+  .admin-save-day { font-size:7px; }
+  .admin-exception-form { grid-template-columns:1fr; }
+  .admin-exception-form .admin-check-line { padding-top:0; }
+  .admin-exception-form .admin-manage-submit { grid-column:auto; }
+}
