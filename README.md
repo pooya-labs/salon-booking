@@ -57,7 +57,7 @@ npm run build
 
 ## Preview vs production
 
-GitHub Pages is used temporarily to review the visual frontend. It does not run the Worker API or D1 database; booking and owner management are intentionally non-functional in this preview. Do not submit real customer information there.
+GitHub Pages is used temporarily to review the visual frontend and the interactive four-step booking journey. It does not run the Worker API or D1 database; selected services, dates and slots are sample data, and the final step explicitly does not create a reservation or transmit personal details. Do not submit real customer information there.
 
 The production deployment will move to Cloudflare Workers + D1 after booking, admin, security and QA work is complete.
 
