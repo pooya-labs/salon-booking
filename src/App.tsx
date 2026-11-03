@@ -99,6 +99,7 @@ function BookingWizard({
   const [slotsMessage, setSlotsMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const submissionLock = useRef(false)
+  const submissionAttempt = useRef<{ fingerprint: string; key: string } | null>(null)
   const [bookingReference, setBookingReference] = useState<string | null>(null)
   const [bookingManagementToken, setBookingManagementToken] = useState<string | null>(null)
 
@@ -209,18 +210,27 @@ function BookingWizard({
     submissionLock.current = true
     setSubmitting(true)
     setError('')
+    const bookingPayload = {
+      serviceId: draft.serviceId,
+      date: draft.date,
+      time: draft.time,
+      name: draft.name.trim(),
+      phone: normalizeDigits(draft.phone).replace(/[\\s()-]/g, ''),
+    }
+    const fingerprint = JSON.stringify(bookingPayload)
+    if (!submissionAttempt.current || submissionAttempt.current.fingerprint !== fingerprint) {
+      submissionAttempt.current = { fingerprint, key: crypto.randomUUID() }
+    }
+
     try {
       const response = await fetch('/api/public/bookings', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({
-          serviceId: draft.serviceId,
-          date: draft.date,
-          time: draft.time,
-          name: draft.name.trim(),
-          phone: normalizeDigits(draft.phone).replace(/[\s()-]/g, ''),
-        }),
-      })
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json',
+          'idempotency-key': submissionAttempt.current.key,
+        },
+        body: JSON.stringify(bookingPayload),
       const payload = await response.json() as {
         booking?: { reference?: string; managementToken?: string }
         message?: string
