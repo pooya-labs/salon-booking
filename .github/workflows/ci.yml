@@ -37,7 +37,7 @@ jobs:
       - name: Cloudflare Worker + local D1 integration tests
         run: npm run test:worker
       - name: Install pinned browser-test tooling
-        run: npm install --no-save --package-lock=false playwright@1.56.1
+        run: npm install --no-save --package-lock=false playwright@1.56.1 axe-core@4.14.0
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Build static demo for browser QA

@@ -71,6 +71,29 @@ const origin = 'http://127.0.0.1:' + address.port
 const homeUrl = origin + basePath
 
 const diagnostics = { pageErrors: [], consoleErrors: [], failedRequests: [], badResponses: [], apiRequests: [], externalRequests: [] }
+const assertNoAccessibilityViolations = async (page, label) => {
+  await page.addScriptTag({ path: resolve('node_modules/axe-core/axe.min.js') })
+  const violations = await page.evaluate(async () => {
+    const result = await window.axe.run(document, {
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
+      },
+    })
+    return result.violations.map(violation => ({
+      id: violation.id,
+      impact: violation.impact,
+      description: violation.description,
+      nodes: violation.nodes.map(node => ({
+        target: node.target,
+        summary: node.failureSummary,
+      })),
+    }))
+  })
+  assert.deepEqual(violations, [], label + ' WCAG 2.2 AA accessibility violations: ' + JSON.stringify(violations))
+  console.log('[a11y] ' + label + ' passed WCAG 2.2 AA automated axe scan')
+}
+
 const watchPage = (page) => {
   page.on('pageerror', error => diagnostics.pageErrors.push(error.message))
   page.on('console', message => {
@@ -100,6 +123,8 @@ try {
   watchPage(page)
   await page.goto(homeUrl, { waitUntil: 'networkidle' })
   await page.locator('.site-header').waitFor({ state: 'visible' })
+
+  await assertNoAccessibilityViolations(page, 'public homepage')
 
   assert.equal(await page.locator('html').getAttribute('lang'), 'fa', 'document language must be Persian')
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'document direction must be RTL')
@@ -134,6 +159,8 @@ try {
   assert.equal(await dialog.getAttribute('aria-modal'), 'true')
   assert.ok(await dialog.getAttribute('aria-labelledby'), 'dialog must have an accessible name')
   assert.ok(await dialog.evaluate(element => element.contains(document.activeElement)), 'initial focus must move into the dialog')
+  await assertNoAccessibilityViolations(page, 'public booking dialog')
+
   assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden', 'background scrolling must be locked')
 
   await page.keyboard.press('Shift+Tab')
@@ -151,6 +178,7 @@ try {
   await manageTrigger.click()
   const manageDialog = page.getByRole('dialog')
   await manageDialog.waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'customer-management dialog')
   assert.ok(await manageDialog.getAttribute('aria-labelledby'), 'customer-management dialog must have an accessible name')
   assert.ok(await manageDialog.evaluate(element => element.contains(document.activeElement)), 'customer-management dialog must receive initial focus')
   await page.keyboard.press('Shift+Tab')

@@ -18,6 +18,29 @@ const mimeTypes = {
   '.webp': 'image/webp',
 }
 
+const assertNoAccessibilityViolations = async (page, label) => {
+  await page.addScriptTag({ path: resolve('node_modules/axe-core/axe.min.js') })
+  const violations = await page.evaluate(async () => {
+    const result = await window.axe.run(document, {
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
+      },
+    })
+    return result.violations.map(violation => ({
+      id: violation.id,
+      impact: violation.impact,
+      description: violation.description,
+      nodes: violation.nodes.map(node => ({
+        target: node.target,
+        summary: node.failureSummary,
+      })),
+    }))
+  })
+  assert.deepEqual(violations, [], label + ' WCAG 2.2 AA accessibility violations: ' + JSON.stringify(violations))
+  console.log('[a11y] ' + label + ' passed WCAG 2.2 AA automated axe scan')
+}
+
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1')
@@ -183,6 +206,8 @@ try {
   await page.locator('.admin-date-navigation [role="status"]').waitFor({ state: 'visible' })
   await page.locator('.admin-manage-tabs').waitFor({ state: 'visible' })
 
+  await assertNoAccessibilityViolations(page, 'owner dashboard')
+
   assert.ok(apiCalls.some(call => call.from === '2026-11-03' && call.to === '2026-11-09' && call.status === 'all'),
     'initial dashboard request should use the API default seven-day range')
 
@@ -239,6 +264,7 @@ try {
   await pendingCard.getByRole('button', { name: 'لغو', exact: true }).click()
   let confirmation = pendingCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
   await confirmation.waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner cancellation confirmation')
   assert.equal(statusUpdates.length, 0, 'requesting cancellation must not mutate booking status')
   await confirmation.getByRole('button', { name: 'انصراف' }).click()
   assert.equal(statusUpdates.length, 0, 'cancelling the confirmation must not mutate booking status')
