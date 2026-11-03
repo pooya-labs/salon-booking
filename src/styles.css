@@ -406,6 +406,12 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
 .admin-booking-actions button { min-height:31px; padding:0 9px; display:flex; align-items:center; justify-content:center; gap:5px; border:1px solid #d9d2c6; background:#f5f2eb; color:#6a624f; font:9px Tahoma,sans-serif; cursor:pointer; }
 .admin-booking-actions button.is-danger { border-color:#ead8d1; color:#9a5a48; background:#fbf3ef; }
 .admin-booking-actions button:disabled { opacity:.55; cursor:wait; }
+.admin-status-confirmation { min-width:190px; padding:10px; display:flex; flex-direction:column; gap:8px; border:1px solid #ead8d1; background:#fbf3ef; }
+.admin-status-confirmation p { margin:0; color:#8e594a; font-size:9px; line-height:1.8; }
+.admin-status-confirmation-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.admin-status-confirmation-actions button { flex:1 1 auto; min-height:30px; padding:0 8px; border:1px solid #d9d2c6; background:#fffefa; color:#6a624f; font:9px Tahoma,sans-serif; cursor:pointer; }
+.admin-status-confirmation-actions button.is-danger { border-color:#d9b7aa; background:#9a5a48; color:#fffaf5; }
+.admin-status-confirmation-actions button:disabled { opacity:.55; cursor:wait; }
 .admin-next-step { display:flex; align-items:flex-start; gap:12px; padding:17px 19px; margin-top:16px; border:1px solid #e3ddd2; color:#8c806f; background:#f0eee7; }
 .admin-next-step svg { margin-top:2px; color:#987654; }
 .admin-next-step strong,.admin-next-step small { display:block; }

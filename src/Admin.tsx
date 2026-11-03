@@ -94,6 +94,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [dashboardError, setDashboardError] = useState('')
   const [updatingBooking, setUpdatingBooking] = useState<string | null>(null)
+  const [statusConfirmation, setStatusConfirmation] = useState<{ bookingId: string; status: BookingStatus } | null>(null)
 
   const loadBookings = async (
     status = filter,
@@ -244,6 +245,14 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     }
   }
 
+  const requestStatusChange = (booking: Booking, nextStatus: BookingStatus) => {
+    if (['cancelled', 'completed', 'no_show'].includes(nextStatus)) {
+      setStatusConfirmation({ bookingId: booking.id, status: nextStatus })
+      return
+    }
+    void updateStatus(booking, nextStatus)
+  }
+
   const updateStatus = async (booking: Booking, nextStatus: BookingStatus) => {
     if (updatingBooking) return
     setUpdatingBooking(booking.id)
@@ -256,6 +265,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
         body: JSON.stringify({ status: nextStatus }),
       })
       if (!response.ok) throw new Error(await apiMessage(response, 'تغییر وضعیت انجام نشد.'))
+      setStatusConfirmation(null)
       await loadBookings(filter)
     } catch (error) {
       setDashboardError(error instanceof Error ? error.message : 'تغییر وضعیت انجام نشد.')
@@ -375,8 +385,17 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                     {booking.note && <small className="admin-booking-note">{booking.note}</small>}
                   </div>
                   <div className="admin-booking-actions">
-                    {booking.status === 'pending' && <><button disabled={updatingBooking === booking.id} onClick={() => void updateStatus(booking, 'confirmed')}><Check size={14} /> تأیید</button><button className="is-danger" disabled={updatingBooking === booking.id} onClick={() => void updateStatus(booking, 'cancelled')}><X size={14} /> لغو</button></>}
-                    {booking.status === 'confirmed' && <><button disabled={updatingBooking === booking.id} onClick={() => void updateStatus(booking, 'completed')}><Check size={14} /> انجام شد</button><button className="is-danger" disabled={updatingBooking === booking.id} onClick={() => void updateStatus(booking, 'no_show')}>عدم مراجعه</button></>}
+                    {booking.status === 'pending' && <><button disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'confirmed')}><Check size={14} /> تأیید</button><button className="is-danger" disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'cancelled')}><X size={14} /> لغو</button></>}
+                    {booking.status === 'confirmed' && <><button disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'completed')}><Check size={14} /> انجام شد</button><button className="is-danger" disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'no_show')}>عدم مراجعه</button></>}
+                    {statusConfirmation?.bookingId === booking.id && (
+                      <div className="admin-status-confirmation" role="group" aria-label="تأیید تغییر وضعیت">
+                        <p>{statusConfirmation.status === 'cancelled' ? 'آیا از لغو این نوبت مطمئن هستید؟' : statusConfirmation.status === 'completed' ? 'انجام این نوبت را تأیید می‌کنید؟' : 'عدم مراجعهٔ مشتری را ثبت می‌کنید؟'}</p>
+                        <div className="admin-status-confirmation-actions">
+                          <button type="button" className="is-danger" disabled={updatingBooking === booking.id} aria-label={statusConfirmation.status === 'cancelled' ? 'تأیید لغو نوبت' : statusConfirmation.status === 'completed' ? 'تأیید انجام نوبت' : 'تأیید عدم مراجعه'} onClick={() => void updateStatus(booking, statusConfirmation.status)}>تأیید نهایی</button>
+                          <button type="button" disabled={updatingBooking === booking.id} onClick={() => setStatusConfirmation(null)}>انصراف</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </article>
               ))}

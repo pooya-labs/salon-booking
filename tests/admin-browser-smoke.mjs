@@ -56,6 +56,45 @@ const address = server.address()
 if (!address || typeof address === 'string') throw new Error('Could not start owner UI test server')
 const origin = 'http://127.0.0.1:' + address.port
 const apiCalls = []
+const statusUpdates = []
+const qaBookings = [
+  {
+    id: 'qa-pending',
+    reference: 'SB-ABCDEFG',
+    name: 'QA Client Pending',
+    phone: '+491234567890',
+    startsAt: '2026-11-03T06:00:00.000Z',
+    endsAt: '2026-11-03T06:45:00.000Z',
+    status: 'pending',
+    note: '',
+    service: 'QA haircut',
+    durationMinutes: 45,
+  },
+  {
+    id: 'qa-confirmed-noshow',
+    reference: 'SB-HJKLMNP',
+    name: 'QA Client No-show',
+    phone: '+491234567891',
+    startsAt: '2026-11-03T07:00:00.000Z',
+    endsAt: '2026-11-03T07:45:00.000Z',
+    status: 'confirmed',
+    note: '',
+    service: 'QA haircut',
+    durationMinutes: 45,
+  },
+  {
+    id: 'qa-confirmed-complete',
+    reference: 'SB-QRSTUV2',
+    name: 'QA Client Complete',
+    phone: '+491234567892',
+    startsAt: '2026-11-03T08:00:00.000Z',
+    endsAt: '2026-11-03T08:45:00.000Z',
+    status: 'confirmed',
+    note: '',
+    service: 'QA haircut',
+    durationMinutes: 45,
+  },
+]
 const diagnostics = { pageErrors: [], consoleErrors: [], failedRequests: [], badResponses: [], externalRequests: [] }
 
 const browser = await chromium.launch({ headless: true })
@@ -89,14 +128,28 @@ try {
       }) })
       return
     }
-    if (path === '/api/admin/bookings') {
+    if (path === '/api/admin/bookings' && route.request().method() === 'GET') {
       const from = url.searchParams.get('from') ?? '2026-11-03'
       const to = url.searchParams.get('to') ?? '2026-11-09'
       const status = url.searchParams.get('status') ?? 'all'
       apiCalls.push({ from, to, status })
+      const bookings = qaBookings.filter(booking => status === 'all' || booking.status === status)
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-        ok: true, timezone: 'Asia/Tehran', from, to, bookings: [],
+        ok: true, timezone: 'Asia/Tehran', from, to, bookings,
       }) })
+      return
+    }
+    if (path.startsWith('/api/admin/bookings/') && path.endsWith('/status') && route.request().method() === 'PATCH') {
+      const bookingId = path.split('/').slice(-2)[0]
+      const body = route.request().postDataJSON()
+      const booking = qaBookings.find(item => item.id === bookingId)
+      if (!booking || !['confirmed', 'cancelled', 'completed', 'no_show'].includes(body.status)) {
+        await route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ ok: false, message: 'invalid status update' }) })
+        return
+      }
+      booking.status = body.status
+      statusUpdates.push({ bookingId, status: body.status })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, status: body.status }) })
       return
     }
     if (path === '/api/admin/services') {
@@ -178,6 +231,38 @@ try {
   await page.waitForFunction(() => !document.querySelector('button[aria-label="هفت روز بعد"]')?.disabled)
   assert.ok(apiCalls.some(call => call.from === '2026-11-03' && call.to === '2026-11-09' && call.status === 'pending'),
     'reset should restore the API default seven-day range and preserve the status filter')
+
+  await page.locator('.admin-filter select').selectOption('all')
+  await page.waitForFunction(() => Array.from(document.querySelectorAll('.admin-filter select')).some(select => select.value === 'all'))
+
+  const pendingCard = page.locator('.admin-booking-card').filter({ hasText: 'QA Client Pending' })
+  await pendingCard.getByRole('button', { name: 'لغو', exact: true }).click()
+  let confirmation = pendingCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
+  await confirmation.waitFor({ state: 'visible' })
+  assert.equal(statusUpdates.length, 0, 'requesting cancellation must not mutate booking status')
+  await confirmation.getByRole('button', { name: 'انصراف' }).click()
+  assert.equal(statusUpdates.length, 0, 'cancelling the confirmation must not mutate booking status')
+
+  await pendingCard.getByRole('button', { name: 'لغو', exact: true }).click()
+  confirmation = pendingCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
+  await confirmation.getByRole('button', { name: 'تأیید لغو نوبت' }).click()
+  await page.waitForFunction(() => document.querySelector('.admin-booking-card')?.innerText.includes('لغو شده'))
+  assert.deepEqual(statusUpdates[0], { bookingId: 'qa-pending', status: 'cancelled' })
+
+  const noShowCard = page.locator('.admin-booking-card').filter({ hasText: 'QA Client No-show' })
+  await noShowCard.getByRole('button', { name: 'عدم مراجعه', exact: true }).click()
+  confirmation = noShowCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
+  await confirmation.getByRole('button', { name: 'تأیید عدم مراجعه' }).click()
+  await page.waitForFunction(() => document.querySelectorAll('.admin-booking-card').length > 0)
+  assert.deepEqual(statusUpdates[1], { bookingId: 'qa-confirmed-noshow', status: 'no_show' })
+
+  const completeCard = page.locator('.admin-booking-card').filter({ hasText: 'QA Client Complete' })
+  await completeCard.getByRole('button', { name: 'انجام شد', exact: true }).click()
+  confirmation = completeCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
+  await confirmation.getByRole('button', { name: 'تأیید انجام نوبت' }).click()
+  assert.deepEqual(statusUpdates[2], { bookingId: 'qa-confirmed-complete', status: 'completed' })
+  console.log('[admin-browser] cancellation, completion and no-show actions require explicit confirmation')
+  console.log('[admin-browser] cancelling a confirmation does not send a status mutation')
 
   for (const width of [360, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 })
