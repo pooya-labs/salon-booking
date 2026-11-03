@@ -23,9 +23,11 @@
 - Removed the 200-row cap from the owner booking list so the selected date range is not silently truncated.
 - Removed fixed 180-exception/1,440-interval caps from the owner schedule response so saved date exceptions are not hidden after arbitrary thresholds.
 - Added a Worker+D1 regression fixture with 202 synthetic appointments: the owner list must return all 202 and a proposed 09:00–17:00 exception must reject an 18:00 appointment even though it appears after the former 200-row scan window.
-- Implementation commit: `bfdbcd9dadec121401e2e777abe57d5f0320a0d4`; Worker+D1 regression commit: `69131a8f9ca30e80163597712ea1588761feff90`.
-- The SQL seed was separately exercised in an isolated SQLite simulation (202 adjacent synthetic rows plus one 18:00 booking); this validates fixture SQL and the overflow scenario, not the Wrangler Worker+D1 integration test.
-- The last confirmed green full CI remains run `41654596006`, which predates these commits. GitHub Actions results for the current `main` head were not available through the connected GitHub actions tools; do not mark the regression complete until a green current-head run is observed.
+- Implementation commit: `bfdbcd9dadec121401e2e777abe57d5f0320a0d4`; initial Worker+D1 regression commit: `69131a8f9ca30e80163597712ea1588761feff90`.
+- Expanded the Worker+D1 integration harness to cover every removed result cap: 2,000 one-minute appointments across four future occurrences plus a late 23:30 appointment (2,003 future rows including two existing bookings) so the prior 2,000-row weekly-hours guard would miss the only conflict; and 181 date exceptions with 1,448 intervals to exceed the previous 180/1,440 schedule-read limits.
+- Expanded regression-test commit: `4cc5b8ee05dd1a0c54e930e025137de9791ee4dd`.
+- The new fixture SQL was separately exercised in an isolated SQLite simulation: 2,003 ordered booking rows confirmed that the first 2,000 fit within 00:00–23:00 while the later 23:30 booking conflicts; 181 exceptions and all 1,448 non-overlapping intervals inserted and read back. This validates the fixture SQL and scenario, not the actual Wrangler Worker+D1 integration test.
+- The last confirmed green full CI remains run `41654596006`, which predates the expanded regression commit. Current-head GitHub Actions results remain unavailable through the connected GitHub Actions tools; do not mark this roadmap item complete until a green run for the current `main` head is observed.
 
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
 - Latest verified owner-dashboard commit on `main`: `2178056a13e4f06298a63392c5d56a032b30be69` — explicit confirmation for cancellation, completion and no-show transitions, with dedicated browser assertions.
