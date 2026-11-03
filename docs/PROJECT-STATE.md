@@ -18,8 +18,8 @@
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41631396406 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration for public, owner, settings, schedule and browser security headers, TypeScript and Vite production build).
-- Latest Pages deployment: run 41631396317 — success; includes the customer booking-management UI while remaining demo-only.
+- Latest verified standard CI: run 41633719836 — success (25 unit tests, privacy-focused SQLite migration checks, Wrangler local Worker + D1 HTTP integration including expired admin-session/rate-limit pruning, TypeScript and Vite production build).
+- Latest Pages deployment: run 41633720066 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
@@ -146,6 +146,17 @@ Use clearly marked placeholders until the owner supplies these details.
 - Integration tests verify security headers on JSON API, public home page and admin entry page. Both CI run 41631396406 and Pages run 41631396317 passed for code/test commit `3def87ec813a8fe5c5813fff5b99c104926e2d2a`.
 - The CSP is a baseline and still needs a full review against any future external analytics, fonts, image hosts or embedded widgets before those are introduced. GitHub Pages preview does not run the production Worker middleware.
 - Browser security headers now have a baseline implementation; production security review, mobile/accessibility QA and remote Cloudflare deployment remain incomplete.
+
+## Latest privacy operations and expiry cleanup checkpoint (2026-11-03)
+
+- Added `docs/PRIVACY-OPERATIONS.md` with data inventory, minimization controls, subject export query, private D1 backup/export steps, retention preview, controlled deletion procedure, cascade behavior and incident/access hygiene.
+- No retention duration is invented and no automatic booking purge is implemented. Salon jurisdiction, published privacy contact, retention periods and backup expiry remain owner/legal decisions before launch.
+- `worker/admin-api.ts` now prunes expired `admin_sessions` while validating an authenticated session and prunes expired `admin_rate_limits` on each admin rate-limit check. Admin rate limiting now fails closed if the trusted Cloudflare client-IP header is absent or oversized instead of grouping clients under an `unknown` bucket.
+- The integration harness seeds expired synthetic admin session/rate-limit rows and asserts that the Worker removes them on session/rate-limit activity.
+- SQLite migration checks verify that booking status history has no direct client identity/contact columns, that its foreign key cascades on booking deletion, and that the sample audit detail contains no client name/phone/note.
+- CI run 41633719836 passed: 25/25 unit tests, privacy-focused migration regression, TypeScript/Vite build and local Wrangler Worker+D1 HTTP integration. Pages run 41633720066 succeeded.
+- Implementation commit: `bf00678eaabe20d7a2696340bc9dd4fb3fd1f641`.
+- Production D1 remains unprovisioned; no real customer data has been processed, no remote export/restore has been exercised, and no production deletion has been attempted.
 
 ## Resume instructions for the next assistant/session
 

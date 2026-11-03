@@ -101,7 +101,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
 - [x] Fixed-window IP-HMAC limits protect public availability (180/15 min), booking creation (10/15 min), and customer lookup/cancellation (20/15 min).
-- [~] Data inventory, owner-controlled retention schedule template, private export/backup, subject export, deletion preview and cascade-aware deletion procedure drafted in `docs/PRIVACY-OPERATIONS.md`; pending CI verification.
+- [x] Data inventory, owner-controlled retention schedule template, private export/backup, subject export, deletion preview and cascade-aware deletion procedure documented in `docs/PRIVACY-OPERATIONS.md`; retention periods and real backup verification remain owner actions.
 
 **Exit criteria:** booking correctness is enforced by the backend and database under concurrent requests.
 
@@ -128,7 +128,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] HttpOnly, Secure, SameSite=Strict host-only cookie and same-origin checks on mutations.
 - [x] Every implemented owner mutation checks the authenticated owner server-side.
 - [x] Public APIs do not expose owner booking lists or admin records.
-- [~] Personal-data minimization documented and regression checks added for minimal status history, no direct identity fields and booking-erasure cascade; pending CI verification.
+- [x] Personal-data minimization documented and verified: minimal status-history schema, no direct identity fields, audit-detail checks and booking-erasure cascade tests.
 - [x] Secrets are read only from Worker secret bindings; no defaults are committed.
 - [~] Baseline Worker security headers, HTML/API CSP, and anti-framing controls are implemented and integration-tested on API, home and admin entry responses; complete CSP/source audit and input/output review remain.
 - [x] Login/bootstrap, public availability/booking, and customer lookup/cancellation fixed-window rate limits use HMAC-derived IP buckets.
@@ -143,7 +143,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Public booking and owner-admin lifecycle/authorization HTTP tests against a local Wrangler Worker + D1 environment: service catalog, availability, booking creation/conflict, customer origin/token/privacy/cancellation/slot release, first-owner bootstrap, secure session, login/logout/revocation, protected owner booking list/status transitions, service CRUD, salon settings, timezone-change conflict protection, split weekly intervals, break-aware availability, overlap rejection and date-exception create/read/delete.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0007 (remote Cloudflare D1 application remains pending).
-- [x] Production build and TypeScript checks (latest CI run 41631396406 passed).
+- [x] Production build and TypeScript checks (latest CI run 41633719836 passed).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.
@@ -186,7 +186,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41631396317 succeeded on 2026-11-03 and includes the customer booking-management preview UI. The preview remains demo-only. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41633720066 succeeded on 2026-11-03 and includes the customer booking-management preview UI. The preview remains demo-only. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 

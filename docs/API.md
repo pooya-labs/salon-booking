@@ -148,4 +148,4 @@ Migration 0005 creates normalized weekly/date interval tables, prevents overlapp
 
 The Cloudflare production build connects to the Worker and D1. GitHub Pages and local Vite development deliberately use sample data and never submit customer information. Pages does not host this API or the owner backend.
 
-The implementation is not production-ready yet: notifications, retention/export/deletion policy, backups, full security review, a confirmed cancellation policy, and Cloudflare production provisioning remain incomplete. Do not collect real customer data until those gates pass.
+The implementation is not production-ready yet: notifications, owner-approved retention periods, verified backup/restore, full security review, a confirmed cancellation policy, and Cloudflare production provisioning remain incomplete. The export/deletion operational procedure is documented in [PRIVACY-OPERATIONS.md](./PRIVACY-OPERATIONS.md). Do not collect real customer data until those gates pass.
