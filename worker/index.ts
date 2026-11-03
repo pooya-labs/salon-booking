@@ -818,7 +818,7 @@ const withSecurityHeaders = (response: Response, request: Request): Response => 
   if (contentType.toLowerCase().includes('text/html')) {
     headers.set(
       'content-security-policy',
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
     )
   } else if (contentType.toLowerCase().includes('application/json')) {
     headers.set('content-security-policy', "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")

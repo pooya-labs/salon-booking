@@ -179,8 +179,18 @@ try {
 
   const publicPage = await request(baseUrl, '/')
   assert.equal(publicPage.status, 200, 'Worker should serve its static entry page')
-  assert.match(publicPage.headers.get('content-security-policy') ?? '', /script-src 'self'/)
-  assert.match(publicPage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/)
+  const publicPolicy = publicPage.headers.get('content-security-policy') ?? ''
+  assert.match(publicPolicy, /script-src 'self'/)
+  assert.match(publicPolicy, /style-src 'self' 'unsafe-inline'/)
+  assert.match(publicPolicy, /img-src 'self' data:/)
+  assert.match(publicPolicy, /font-src 'self' data:/)
+  assert.match(publicPolicy, /connect-src 'self'/)
+  assert.match(publicPolicy, /object-src 'none'/)
+  assert.match(publicPolicy, /base-uri 'self'/)
+  assert.match(publicPolicy, /form-action 'self'/)
+  assert.match(publicPolicy, /frame-ancestors 'none'/)
+  assert.doesNotMatch(publicPolicy, /https:/, 'HTML CSP must not allow arbitrary external HTTPS resources')
+  assert.doesNotMatch(publicPolicy, /unsafe-eval/, 'HTML CSP must not allow eval-like script execution')
   assert.equal(publicPage.headers.get('x-frame-options'), 'DENY')
 
   const adminPage = await request(baseUrl, '/admin')
