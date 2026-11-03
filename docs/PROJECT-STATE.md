@@ -18,8 +18,8 @@
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41623386330 — success (20 unit tests, SQLite migration/security checks including interval overlap, status history and legacy backfill, TypeScript and Vite production build).
-- Latest Pages deployment: run 41623386318 — success; includes the customer booking-management UI while remaining demo-only.
+- Latest verified standard CI: run 41624696511 — success (25 unit tests, SQLite migration/security checks including interval overlap, status history and legacy backfill, TypeScript and Vite production build).
+- Latest Pages deployment: run 41624696397 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
@@ -126,11 +126,10 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Immediate next engineering priorities
 
-1. Add rate limiting to public booking creation and availability without persisting raw IP addresses.
-2. Add customer booking lookup/cancellation using privacy-preserving verification and anti-enumeration responses.
-3. Add Worker/D1 integration tests for actual multi-interval availability and booking lifecycle.
-4. Complete data retention, export/deletion, backup, security header and threat-model reviews.
-5. Sync deployment guide and then prepare Cloudflare D1 provisioning handoff.
+1. Confirm the salon owner's desired cancellation notice period and publish the cancellation policy.
+2. Add Worker/D1 integration tests for real D1 and multi-interval booking lifecycle, including remote migration smoke tests.
+3. Complete data retention/export/deletion, backup, security-header, accessibility and threat-model reviews.
+4. Prepare Cloudflare D1 provisioning and first deployment handoff; do not enable real bookings before owner details and launch gates are complete.
 
 Production blockers and real salon details remain unchanged.
 
@@ -156,3 +155,13 @@ Production blockers and real salon details remain unchanged.
 - Invalid/missing references and tokens share a generic HTTP 404 response. Lookup and cancellation are limited to 20 combined requests per IP per 15 minutes and require same-origin requests.
 - GitHub Pages remains demo-only and never sends booking or management details.
 - D1 must apply migrations 0001–0007; bookings created before migration 0007 do not have a self-service token.
+
+
+## Latest verification refinement (2026-11-03)
+
+- Test harness now imports the isolated customer-booking security helpers rather than trying to import the Cloudflare Worker entry in Node; this avoids Node ESM resolution differences while exercising the exact helpers used by the Worker.
+- Added coverage for booking reference validation, correct/wrong/missing one-time token verification, 256-bit token hashing, cancellation eligibility (status + appointment start time), and same-origin enforcement.
+- Latest verified code commit: `456f943485eb459b780703f0d10d968eee402433`.
+- Latest CI: run 41624696511 — success (25 unit tests; migrations/status-history/rate-limit tests; TypeScript and Vite build).
+- Latest Pages deployment: run 41624696397 — success.
+- The customer endpoints are implemented but not yet tested against a provisioned remote Cloudflare D1 database. This remains a release-quality task.
