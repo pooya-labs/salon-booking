@@ -15,6 +15,7 @@ import {
   getLocalDateKey,
   localDateTimeToUtc,
   parseDateKey,
+  isValidIanaTimeZone,
 } from './scheduling'
 
 export interface AdminEnv {
@@ -52,9 +53,479 @@ interface AdminRequestBody {
   username?: unknown
   password?: unknown
   status?: unknown
+  name?: unknown
+  description?: unknown
+  durationMinutes?: unknown
+  priceAmount?: unknown
+  priceCurrency?: unknown
+  isActive?: unknown
+  sortOrder?: unknown
+  timezone?: unknown
+  slotIntervalMinutes?: unknown
+  minBookingNoticeMinutes?: unknown
+  bookingWindowDays?: unknown
+  bufferMinutes?: unknown
+  weekday?: unknown
+  opensAt?: unknown
+  closesAt?: unknown
+  date?: unknown
+  startsAt?: unknown
+  endsAt?: unknown
+  note?: unknown
 }
 
 const SESSION_TTL_SECONDS = 12 * 60 * 60
+
+interface AdminServiceRow {
+  id: string
+  name: string
+  description: string
+  duration_minutes: number
+  price_amount: number
+  price_currency: string
+  is_active: number
+  sort_order: number
+}
+
+interface WeeklyHoursRow {
+  weekday: number
+  opens_at: string | null
+  closes_at: string | null
+  is_closed: number
+}
+
+interface ScheduleExceptionRow {
+  id: string
+  local_date: string
+  starts_at: string | null
+  ends_at: string | null
+  is_closed: number
+  note: string
+}
+
+const WEEKDAY_NAMES = [
+  'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه',
+]
+
+const validClockTime = (value: unknown): value is string =>
+  typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+
+const readServiceValues = (
+  input: AdminRequestBody,
+  current?: AdminServiceRow,
+): Omit<AdminServiceRow, 'id'> | null => {
+  const name = input.name === undefined ? current?.name : input.name
+  const description = input.description === undefined ? current?.description : input.description
+  const duration = input.durationMinutes === undefined ? current?.duration_minutes : input.durationMinutes
+  const price = input.priceAmount === undefined ? current?.price_amount : input.priceAmount
+  const currency = input.priceCurrency === undefined ? current?.price_currency : input.priceCurrency
+  const isActive = input.isActive === undefined ? current?.is_active === 1 : input.isActive
+  const sortOrder = input.sortOrder === undefined ? current?.sort_order ?? 0 : input.sortOrder
+
+  if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80) return null
+  if (typeof description !== 'string' || description.length > 300) return null
+  if (!Number.isInteger(duration) || Number(duration) < 5 || Number(duration) > 480) return null
+  if (!Number.isSafeInteger(price) || Number(price) < 0 || Number(price) > 2_000_000_000) return null
+  if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) return null
+  if (typeof isActive !== 'boolean') return null
+  if (!Number.isInteger(sortOrder) || Number(sortOrder) < 0 || Number(sortOrder) > 10000) return null
+
+  return {
+    name: name.trim(),
+    description: description.trim(),
+    duration_minutes: Number(duration),
+    price_amount: Number(price),
+    price_currency: currency,
+    is_active: isActive ? 1 : 0,
+    sort_order: Number(sortOrder),
+  }
+}
+
+const writeAudit = (
+  env: AdminEnv,
+  user: AdminSessionUser,
+  action: string,
+  entityType: string,
+  entityId: string,
+  details: Record<string, unknown>,
+) => env.DB.prepare(
+  `INSERT INTO admin_audit_log
+     (id, actor_user_id, action, entity_type, entity_id, details_json)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+).bind(
+  crypto.randomUUID(),
+  user.id,
+  action,
+  entityType,
+  entityId,
+  JSON.stringify(details),
+)
+
+const readSettings = async (env: AdminEnv) => {
+  const result = await env.DB.prepare(
+    'SELECT setting_key, setting_value FROM salon_settings',
+  ).all<{ setting_key: string; setting_value: string }>()
+  const values = Object.fromEntries((result.results ?? []).map((row) => [row.setting_key, row.setting_value]))
+  return {
+    timezone: values.local_timezone ?? 'unset',
+    slotIntervalMinutes: Number(values.slot_interval_minutes ?? 15),
+    minBookingNoticeMinutes: Number(values.min_booking_notice_minutes ?? 120),
+    bookingWindowDays: Number(values.booking_window_days ?? 30),
+    bufferMinutes: Number(values.buffer_minutes ?? 0),
+  }
+}
+
+const getAdminServices = async (env: AdminEnv) => {
+  const result = await env.DB.prepare(
+    `SELECT id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order
+     FROM services ORDER BY is_active DESC, sort_order ASC, name COLLATE NOCASE ASC`,
+  ).all<AdminServiceRow>()
+
+  return json({
+    ok: true,
+    services: (result.results ?? []).map((service) => ({
+      id: service.id,
+      name: service.name,
+      description: service.description,
+      durationMinutes: service.duration_minutes,
+      priceAmount: service.price_amount,
+      priceCurrency: service.price_currency,
+      isActive: service.is_active === 1,
+      sortOrder: service.sort_order,
+    })),
+  })
+}
+
+const createAdminService = async (request: Request, env: AdminEnv, user: AdminSessionUser) => {
+  const input = await readBody(request)
+  if (!input) return errorResponse('invalid_request', 'اطلاعات خدمت معتبر نیست.', 400)
+  const values = readServiceValues(input)
+  if (!values) return errorResponse('invalid_service', 'نام، مدت، قیمت یا واحد پول خدمت معتبر نیست.', 400)
+
+  const id = crypto.randomUUID()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO services
+       (id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      id, values.name, values.description, values.duration_minutes, values.price_amount,
+      values.price_currency, values.is_active, values.sort_order,
+    ),
+    writeAudit(env, user, 'service.created', 'service', id, {
+      name: values.name, isActive: values.is_active === 1,
+    }),
+  ])
+  return json({ ok: true, id }, 201)
+}
+
+const updateAdminService = async (
+  request: Request,
+  env: AdminEnv,
+  user: AdminSessionUser,
+  id: string,
+) => {
+  const input = await readBody(request)
+  if (!input) return errorResponse('invalid_request', 'اطلاعات خدمت معتبر نیست.', 400)
+
+  const current = await env.DB.prepare(
+    `SELECT id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order
+     FROM services WHERE id = ?`,
+  ).bind(id).first<AdminServiceRow>()
+  if (!current) return errorResponse('service_not_found', 'خدمت پیدا نشد.', 404)
+
+  const values = readServiceValues(input, current)
+  if (!values) return errorResponse('invalid_service', 'نام، مدت، قیمت یا واحد پول خدمت معتبر نیست.', 400)
+
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE services SET name = ?, description = ?, duration_minutes = ?,
+        price_amount = ?, price_currency = ?, is_active = ?, sort_order = ?, updated_at = ?
+       WHERE id = ?`,
+    ).bind(
+      values.name, values.description, values.duration_minutes, values.price_amount,
+      values.price_currency, values.is_active, values.sort_order, new Date().toISOString(), id,
+    ),
+    writeAudit(env, user, 'service.updated', 'service', id, {
+      name: values.name, isActive: values.is_active === 1,
+    }),
+  ])
+  return json({ ok: true })
+}
+
+const localBookingClock = (value: string, timezone: string) => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(value))
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${values.hour}:${values.minute}`
+}
+
+const localWeekday = (value: string, timezone: string) => {
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' })
+    .format(new Date(value))
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(name)
+}
+
+const hasOutOfHoursBookings = async (
+  env: AdminEnv,
+  timezone: string,
+  weekday: number,
+  isClosed: boolean,
+  opensAt: string | null,
+  closesAt: string | null,
+) => {
+  const result = await env.DB.prepare(
+    `SELECT starts_at, ends_at FROM bookings
+     WHERE status IN ('pending', 'confirmed') AND starts_at >= ?
+     ORDER BY starts_at ASC LIMIT 2000`,
+  ).bind(new Date().toISOString()).all<BookingRow>()
+
+  return (result.results ?? []).some((booking) => {
+    if (localWeekday(booking.starts_at, timezone) !== weekday) return false
+    if (isClosed || !opensAt || !closesAt) return true
+    const start = localBookingClock(booking.starts_at, timezone)
+    const end = localBookingClock(booking.ends_at, timezone)
+    return start < opensAt || end > closesAt
+  })
+}
+
+const getAdminSchedule = async (env: AdminEnv) => {
+  const [settings, weekly, exceptions] = await Promise.all([
+    readSettings(env),
+    env.DB.prepare(
+      'SELECT weekday, opens_at, closes_at, is_closed FROM opening_hours ORDER BY weekday',
+    ).all<WeeklyHoursRow>(),
+    env.DB.prepare(
+      `SELECT id, local_date, starts_at, ends_at, is_closed, note
+       FROM schedule_exceptions ORDER BY local_date ASC LIMIT 180`,
+    ).all<ScheduleExceptionRow>(),
+  ])
+
+  const byWeekday = new Map((weekly.results ?? []).map((row) => [row.weekday, row]))
+  return json({
+    ok: true,
+    settings,
+    weeklyHours: WEEKDAY_NAMES.map((name, weekday) => {
+      const row = byWeekday.get(weekday)
+      return {
+        weekday,
+        name,
+        opensAt: row?.opens_at ?? '09:00',
+        closesAt: row?.closes_at ?? '17:00',
+        isClosed: row ? row.is_closed === 1 : true,
+        configured: Boolean(row),
+      }
+    }),
+    exceptions: (exceptions.results ?? []).map((row) => ({
+      id: row.id,
+      date: row.local_date,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      isClosed: row.is_closed === 1,
+      note: row.note,
+    })),
+  })
+}
+
+const updateSalonSettings = async (request: Request, env: AdminEnv, user: AdminSessionUser) => {
+  const input = await readBody(request)
+  if (!input) return errorResponse('invalid_request', 'تنظیمات معتبر نیست.', 400)
+
+  const settings = await readSettings(env)
+  const timezone = input.timezone === undefined ? settings.timezone : input.timezone
+  const slotInterval = input.slotIntervalMinutes === undefined ? settings.slotIntervalMinutes : input.slotIntervalMinutes
+  const notice = input.minBookingNoticeMinutes === undefined ? settings.minBookingNoticeMinutes : input.minBookingNoticeMinutes
+  const horizon = input.bookingWindowDays === undefined ? settings.bookingWindowDays : input.bookingWindowDays
+  const buffer = input.bufferMinutes === undefined ? settings.bufferMinutes : input.bufferMinutes
+
+  if (typeof timezone !== 'string' || (timezone !== 'unset' && !isValidIanaTimeZone(timezone))) {
+    return errorResponse('invalid_timezone', 'منطقه زمانی باید یک شناسه معتبر مانند Europe/Berlin باشد.', 400)
+  }
+  if (!Number.isInteger(slotInterval) || Number(slotInterval) < 5 || Number(slotInterval) > 120) {
+    return errorResponse('invalid_slot_interval', 'فاصله زمانی نوبت‌ها باید بین ۵ تا ۱۲۰ دقیقه باشد.', 400)
+  }
+  if (!Number.isInteger(notice) || Number(notice) < 0 || Number(notice) > 10080) {
+    return errorResponse('invalid_notice', 'حداقل فاصله رزرو باید بین صفر تا ۷ روز باشد.', 400)
+  }
+  if (!Number.isInteger(horizon) || Number(horizon) < 1 || Number(horizon) > 365) {
+    return errorResponse('invalid_horizon', 'بازه رزرو باید بین ۱ تا ۳۶۵ روز باشد.', 400)
+  }
+  if (!Number.isInteger(buffer) || Number(buffer) < 0 || Number(buffer) > 240) {
+    return errorResponse('invalid_buffer', 'زمان فاصله بین نوبت‌ها باید بین صفر تا ۲۴۰ دقیقه باشد.', 400)
+  }
+
+  if (timezone !== settings.timezone) {
+    const bookings = await env.DB.prepare(
+      "SELECT COUNT(*) AS total FROM bookings WHERE status IN ('pending', 'confirmed') AND starts_at >= ?",
+    ).bind(new Date().toISOString()).first<{ total: number }>()
+    if ((bookings?.total ?? 0) > 0) {
+      return errorResponse('timezone_has_bookings', 'تا زمانی که نوبت فعال آینده وجود دارد، تغییر منطقه زمانی مجاز نیست.', 409)
+    }
+  }
+
+  const entries: Array<[string, string]> = [
+    ['local_timezone', timezone],
+    ['slot_interval_minutes', String(slotInterval)],
+    ['min_booking_notice_minutes', String(notice)],
+    ['booking_window_days', String(horizon)],
+    ['buffer_minutes', String(buffer)],
+  ]
+  const statements = entries.map(([key, value]) => env.DB.prepare(
+    `INSERT INTO salon_settings (setting_key, setting_value, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = excluded.updated_at`,
+  ).bind(key, value, new Date().toISOString()))
+  statements.push(writeAudit(env, user, 'salon.settings_updated', 'salon', 'settings', {
+    timezone, slotIntervalMinutes: slotInterval, minBookingNoticeMinutes: notice,
+    bookingWindowDays: horizon, bufferMinutes: buffer,
+  }))
+  await env.DB.batch(statements)
+  return json({ ok: true, settings: await readSettings(env) })
+}
+
+const updateWeeklyHours = async (
+  request: Request,
+  env: AdminEnv,
+  user: AdminSessionUser,
+  weekday: number,
+) => {
+  const input = await readBody(request)
+  if (!input || typeof input.isClosed !== 'boolean') {
+    return errorResponse('invalid_request', 'وضعیت روز کاری معتبر نیست.', 400)
+  }
+  const isClosed = input.isClosed
+  const opensAt = isClosed ? null : input.opensAt
+  const closesAt = isClosed ? null : input.closesAt
+
+  if (!isClosed && (!validClockTime(opensAt) || !validClockTime(closesAt) || opensAt >= closesAt)) {
+    return errorResponse('invalid_hours', 'ساعت شروع و پایان معتبر نیست.', 400)
+  }
+
+  const settings = await readSettings(env)
+  if (settings.timezone === 'unset') {
+    return errorResponse('schedule_not_configured', 'ابتدا منطقه زمانی استودیو را در تنظیمات ذخیره کنید.', 409)
+  }
+
+  if (await hasOutOfHoursBookings(env, settings.timezone, weekday, isClosed, opensAt as string | null, closesAt as string | null)) {
+    return errorResponse('hours_conflict', 'این تغییر با نوبت‌های فعال آینده تداخل دارد؛ ابتدا نوبت‌های مربوط را مدیریت کنید.', 409)
+  }
+
+  const id = crypto.randomUUID()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO opening_hours (id, weekday, opens_at, closes_at, is_closed)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(weekday) DO UPDATE SET
+         opens_at = excluded.opens_at, closes_at = excluded.closes_at,
+         is_closed = excluded.is_closed`,
+    ).bind(id, weekday, opensAt, closesAt, isClosed ? 1 : 0),
+    writeAudit(env, user, 'schedule.weekday_updated', 'opening_hours', String(weekday), {
+      weekday, isClosed, opensAt, closesAt,
+    }),
+  ])
+  return json({ ok: true })
+}
+
+const getDateWindowUtc = (date: string, timezone: string) => {
+  const start = localDateTimeToUtc(date, '00:00', timezone)
+  const nextDate = addDays(date, 1)
+  const end = nextDate ? localDateTimeToUtc(nextDate, '00:00', timezone) : null
+  return start && end ? { start, end } : null
+}
+
+const hasActiveBookingsOnDate = async (env: AdminEnv, date: string, timezone: string) => {
+  const window = getDateWindowUtc(date, timezone)
+  if (!window) return true
+  const result = await env.DB.prepare(
+    `SELECT starts_at, ends_at FROM bookings
+     WHERE status IN ('pending', 'confirmed') AND starts_at < ? AND ends_at > ?
+     LIMIT 200`,
+  ).bind(window.end.toISOString(), window.start.toISOString()).all<BookingRow>()
+  return result.results ?? []
+}
+
+const createScheduleException = async (request: Request, env: AdminEnv, user: AdminSessionUser) => {
+  const input = await readBody(request)
+  if (!input || typeof input.date !== 'string' || !parseDateKey(input.date) || typeof input.isClosed !== 'boolean') {
+    return errorResponse('invalid_exception', 'تاریخ یا نوع تعطیلی معتبر نیست.', 400)
+  }
+  const settings = await readSettings(env)
+  if (settings.timezone === 'unset') return errorResponse('schedule_not_configured', 'ابتدا منطقه زمانی را تنظیم کنید.', 409)
+
+  const date = input.date
+  const today = getLocalDateKey(new Date(), settings.timezone)
+  if (date < today || date > (addDays(today, 365) ?? today)) {
+    return errorResponse('date_out_of_range', 'تاریخ استثنا باید از امروز تا یک سال آینده باشد.', 400)
+  }
+
+  const isClosed = input.isClosed
+  const startsAt = isClosed ? null : input.startsAt
+  const endsAt = isClosed ? null : input.endsAt
+  const note = typeof input.note === 'string' ? input.note.trim() : ''
+  if (note.length > 160) return errorResponse('invalid_note', 'توضیحات حداکثر ۱۶۰ نویسه است.', 400)
+  if (!isClosed && (!validClockTime(startsAt) || !validClockTime(endsAt) || startsAt >= endsAt)) {
+    return errorResponse('invalid_exception_hours', 'بازه ساعات استثنا معتبر نیست.', 400)
+  }
+
+  const bookings = await hasActiveBookingsOnDate(env, date, settings.timezone)
+  const conflicts = bookings.some((booking) => {
+    if (isClosed || !startsAt || !endsAt) return true
+    return localBookingClock(booking.starts_at, settings.timezone) < startsAt
+      || localBookingClock(booking.ends_at, settings.timezone) > endsAt
+  })
+  if (conflicts) return errorResponse('exception_has_bookings', 'این تغییر با نوبت‌های فعال این روز تداخل دارد.', 409)
+
+  const id = crypto.randomUUID()
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO schedule_exceptions (id, local_date, starts_at, ends_at, is_closed, note)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(local_date) DO UPDATE SET
+           starts_at = excluded.starts_at, ends_at = excluded.ends_at,
+           is_closed = excluded.is_closed, note = excluded.note`,
+      ).bind(id, date, startsAt, endsAt, isClosed ? 1 : 0, note),
+      writeAudit(env, user, 'schedule.exception_saved', 'schedule_exception', date, {
+        date, isClosed, startsAt, endsAt, note,
+      }),
+    ])
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.toLowerCase().includes('unique')) {
+      return errorResponse('exception_conflict', 'برای این تاریخ قبلاً استثنا ثبت شده است.', 409)
+    }
+    throw error
+  }
+  return json({ ok: true, date })
+}
+
+const deleteScheduleException = async (
+  env: AdminEnv,
+  user: AdminSessionUser,
+  exceptionId: string,
+) => {
+  const exception = await env.DB.prepare(
+    'SELECT id, local_date FROM schedule_exceptions WHERE id = ?',
+  ).bind(exceptionId).first<{ id: string; local_date: string }>()
+  if (!exception) return errorResponse('exception_not_found', 'استثنای برنامه پیدا نشد.', 404)
+
+  const settings = await readSettings(env)
+  if (settings.timezone === 'unset') return errorResponse('schedule_not_configured', 'منطقه زمانی تنظیم نشده است.', 409)
+  const bookings = await hasActiveBookingsOnDate(env, exception.local_date, settings.timezone)
+  if (bookings.length) return errorResponse('exception_has_bookings', 'تا زمانی که برای این تاریخ نوبت فعال وجود دارد، حذف استثنا مجاز نیست.', 409)
+
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM schedule_exceptions WHERE id = ?').bind(exceptionId),
+    writeAudit(env, user, 'schedule.exception_deleted', 'schedule_exception', exception.local_date, {}),
+  ])
+  return json({ ok: true })
+}
+
+
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
@@ -444,6 +915,55 @@ export const handleAdminRequest = async (request: Request, env: AdminEnv): Promi
     if (url.pathname === '/api/admin/bookings') {
       if (request.method !== 'GET') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
       return await getAdminBookings(request, env)
+    }
+
+    if (url.pathname === '/api/admin/services') {
+      if (request.method === 'GET') return await getAdminServices(env)
+      if (request.method === 'POST') {
+        if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+        return await createAdminService(request, env, user)
+      }
+      return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+    }
+
+    const serviceMatch = /^\/api\/admin\/services\/([a-f0-9-]{36})$/i.exec(url.pathname)
+    if (serviceMatch) {
+      if (request.method !== 'PATCH') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+      return await updateAdminService(request, env, user, serviceMatch[1])
+    }
+
+    if (url.pathname === '/api/admin/schedule') {
+      if (request.method === 'GET') return await getAdminSchedule(env)
+      return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+    }
+
+    if (url.pathname === '/api/admin/settings') {
+      if (request.method !== 'PUT') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+      return await updateSalonSettings(request, env, user)
+    }
+
+    const weekdayMatch = /^\/api\/admin\/schedule\/weekly\/(\d)$/i.exec(url.pathname)
+    if (weekdayMatch) {
+      if (request.method !== 'PUT') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+      const weekday = Number(weekdayMatch[1])
+      if (weekday < 0 || weekday > 6) return errorResponse('invalid_weekday', 'روز هفته معتبر نیست.', 400)
+      return await updateWeeklyHours(request, env, user, weekday)
+    }
+
+    if (url.pathname === '/api/admin/schedule/exceptions') {
+      if (request.method !== 'POST') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+      return await createScheduleException(request, env, user)
+    }
+
+    const exceptionMatch = /^\/api\/admin\/schedule\/exceptions\/([a-f0-9-]{36})$/i.exec(url.pathname)
+    if (exceptionMatch) {
+      if (request.method !== 'DELETE') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      if (!isSameOriginRequest(request)) return errorResponse('forbidden_origin', 'مبدأ درخواست معتبر نیست.', 403)
+      return await deleteScheduleException(env, user, exceptionMatch[1])
     }
 
     const statusMatch = /^\/api\/admin\/bookings\/([a-f0-9-]{36})\/status$/i.exec(url.pathname)

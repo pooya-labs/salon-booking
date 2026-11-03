@@ -57,6 +57,20 @@ db.execute(
 )
 assert db.execute("SELECT COUNT(*) FROM admin_audit_log").fetchone()[0] == 1
 
+# Schedule exceptions are unique by salon-local date.
+db.execute(
+    "INSERT INTO schedule_exceptions (id, local_date, is_closed, note) VALUES (?, ?, ?, ?)",
+    ("exception-a", "2026-12-25", 1, "Holiday"),
+)
+try:
+    db.execute(
+        "INSERT INTO schedule_exceptions (id, local_date, is_closed, note) VALUES (?, ?, ?, ?)",
+        ("exception-b", "2026-12-25", 1, "Duplicate"),
+    )
+    raise AssertionError("duplicate schedule exception unexpectedly succeeded")
+except sqlite3.IntegrityError:
+    pass
+
 db.execute(
     "INSERT INTO services (id, name, duration_minutes, price_amount) VALUES (?, ?, ?, ?)",
     ("service-test", "Test service", 30, 100),
@@ -93,4 +107,4 @@ except sqlite3.IntegrityError as error:
 db.execute("UPDATE bookings SET status = 'cancelled' WHERE id = 'booking-a'")
 insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
 
-print("PASS: all D1 migrations, defaults, overlap triggers, rate-limit buckets and audit-log schema behave as expected.")
+print("PASS: D1 migrations, overlap triggers, rate-limit buckets, audit log and unique schedule exceptions behave as expected.")
