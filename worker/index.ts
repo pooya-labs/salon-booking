@@ -452,10 +452,11 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
   const input = await readJsonBody(request)
   if (!input) return errorResponse('invalid_request', 'درخواست معتبر نیست.', 400)
 
-  const idempotencyKey = request.headers.get('idempotency-key')
-  if (!isValidIdempotencyKey(idempotencyKey)) {
+  const idempotencyKeyHeader = request.headers.get('idempotency-key')
+  if (!isValidIdempotencyKey(idempotencyKeyHeader)) {
     return errorResponse('idempotency_key_required', 'کلید یکتای ثبت نوبت معتبر نیست؛ دوباره تلاش کنید.', 400)
   }
+  const idempotencyKey = idempotencyKeyHeader.toLowerCase()
 
   const serviceId = typeof input.serviceId === 'string' ? input.serviceId.trim() : ''
   const date = typeof input.date === 'string' ? input.date : ''
