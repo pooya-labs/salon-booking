@@ -1,3 +1,4 @@
+import { handleAdminRequest, type AdminEnv } from './admin-api'
 import {
   addMinutesToTime,
   getLocalDateKey,
@@ -7,9 +8,8 @@ import {
   parseDateKey,
 } from './scheduling'
 
-interface Env {
+interface Env extends AdminEnv {
   ASSETS: { fetch(request: Request): Promise<Response> }
-  DB: D1Database
 }
 
 interface ServiceRow {
@@ -395,6 +395,9 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
 
+    const adminResponse = await handleAdminRequest(request, env)
+    if (adminResponse) return adminResponse
+
     if (url.pathname === '/api/health') {
       return json({ ok: true, service: 'salon-booking-api', version: '0.2.0' })
     }
@@ -447,6 +450,13 @@ export default {
 
     if (url.pathname.startsWith('/api/')) {
       return errorResponse('not_found', 'این مسیر پیدا نشد.', 404)
+    }
+
+    if (url.pathname === '/admin' || url.pathname === '/admin/') {
+      const target = new URL(request.url)
+      target.pathname = '/'
+      target.searchParams.set('admin', '1')
+      return env.ASSETS.fetch(new Request(target.toString(), { method: 'GET', headers: request.headers }))
     }
 
     return env.ASSETS.fetch(request)
