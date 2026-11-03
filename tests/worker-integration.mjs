@@ -593,6 +593,22 @@ try {
   ), 200, 'owner deletes date exception')
   assert.equal(deletedException.ok, true)
 
+  const auditVerification = await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    `SELECT CASE WHEN
+       EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'booking.status_changed' AND entity_type = 'booking' AND entity_id = '${ownerBooking.id}')
+       AND EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'service.created' AND entity_type = 'service' AND entity_id = '${createdService.id}')
+       AND EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'service.updated' AND entity_type = 'service' AND entity_id = '${createdService.id}')
+       AND EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'salon.settings_updated' AND entity_type = 'salon' AND entity_id = 'settings')
+       AND EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'schedule.weekday_updated' AND entity_type = 'opening_hours' AND entity_id = '${weekday}')
+       AND EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'schedule.exception_saved' AND entity_type = 'schedule_exception' AND entity_id = '${exceptionDate}')
+       AND EXISTS (SELECT 1 FROM admin_audit_log WHERE action = 'schedule.exception_deleted' AND entity_type = 'schedule_exception' AND entity_id = '${exceptionDate}')
+       THEN 'OWNER_AUDIT_VERIFIED' ELSE 'OWNER_AUDIT_MISSING' END AS result`,
+  ])
+  assert.match(auditVerification.stdout, /OWNER_AUDIT_VERIFIED/)
+  console.log('PASS: D1 owner audit log records booking status, service CRUD, salon settings, weekly hours and schedule exception create/delete.')
+
   const logout = await expectJson(await request(baseUrl, '/api/admin/logout', {
     method: 'POST',
     headers: ownerHeaders,
