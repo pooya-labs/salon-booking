@@ -4,6 +4,22 @@ The API runs inside the Cloudflare Worker. All timestamps persisted in D1 are UT
 
 ## Endpoints
 
+### `GET /api/public/config`
+
+Returns non-sensitive public scheduling configuration:
+
+```json
+{
+  "ok": true,
+  "configured": true,
+  "timezone": "Europe/Berlin",
+  "bookingWindowDays": 30,
+  "slotIntervalMinutes": 15
+}
+```
+
+When the timezone is still `unset`, `configured` is false and `timezone` is null. The client then falls back to the visitor timezone only to render a calendar; availability and booking remain unavailable until the salon timezone is configured.
+
 ### `GET /api/public/services`
 
 Returns active services only.
@@ -79,5 +95,7 @@ Then configure the seven weekdays in `opening_hours`, create owner-approved serv
 ## Conflict protection and current limitations
 
 The D1 triggers reject overlapping inserts and updates for `pending` and `confirmed` bookings, including concurrent requests that both saw a time as free. The API rechecks availability before attempting the insert; the trigger remains the final database guard.
+
+In the Cloudflare production build, the React client loads the public config and services, requests server-calculated slots, and submits the final booking to this API. Development and GitHub Pages builds deliberately use sample data and never submit customer information.
 
 This initial public API does not yet include abuse/rate limiting, booking lookup, customer cancellation, owner authentication, notification delivery, or audit history. Do not treat this deployment as production-ready until the remaining security, privacy and operational roadmap gates pass. The GitHub Pages preview never invokes or hosts this API.

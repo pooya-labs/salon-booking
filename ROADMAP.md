@@ -69,13 +69,14 @@ This document is the durable source of truth for scope, completion, test evidenc
 ## R03 — Client booking journey
 
 - [x] Service selection UI with direct service-card entry into the booking flow.
-- [x] Jalali calendar labels for the next 14 days; past dates are excluded from the preview.
-- [~] Selectable time-slot interface (currently clearly marked sample slots; server availability is not connected yet).
-- [x] Client name and international phone-number format validation in the form.
+- [~] Production build loads the active service catalog from the Worker API; demo builds use sample services.
+- [~] Jalali calendar labels are generated against the salon timezone when configured; the preview uses the visitor timezone.
+- [~] Production booking step requests server-calculated available slots; demo builds use sample slots.
+- [x] Client name and international phone-number format validation in the form and API.
 - [x] Booking review screen with service, date, time, duration and contact summary.
-- [~] Preview completion state is explicit and does not submit/save personal data; real confirmation and reference code require the production API.
-- [~] Server-provided available time slots (API implemented; frontend still uses demo slots until the production host is configured).
-- [~] Booking creation endpoint and random reference generation implemented; requires configured D1 and salon schedule.
+- [~] Production confirmation posts to the Worker API and displays the generated booking reference; requires configured D1 and salon schedule.
+- [x] Server-provided available time slots API is implemented and connected to the production UI.
+- [x] Booking creation endpoint and random reference generation are implemented; live acceptance is pending D1 setup.
 - [ ] Lookup booking by reference + verified contact detail.
 - [ ] Clear cancellation/reschedule policy supplied and displayed.
 - [x] Accessible field labels, validation error message and step navigation.

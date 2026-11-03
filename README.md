@@ -8,8 +8,8 @@ A polished, mobile-first appointment booking platform for an independent hair sa
 
 ## Project status
 
-**Current phase:** R00 — Foundation & project governance  
-**Current release:** 0.1.0 — Bootstrap  
+**Current phase:** R04 — Scheduling API and D1 booking engine  
+**Current release:** 0.2.0 — Booking API foundation  
 **Default branch:** `main`  
 **Preview:** GitHub Pages (static visual preview)  
 **Production target:** Cloudflare Workers + Static Assets + D1  
@@ -37,7 +37,7 @@ See [ROADMAP.md](./ROADMAP.md) for the full delivery plan and [docs/PROJECT-STAT
 - **Hosting:** Cloudflare Workers Static Assets
 - **Source of truth:** GitHub, `main`
 
-The Worker will serve both the frontend assets and the `/api/*` endpoints. This avoids a separate VPS and keeps deployment simple. Cloudflare account setup and D1 provisioning are one-time operator steps; no credentials or secrets belong in Git.
+The Worker serves frontend assets and JSON API routes. Initial public endpoints provide active services, timezone-aware availability and conflict-safe booking creation backed by D1. The frontend uses those endpoints in the Cloudflare production build; GitHub Pages and local development intentionally keep sample data only. Cloudflare account setup and D1 provisioning are one-time operator steps; no credentials or secrets belong in Git.
 
 ## Local development
 
@@ -71,7 +71,7 @@ Production deployment is intentionally documented but not activated until a Clou
 4. Connect this GitHub repository to Cloudflare Workers Builds, or deploy with Wrangler.
 5. Set production secrets through Cloudflare's dashboard/CLI.
 
-See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) and the [public API contract](./docs/API.md).
 
 ## Ownership and credits
 
