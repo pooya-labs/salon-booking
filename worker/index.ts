@@ -234,7 +234,7 @@ const getAvailability = async (
   }
 
   const slots = [...slotSet].sort()
-  return { slots, date: dateKey, timezone: settings.timezone }  return { slots, date: dateKey, timezone: settings.timezone }
+  return { slots, date: dateKey, timezone: settings.timezone }
 }
 
 const makeReference = () => {

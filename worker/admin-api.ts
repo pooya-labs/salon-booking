@@ -127,6 +127,7 @@ const WEEKDAY_NAMES = [
 const WEEKDAY_ORDER = [6, 0, 1, 2, 3, 4, 5]
 
 const validClockTime = (value: unknown): value is string =>
+  typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 
 const readScheduleIntervals = (
   input: AdminRequestBody,
@@ -144,7 +145,6 @@ const readScheduleIntervals = (
   }
   return normalizeClockIntervals(mapped)
 }
-  typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 
 const readServiceValues = (
   input: AdminRequestBody,

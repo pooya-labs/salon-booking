@@ -484,7 +484,6 @@ export function AdminManagement() {
                 ))}
               </div>
             )}
-          </section>            )}
           </section>
 
           <section className="admin-manage-panel admin-exceptions-panel">
