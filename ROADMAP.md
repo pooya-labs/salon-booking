@@ -140,11 +140,11 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R07 — Quality and acceptance
 
-- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security, customer-management credential/cancellation helpers and phone normalization (30 tests; latest CI run 41646215390 passed).
+- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security, customer-management credential/cancellation helpers and phone normalization (30 tests; latest CI run 41647018808 passed).
 - [x] Public booking and owner-admin lifecycle/authorization HTTP tests against a local Wrangler Worker + D1 environment: service catalog, availability, booking creation/conflict, customer origin/token/privacy/cancellation/slot release, first-owner bootstrap, secure session, login/logout/revocation, protected owner booking list/status transitions, service CRUD, salon settings, timezone-change conflict protection, split weekly intervals, break-aware availability, overlap rejection and date-exception create/read/delete.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0008 (remote Cloudflare D1 application remains pending).
-- [x] Production build and TypeScript checks (latest CI run 41646215390 passed).
+- [x] Production build and TypeScript checks (latest CI run 41647018808 passed).
 - [x] Automated Chromium responsive QA at 320, 360, 390, 430, 768, 1024, 1280 and 1440 px (mobile, tablet and desktop viewport emulation; not physical-device certification).
 - [x] RTL, Persian digit, Jalali calendar and visitor-local day-boundary checks across Asia/Tehran, Europe/Berlin and America/Los_Angeles.
 - [x] Automated keyboard/accessibility behavior for both booking and customer-management dialogs: accessible dialog name, initial focus, Tab/Shift+Tab containment, Escape close, focus restoration and scroll lock.
@@ -168,7 +168,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Production URL and custom domain decision documented (custom domain optional).
 - [ ] Smoke tests run against production.
 - [~] Wrangler local D1 export/restore smoke test passes in CI; owner production backup/restore validation remains pending.
-- [ ] Rollback procedure documented.
+- [x] Worker rollback and D1 recovery runbook documented in `docs/DEPLOYMENT.md`; live rollback/restore drill remains unverified.
 - [ ] Owner receives concise operating instructions.
 - [ ] Launch approval recorded.
 
