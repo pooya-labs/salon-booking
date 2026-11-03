@@ -15,7 +15,6 @@ import {
   verifyBookingManagementToken,
 } from './customer-booking-security'
 import {
-  createSessionToken,
   isSameOriginRequest,
   sha256Hex,
 } from './admin-security'
@@ -422,7 +421,6 @@ const replayIdempotentBooking = async (
   idempotencyKeyHash: string,
   requestHash: string,
   idempotencyKey: string,
-  sessionSecret: string,
 ): Promise<Response | null> => {
   const record = await db.prepare(
     `SELECT request_hash, response_json
@@ -441,11 +439,7 @@ const replayIdempotentBooking = async (
   }
 
   const booking = JSON.parse(record.response_json) as StoredBookingResponse
-  const managementToken = await createRateLimitBucketHash(
-    sessionSecret,
-    'booking_management_token',
-    idempotencyKey,
-  )
+  const managementToken = await sha256Hex(`salon-booking-management-token:${idempotencyKey}`)
 
   return json({
     ok: true,
@@ -454,7 +448,7 @@ const replayIdempotentBooking = async (
   }, 200)
 }
 
-const handleCreateBooking = async (request: Request, db: D1Database, sessionSecret: string) => {
+const handleCreateBooking = async (request: Request, db: D1Database) => {
   const input = await readJsonBody(request)
   if (!input) return errorResponse('invalid_request', 'درخواست معتبر نیست.', 400)
 
@@ -484,24 +478,17 @@ const handleCreateBooking = async (request: Request, db: D1Database, sessionSecr
     return errorResponse('invalid_note', 'متن توضیحات بیش از حد طولانی است.', 400)
   }
 
-  const idempotencyKeyHash = await createRateLimitBucketHash(
-    sessionSecret,
-    'booking_idempotency',
-    idempotencyKey,
-  )
+  // The client key contains 256 random bits. Domain-separated SHA-256 digests
+  // let retries recover the same token without storing either raw key or PII.
+  const idempotencyKeyHash = await sha256Hex(`salon-booking-idempotency:${idempotencyKey}`)
   const requestFingerprint = JSON.stringify({ serviceId, date, time, name, phone, note })
-  const requestHash = await createRateLimitBucketHash(
-    sessionSecret,
-    'booking_request',
-    `${idempotencyKey}:${requestFingerprint}`,
-  )
+  const requestHash = await sha256Hex(`salon-booking-request:${idempotencyKey}:${requestFingerprint}`)
   const replay = await replayIdempotentBooking(
     db,
     idempotencyKeyHash,
     requestHash,
     idempotencyKey,
-    sessionSecret,
-  )
+    )
   if (replay) return replay
 
   const service = await db
@@ -545,11 +532,7 @@ const handleCreateBooking = async (request: Request, db: D1Database, sessionSecr
 
   const id = crypto.randomUUID()
   const reference = makeReference()
-  const managementToken = await createRateLimitBucketHash(
-    sessionSecret,
-    'booking_management_token',
-    idempotencyKey,
-  )
+  const managementToken = await sha256Hex(`salon-booking-management-token:${idempotencyKey}`)
   const managementTokenHash = await sha256Hex(managementToken)
   const bookingResponse: StoredBookingResponse = {
     reference,
@@ -586,7 +569,6 @@ const handleCreateBooking = async (request: Request, db: D1Database, sessionSecr
       idempotencyKeyHash,
       requestHash,
       idempotencyKey,
-      sessionSecret,
     )
     if (concurrentReplay) return concurrentReplay
 
@@ -778,7 +760,7 @@ const handleWorkerRequest = async (request: Request, env: Env): Promise<Response
       const limitResponse = await enforcePublicRateLimit(env.DB, request, env.SESSION_SECRET, 'booking', 10, 900)
       if (limitResponse) return limitResponse
       try {
-        return await handleCreateBooking(request, env.DB, env.SESSION_SECRET)
+        return await handleCreateBooking(request, env.DB)
       } catch {
         return errorResponse('booking_unavailable', 'ثبت نوبت در حال حاضر ممکن نیست.', 503)
       }
