@@ -149,11 +149,13 @@ try {
 
   const port = await getFreePort()
   const baseUrl = `http://127.0.0.1:${port}`
+  const bootstrapToken = 'local-worker-bootstrap-only-token-2026'
   const executable = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   workerProcess = spawn(executable, [
     'wrangler', 'dev', '--config', configPath, '--ip', '127.0.0.1',
     '--port', String(port), '--persist-to', persistPath,
     '--var', `SESSION_SECRET:${sessionSecret}`,
+    '--var', `ADMIN_BOOTSTRAP_TOKEN:${bootstrapToken}`,
   ], {
     cwd: root,
     env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
@@ -207,6 +209,142 @@ try {
 
   const origin = new URL(baseUrl).origin
   const managementHeaders = { origin }
+
+  console.log('Checking owner bootstrap, sessions, service management and booking authorization...')
+  const setup = await expectJson(await request(baseUrl, '/api/admin/setup-status'), 200, 'admin setup status')
+  assert.equal(setup.initialized, false)
+  assert.equal(setup.bootstrapAvailable, true)
+
+  const blockedBootstrap = await expectJson(await request(baseUrl, '/api/admin/bootstrap', {
+    method: 'POST',
+    headers: { origin: 'https://attacker.invalid', 'x-admin-bootstrap-token': bootstrapToken },
+    body: JSON.stringify({ username: 'integration-owner', password: 'Local-only-test-password!2026' }),
+  }), 403, 'cross-origin admin bootstrap')
+  assert.equal(blockedBootstrap.error, 'forbidden_origin')
+
+  const rejectedBootstrap = await expectJson(await request(baseUrl, '/api/admin/bootstrap', {
+    method: 'POST',
+    headers: { origin, 'x-admin-bootstrap-token': 'wrong-bootstrap-token' },
+    body: JSON.stringify({ username: 'integration-owner', password: 'Local-only-test-password!2026' }),
+  }), 401, 'invalid admin bootstrap token')
+  assert.equal(rejectedBootstrap.error, 'invalid_bootstrap_token')
+
+  const bootstrapResponse = await request(baseUrl, '/api/admin/bootstrap', {
+    method: 'POST',
+    headers: { origin, 'x-admin-bootstrap-token': bootstrapToken },
+    body: JSON.stringify({ username: 'integration-owner', password: 'Local-only-test-password!2026' }),
+  })
+  const bootstrapped = await expectJson(bootstrapResponse, 200, 'first owner bootstrap')
+  assert.equal(bootstrapped.user.username, 'integration-owner')
+  const bootstrapSetCookie = bootstrapResponse.headers.get('set-cookie') ?? ''
+  assert.match(bootstrapSetCookie, /__Host-salon_session=[0-9a-f]{64}/i)
+  assert.match(bootstrapSetCookie, /HttpOnly/i)
+  assert.match(bootstrapSetCookie, /Secure/i)
+  assert.match(bootstrapSetCookie, /SameSite=Strict/i)
+  const firstSessionCookie = bootstrapSetCookie.split(';', 1)[0]
+  const ownerHeaders = { origin, cookie: firstSessionCookie }
+
+  const initialized = await expectJson(await request(baseUrl, '/api/admin/setup-status'), 200, 'initialized admin status')
+  assert.equal(initialized.initialized, true)
+  assert.equal(initialized.bootstrapAvailable, false)
+
+  const anonymousAdmin = await expectJson(await request(baseUrl, '/api/admin/services'), 401, 'anonymous admin services')
+  assert.equal(anonymousAdmin.error, 'unauthorized')
+
+  const ownerMe = await expectJson(await request(baseUrl, '/api/admin/me', {
+    headers: ownerHeaders,
+  }), 200, 'owner session')
+  assert.equal(ownerMe.user.username, 'integration-owner')
+
+  const ownerBookings = await expectJson(await request(
+    baseUrl,
+    `/api/admin/bookings?from=${date}&to=${date}`,
+    { headers: ownerHeaders },
+  ), 200, 'owner booking list')
+  const ownerBooking = ownerBookings.bookings.find((item) => item.reference === booking.reference)
+  assert.ok(ownerBooking, 'authenticated owner should see the new booking')
+  assert.equal(ownerBooking.name, 'Integration Client')
+  assert.equal(ownerBooking.phone, '+491234567890')
+  assert.equal(ownerBooking.status, 'pending')
+
+  const confirmed = await expectJson(await request(
+    baseUrl,
+    `/api/admin/bookings/${ownerBooking.id}/status`,
+    {
+      method: 'PATCH',
+      headers: ownerHeaders,
+      body: JSON.stringify({ status: 'confirmed' }),
+    },
+  ), 200, 'owner confirms booking')
+  assert.equal(confirmed.status, 'confirmed')
+
+  const invalidTransition = await expectJson(await request(
+    baseUrl,
+    `/api/admin/bookings/${ownerBooking.id}/status`,
+    {
+      method: 'PATCH',
+      headers: ownerHeaders,
+      body: JSON.stringify({ status: 'confirmed' }),
+    },
+  ), 409, 'invalid owner status transition')
+  assert.equal(invalidTransition.error, 'invalid_transition')
+
+  const ownerServices = await expectJson(await request(baseUrl, '/api/admin/services', {
+    headers: ownerHeaders,
+  }), 200, 'owner service list')
+  assert.ok(ownerServices.services.some((service) => service.id === 'integration-service'))
+
+  const createdService = await expectJson(await request(baseUrl, '/api/admin/services', {
+    method: 'POST',
+    headers: ownerHeaders,
+    body: JSON.stringify({
+      name: 'Integration add-on',
+      description: 'Synthetic admin test service',
+      durationMinutes: 45,
+      priceAmount: 12500,
+      priceCurrency: 'IRR',
+      isActive: true,
+      sortOrder: 10,
+    }),
+  }), 201, 'owner creates service')
+  assert.match(createdService.id, /^[0-9a-f-]{36}$/i)
+
+  await expectJson(await request(baseUrl, `/api/admin/services/${createdService.id}`, {
+    method: 'PATCH',
+    headers: ownerHeaders,
+    body: JSON.stringify({ name: 'Updated integration add-on', isActive: false }),
+  }), 200, 'owner updates service')
+  const updatedServices = await expectJson(await request(baseUrl, '/api/admin/services', {
+    headers: ownerHeaders,
+  }), 200, 'updated owner service list')
+  const updatedService = updatedServices.services.find((service) => service.id === createdService.id)
+  assert.equal(updatedService.name, 'Updated integration add-on')
+  assert.equal(updatedService.isActive, false)
+
+  const logout = await expectJson(await request(baseUrl, '/api/admin/logout', {
+    method: 'POST',
+    headers: ownerHeaders,
+  }), 200, 'owner logout')
+  assert.equal(logout.ok, true)
+  const revokedSession = await expectJson(await request(baseUrl, '/api/admin/me', {
+    headers: ownerHeaders,
+  }), 401, 'revoked owner session')
+  assert.equal(revokedSession.error, 'unauthorized')
+
+  const loginResponse = await request(baseUrl, '/api/admin/login', {
+    method: 'POST',
+    headers: { origin },
+    body: JSON.stringify({ username: 'integration-owner', password: 'Local-only-test-password!2026' }),
+  })
+  const loggedIn = await expectJson(loginResponse, 200, 'owner login')
+  assert.equal(loggedIn.user.username, 'integration-owner')
+  const loginCookie = (loginResponse.headers.get('set-cookie') ?? '').split(';', 1)[0]
+  assert.match(loginCookie, /^__Host-salon_session=[0-9a-f]{64}$/i)
+  const authenticatedAgain = await expectJson(await request(baseUrl, '/api/admin/me', {
+    headers: { cookie: loginCookie },
+  }), 200, 'owner login session')
+  assert.equal(authenticatedAgain.user.username, 'integration-owner')
+
   const crossOrigin = await expectJson(await request(baseUrl, '/api/public/bookings/lookup', {
     method: 'POST',
     headers: { origin: 'https://attacker.invalid' },
@@ -229,7 +367,7 @@ try {
   assert.equal(lookup.booking.reference, booking.reference)
   assert.equal(lookup.booking.serviceName, 'Integration service')
   assert.equal(lookup.booking.durationMinutes, 30)
-  assert.equal(lookup.booking.status, 'pending')
+  assert.equal(lookup.booking.status, 'confirmed')
   for (const privateField of ['name', 'phone', 'note', 'clientName', 'clientPhone', 'clientNote']) {
     assert.equal(Object.hasOwn(lookup.booking, privateField), false, `customer lookup must not expose ${privateField}`)
   }
@@ -258,7 +396,7 @@ try {
     'cancelling a booking should release its slot',
   )
 
-  console.log('PASS: local Worker + D1 migrations, availability, booking creation, duplicate protection, origin/token checks, privacy-safe lookup, cancellation and slot release.')
+  console.log('PASS: local Worker + D1 migrations, public booking lifecycle, customer self-service, owner bootstrap/login/logout/session revocation, owner service CRUD and booking status authorization.')
 } catch (error) {
   console.error(error)
   if (workerLogs) console.error(workerLogs)
