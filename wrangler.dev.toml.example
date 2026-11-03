@@ -1,0 +1,16 @@
+name = "salon-booking-local"
+main = "worker/index.ts"
+compatibility_date = "2026-11-03"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*", "/", "/admin", "/admin/"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "salon-booking"
+# Local-only placeholder UUID. This file is gitignored after it is copied.
+database_id = "00000000-0000-4000-8000-000000000001"
+migrations_dir = "migrations"

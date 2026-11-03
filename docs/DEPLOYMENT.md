@@ -19,6 +19,28 @@ No VPS is required. The free tier is subject to Cloudflare's current quotas and 
 6. Configure production secrets with Wrangler or the Cloudflare dashboard.
 7. Connect the GitHub repository to Cloudflare Workers Builds, selecting `main` as production branch and `npm run build` as build command. Configure the Worker deployment command according to the current Wrangler setup.
 
+## Local development with the Worker and D1
+
+The plain `npm run dev` command starts Vite only and intentionally displays the static sample-data experience. To exercise the Worker API locally, use a separate Wrangler configuration so the committed production config and its placeholder D1 ID are never overwritten.
+
+1. Copy the local-only examples:
+   `cp wrangler.dev.toml.example wrangler.dev.toml`
+   `cp .dev.vars.example .dev.vars`
+2. Generate two different secrets and replace the placeholders in `.dev.vars`:
+   `openssl rand -hex 32`
+   Run it twice. Keep `SESSION_SECRET` and `ADMIN_BOOTSTRAP_TOKEN` distinct. Both local files are ignored by Git.
+3. Install dependencies and apply migrations to the local D1 database only:
+   `npm install`
+   `npm run db:local`
+4. Build assets and launch the Worker:
+   `npm run build`
+   `npm run dev:worker`
+5. Open the local URL printed by Wrangler. The first owner can be bootstrapped locally using the local-only `ADMIN_BOOTSTRAP_TOKEN`. Never use real client data in local development.
+
+The local Wrangler config uses a reserved local-only D1 UUID and the same logical database name as the migrations. The `db:local` script explicitly passes `--local`; it never applies migrations remotely. Production commands continue to use the committed `wrangler.toml` and must only be run after the Cloudflare database ID and account have been provisioned.
+
+To run static-preview browser QA locally, install Playwright and Chromium using the versions pinned in `.github/workflows/ci.yml`, run `npm run build:pages`, then `npm run test:browser`.
+
 ## Secrets
 
 Never put secrets in Vite environment variables: anything prefixed with `VITE_` is public in the browser bundle.

@@ -1,0 +1,4 @@
+# Local-only Worker secrets. Replace both values with different random strings.
+# Never commit .dev.vars or reuse these values in production.
+SESSION_SECRET=replace-with-a-random-64-character-hex-value
+ADMIN_BOOTSTRAP_TOKEN=replace-with-a-different-random-64-character-hex-value

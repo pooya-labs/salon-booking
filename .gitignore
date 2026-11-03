@@ -12,3 +12,6 @@ private-backups/
 *.sqlite
 *.sqlite3
 *.db
+
+# Local-only Worker configuration; copy the example before use.
+wrangler.dev.toml
