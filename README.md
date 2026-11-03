@@ -8,8 +8,8 @@ A polished, mobile-first appointment booking platform for an independent hair sa
 
 ## Project status
 
-**Current phase:** R05/R06 — Owner dashboard and admin security  
-**Current release:** 0.3.0 — Secure owner workspace foundation  
+**Current phase:** R04/R05 — Multi-interval scheduling and owner management  
+**Current release:** 0.4.0 — Owner service and split-schedule management  
 **Default branch:** `main`  
 **Preview:** GitHub Pages (static visual preview)  
 **Production target:** Cloudflare Workers + Static Assets + D1  
@@ -59,11 +59,11 @@ npm run build
 
 GitHub Pages is used temporarily to review the visual frontend and interactive booking journey. Its admin link opens a non-functional design notice. Pages does not run the Worker API or D1 database; selected services, dates and slots are sample data, and it never creates reservations or submits personal details. Do not submit real customer information there.
 
-The Cloudflare production build includes the public booking API and secure owner sign-in/dashboard. The dashboard currently lists bookings and supports approved status transitions; service and schedule editing, production provisioning, public-booking abuse controls and final security/QA gates remain.
+The Cloudflare production build includes the public booking API and secure owner sign-in/dashboard. The dashboard lists bookings, supports approved status transitions, manages services, and edits weekly/date-specific opening intervals. Production provisioning, public-booking abuse controls and final security/QA gates remain.
 
 ## Deployment
 
-Production deployment is intentionally documented but not activated until a Cloudflare account is connected and a D1 database is provisioned.
+Production deployment is intentionally documented but not activated until a Cloudflare account is connected and a D1 database is provisioned. Apply migrations 0001–0005 in order; migration 0005 introduces split daily opening intervals while preserving old single-window data.
 
 1. Create a Cloudflare D1 database.
 2. Put its database ID in the local/deployment Wrangler configuration (never commit API tokens).

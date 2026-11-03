@@ -1,63 +1,79 @@
 # Owner workspace and first-admin setup
 
-## What is implemented
+## Implemented owner features
 
-The owner workspace is served at /admin by the Cloudflare Worker. It includes:
-- First-owner bootstrap (only while there are no rows in admin_users).
+The protected owner workspace is served at `/admin` by the Cloudflare Worker. It includes:
+
+- First-owner bootstrap, only while no admin account exists.
 - Username/password login and logout.
-- A 12-hour owner session stored as a host-only secure cookie.
-- Upcoming appointment list, status filter, client contact, booking reference and service details.
-- Allowed transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
-- An audit record for each successful booking status transition.
+- 12-hour host-only secure session cookie.
+- Upcoming booking list, status filter, customer contact, reference and service details.
+- Allowed booking transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
+- Service management: create, edit, activate and deactivate; deactivation preserves historical reservations.
+- Booking settings: salon timezone, slot interval, notice period, booking horizon and buffer.
+- Weekly schedule editing, with up to eight separate opening intervals per day (for example morning and afternoon shifts).
+- Date-specific closures or one-off opening intervals, with notes.
+- Audit records for service, schedule, settings and booking-status changes.
 
-GitHub Pages and local Vite development show a demo-only information page. They do not load real customer records and never enable admin API requests.
+The schedule editor validates intervals on the server and rejects overlap. The database also has overlap triggers for weekly and exception intervals. The system rejects schedule changes that conflict with known pending/confirmed bookings. Existing single-interval schedules are backfilled by migration 0005.
+
+GitHub Pages and local Vite development show a demo-only information page. They never load real customer records and do not call owner APIs.
 
 ## Required Worker secrets
 
-Create two distinct random values, for example with:
+Generate two distinct random values:
 
 ```sh
 openssl rand -hex 32
 openssl rand -hex 32
 ```
 
-Use the first for SESSION_SECRET and the second for ADMIN_BOOTSTRAP_TOKEN. Do not reuse passwords or the same secret value.
+Use the first for `SESSION_SECRET` and the second for `ADMIN_BOOTSTRAP_TOKEN`. Do not reuse a password or the same secret value.
 
 Cloudflare Dashboard steps:
 1. Open Workers & Pages.
 2. Select the deployed salon-booking Worker.
 3. Open Settings → Variables and Secrets.
 4. Choose Add → Secret.
-5. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as separate secrets.
+5. Add `SESSION_SECRET` and `ADMIN_BOOTSTRAP_TOKEN` as separate secrets.
 6. Deploy the Worker so the new secret bindings become available.
 
-Cloudflare Worker secrets are exposed to Worker code through the env binding and are not committed to source code.
+Secrets are read through Worker environment bindings and are never committed to source.
+
+## Database setup
+
+Prerequisites: create and bind a Cloudflare D1 database, configure its ID in Wrangler, and apply migrations `0001_initial_schema.sql` through `0005_multi_interval_schedule.sql` in order.
+
+Do not apply migrations to a real database until its ID and target environment have been checked. The project contains no real salon data yet.
 
 ## One-time first-owner bootstrap
 
-Prerequisites: the Worker is deployed, D1 is bound, and migrations 0001–0003 have been applied.
+1. Deploy the Worker and apply all database migrations.
+2. Add the two Worker secrets above.
+3. Open the production `/admin` URL over HTTPS.
+4. The first-owner form is shown only when there is no owner and both secrets are configured.
+5. Enter the bootstrap token, choose a username and a strong password of at least 12 characters, then submit.
+6. Remove `ADMIN_BOOTSTRAP_TOKEN` from Worker settings and deploy again. Keep `SESSION_SECRET`.
 
-1. Open the production /admin URL over HTTPS.
-2. The page displays the first-owner form only when no owner account exists and both required secrets are configured.
-3. Enter the ADMIN_BOOTSTRAP_TOKEN value, choose a username and a strong password of at least 12 characters, then submit.
-4. The server conditionally inserts the first owner and immediately creates a secure session.
-5. Remove ADMIN_BOOTSTRAP_TOKEN from Worker settings and deploy again. Keep SESSION_SECRET.
-
-Bootstrap is one-time at the database level: an existing owner prevents another account from being created even if the bootstrap endpoint is called again.
+Bootstrap is one-time at the database level. An existing owner prevents another account being created.
 
 ## Session and abuse controls
 
-- Password hash: PBKDF2-HMAC-SHA-256, 600,000 iterations, independent 16-byte random salt.
-- Session token: 256 random bits; only its SHA-256 digest is stored.
-- Cookie: __Host-salon_session; Secure, HttpOnly, SameSite=Strict, Path=/, 12-hour lifetime.
+- Password hashes use PBKDF2-HMAC-SHA-256 with 600,000 iterations and independent 16-byte random salt.
+- Session tokens contain 256 random bits; only their SHA-256 digest is stored.
+- Cookie: `__Host-salon_session`, Secure, HttpOnly, SameSite=Strict, Path=/, 12-hour lifetime.
 - Login rate: 8 attempts per IP-derived HMAC bucket per 15-minute window.
 - Bootstrap rate: 3 attempts per IP-derived HMAC bucket per one-hour window.
-- Same-origin Origin required for login, bootstrap, logout and owner mutations.
-- Owner booking reads expose client details only after session validation.
-- Status changes use a D1 batch transaction with an audit-log insert conditional on the update succeeding.
+- Mutating requests require a matching same-origin Origin header.
+- The rate-limit table stores a keyed HMAC of the IP, not the raw address.
 
-The rate-limit table stores only a keyed HMAC of the IP address, not the raw address.
+## Remaining release blockers
 
-## Current limitations
+- Public booking endpoint rate limiting and abuse controls.
+- Customer booking lookup/cancellation with proof of control that prevents phone-number enumeration.
+- Data minimization, retention/export/deletion policy and operational backups.
+- Security headers review, threat model and full security review.
+- Production Cloudflare deployment, real D1, secrets, actual salon services, timezone, hours and owner acceptance.
+- Password recovery and multiple owner accounts are not in the initial scope.
 
-The current owner workspace does not yet edit services, weekly opening hours, breaks, holidays or date exceptions. It does not provide password recovery or multiple owner accounts. Public booking still needs its own abuse/rate controls. Before collecting real customer data, also complete client lookup/cancellation privacy, retention/export/deletion policy, backups, full security review and production acceptance.
+Never use the GitHub Pages preview for real reservations or personal information.

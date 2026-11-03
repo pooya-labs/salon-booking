@@ -423,7 +423,7 @@ export default {
     if (adminResponse) return adminResponse
 
     if (url.pathname === '/api/health') {
-      return json({ ok: true, service: 'salon-booking-api', version: '0.2.0' })
+      return json({ ok: true, service: 'salon-booking-api', version: '0.4.0' })
     }
 
     if (url.pathname === '/api/public/config') {

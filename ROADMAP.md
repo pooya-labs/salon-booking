@@ -88,7 +88,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R04 — Scheduling and data layer
 
-- [~] D1 schema for services, opening hours, exceptions, bookings, admin identity and salon settings (v1/v2 migrations added; production D1 not yet provisioned).
+- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings and normalized weekly/date intervals (migrations 0001–0005; production D1 not yet provisioned).
 - [x] Versioned SQL migrations, with SQLite migration/trigger regression tests.
 - [x] No placeholder services or business hours are seeded into production.
 - [x] Public API input validation and normalized error responses.
@@ -97,8 +97,8 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Database triggers reject overlapping active reservations on insert and update.
 - [x] Service duration and configurable buffers respected.
 - [x] Closed dates and one-off opening windows supported through schedule exceptions.
-- [ ] Breaks as multiple daily intervals (current schema supports one open interval per weekday/exception).
-- [ ] Booking state transitions audited.
+- [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
+- [x] Booking state transitions audited.
 - [ ] Rate limiting and abuse controls.
 - [ ] Data retention and export/deletion procedure documented.
 
@@ -111,9 +111,9 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [~] Dashboard overview for upcoming bookings (current view is the next seven salon-local days).
 - [~] Responsive appointment list with status filter (calendar/date-range navigation remains).
 - [x] Confirm, cancel, complete and no-show transitions with server-side state checks.
-- [ ] Create/edit/block working hours.
-- [ ] Manage breaks, holidays and time-off.
-- [ ] Manage services, duration and price.
+- [x] Create/edit/close weekly working hours with up to eight intervals per day.
+- [x] Manage breaks through split intervals and date-specific closures/one-off hours.
+- [x] Manage service CRUD fields, duration, price, display order and activation.
 - [x] Client contact details are returned only inside the authenticated owner workspace.
 - [x] Responsive admin sign-in and appointment list UI.
 - [~] Status changes create D1 audit entries; destructive confirmation UI and wider audit coverage remain.
@@ -138,11 +138,11 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R07 — Quality and acceptance
 
-- [x] Unit tests for timezone/date/scheduling helpers and admin password/session security (13 tests).
+- [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization and admin password/session security (16 tests).
 - [ ] API tests for booking lifecycle and authorization against a Worker/D1 test environment.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [~] Migration test against a clean SQLite database (D1-compatible SQL smoke test; actual Cloudflare D1 migration still pending).
-- [x] Production build and TypeScript checks (latest CI pass).
+- [x] Production build and TypeScript checks (latest CI run 41617819811 passed).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.
@@ -185,7 +185,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Deployment workflow 41607233352 published the initial preview and workflow 41607904608 published the interactive booking-flow update successfully on 2026-11-03. Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41617819683 succeeded on 2026-11-03 and includes the split-interval management UI. Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 

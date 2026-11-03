@@ -5,25 +5,25 @@
 ## Identity
 
 - Product: Salon Booking
-- Repository: https://github.com/pooya16pg-spec/salon-booking
+- Repository: https://github.com/pooya-labs/salon-booking
 - Product owner: salon owner (friend of Pooya)
 - Engineering / creator credit: **Pooya**
 - Default branch: `main`
 - Deployment target: Cloudflare Workers + Static Assets + D1
-- Current release: 0.3.0
+- Current release: 0.4.0
 
 ## Current checkpoint
 
-- Phase: **R05/R06 — Owner workspace and admin security (first secure dashboard implementation committed; live D1 setup pending)**
-- Status: Worker now includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list and status transitions with D1 audit entries. Responsive owner UI is available at /admin on Cloudflare; Pages shows a demo-only notice.
+- Phase: **R04/R05 — Multi-interval scheduling and owner management (verified build; production D1 setup pending)**
+- Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. The availability engine calculates slots independently inside each opening interval. Responsive owner UI is available at /admin on Cloudflare; Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya16pg-spec.github.io/salon-booking/
-- Latest verified standard CI: run 41613207633 — success (13 unit tests, SQLite migration/security checks, TypeScript and Vite production build).
-- Latest Pages deployment: run 41613207475 — success; owner demo-only view and booking preview published.
+- Latest verified standard CI: run 41617819811 — success (16 unit tests, SQLite migration/security checks including interval overlap and legacy backfill, TypeScript and Vite production build).
+- Latest Pages deployment: run 41617819683 — success; includes the updated split-interval schedule UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
-- D1 is not provisioned, migrations 0002/0003 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
+- D1 is not provisioned, migrations 0001–0005 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
-- Owner workspace supports login, upcoming-booking list and status transitions; service/schedule editing, client lookup/cancellation, public booking rate limits and full security QA remain outstanding.
+- Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Client lookup/cancellation, public booking rate limits and full security QA remain outstanding.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -95,10 +95,10 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0003 (owner action).
+1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0005 (owner action).
 2. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
-3. Confirm salon timezone/content, then add service and opening-hours management to the dashboard.
-4. Deploy and smoke-test the D1-backed public API and owner dashboard on Cloudflare.
+3. Confirm salon timezone/content, then enter owner-approved services and split weekly/date-specific hours in the dashboard.
+4. Deploy and smoke-test the D1-backed public API, multi-interval availability and owner dashboard on Cloudflare.
 5. Add public booking rate limiting, client lookup/cancellation, retention, backups and full security QA.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
@@ -110,3 +110,26 @@ Use clearly marked placeholders until the owner supplies these details.
 4. Run or inspect the project's actual checks; never claim tests were run if they were not.
 5. Continue from the first incomplete roadmap item.
 6. Update this file and roadmap at the end of the session.
+
+
+## Latest verified multi-interval checkpoint (2026-11-03)
+
+- Canonical repository ownership is now `pooya-labs/salon-booking`; use this owner in all links and automation.
+- Latest verified commit: `9dd92bd734dc7066cebcbdd6abd8be5d402547dd`.
+- Feature commits: `a313c6f` schema and interval validation/tests; `b8fddbd` multi-window availability; `9863a18` owner schedule API; `98fd3cb` owner interval editor; `b24b6de` syntax repairs; `9dd92bd` final unused-helper cleanup.
+- Migration 0005 adds normalized weekly and date-exception interval tables, database overlap triggers, and legacy data backfill.
+- Owner UI supports up to eight intervals per day and per date override. Old single-range API request fields remain accepted.
+- Availability generation iterates each interval separately; an appointment plus buffer cannot cross a break.
+- Latest CI: run 41617819811 — success (16 unit tests; SQLite migration/overlap/backfill tests; TypeScript and Vite production build).
+- Latest Pages deployment: run 41617819683 — success. Preview remains static-only and is not a live booking system.
+- Important: initial two CI attempts exposed syntax issues; those were corrected before the green run. Do not cite failed runs as verification.
+
+## Immediate next engineering priorities
+
+1. Add rate limiting to public booking creation and availability without persisting raw IP addresses.
+2. Add customer booking lookup/cancellation using privacy-preserving verification and anti-enumeration responses.
+3. Add Worker/D1 integration tests for actual multi-interval availability and booking lifecycle.
+4. Complete data retention, export/deletion, backup, security header and threat-model reviews.
+5. Sync deployment guide and then prepare Cloudflare D1 provisioning handoff.
+
+Production blockers and real salon details remain unchanged.
