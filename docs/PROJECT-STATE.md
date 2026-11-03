@@ -15,7 +15,7 @@
 ## Current checkpoint
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
-- Latest inspected `main` head: `f3bfc847d83e2233e241d104d6c2b1c8a6f236a4` — final decorative booking-banner contrast adjustment; accessibility/contrast follow-up is recorded below.
+- Latest inspected product-code commit before the handoff documentation sync: `f3bfc847d83e2233e241d104d6c2b1c8a6f236a4` — final decorative booking-banner contrast adjustment. The roadmap and handoff were then synchronized on `main` in documentation commits `c329111e41f142e5db4fa39caee576910de5d114` and `863e7a85308aa712cee76bf26a663d7c87cda893`.
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
 - Latest verified owner-dashboard commit on `main`: `2178056a13e4f06298a63392c5d56a032b30be69` — explicit confirmation for cancellation, completion and no-show transitions, with dedicated browser assertions.
 - Latest audit-test commit: `269d6667fcfec33b5e07037d882d5e5c49cdc288` — the local Worker+D1 integration test reads back and verifies all seven owner audit event types.
