@@ -118,6 +118,30 @@ def insert_booking(identifier, reference, starts_at, ends_at, status="pending"):
 
 
 insert_booking("booking-a", "SB-AAAAAAA", "2026-11-03T09:00:00.000Z", "2026-11-03T10:00:00.000Z")
+
+# Booking idempotency stores keyed request identifiers and response metadata only.
+db.execute(
+    """INSERT INTO booking_idempotency
+       (idempotency_key_hash, request_hash, booking_id, response_json)
+       VALUES (?, ?, ?, ?)""",
+    ("idem-key-hash-a", "request-hash-a", "booking-a",
+     '{"reference":"SB-AAAAAAA","status":"pending","serviceName":"Test service"}'),
+)
+idempotency_columns = {row[1] for row in db.execute("PRAGMA table_info(booking_idempotency)")}
+assert {"idempotency_key_hash", "request_hash", "booking_id", "response_json", "created_at"} <= idempotency_columns
+assert not any(token in column.lower() for column in idempotency_columns for token in ("name", "phone", "note", "email"))
+idempotency_foreign_keys = db.execute("PRAGMA foreign_key_list(booking_idempotency)").fetchall()
+assert any(row[2] == "bookings" and row[6].upper() == "CASCADE" for row in idempotency_foreign_keys)
+try:
+    db.execute(
+        """INSERT INTO booking_idempotency
+           (idempotency_key_hash, request_hash, booking_id, response_json)
+           VALUES (?, ?, ?, ?)""",
+        ("idem-key-hash-a", "different-request-hash", "booking-b", "{}"),
+    )
+    raise AssertionError("duplicate idempotency key unexpectedly succeeded")
+except sqlite3.IntegrityError:
+    pass
 insert_booking("booking-b", "SB-BBBBBBB", "2026-11-03T10:00:00.000Z", "2026-11-03T11:00:00.000Z")
 
 try:
@@ -157,6 +181,7 @@ assert "private client note" not in audit_details
 insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
 db.execute("DELETE FROM bookings WHERE id = 'booking-a'")
 assert db.execute("SELECT COUNT(*) FROM booking_status_events WHERE booking_id = 'booking-a'").fetchone()[0] == 0
+assert db.execute("SELECT COUNT(*) FROM booking_idempotency WHERE booking_id = 'booking-a'").fetchone()[0] == 0
 
 print("PASS: D1 migrations, overlap triggers, rate-limit buckets, privacy-minimal status history, cascading booking erasure, audit log and unique schedule exceptions behave as expected.")
 
