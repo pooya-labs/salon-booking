@@ -15,11 +15,12 @@
 ## Current checkpoint
 
 - Phase: **R01 — Visual system and R02 — Public site (initial design)**
-- Status: Premium RTL landing page scaffolded; GitHub Pages preview workflow added; regular Cloudflare-root build remains unchanged.
-- Last implementation commit: 30636f218b282b4bcc0e28bf136c29a577054586.
-- Last verified standard build: bf435c1577a12a05642d5148f96183911149c021 (GitHub Actions CI success).
-- Pages deployment run: 41606411700 (in progress at checkpoint; verify current run before claiming URL is live).
-- Frontend and Worker TypeScript projects are included in `tsc -b`; standard Vite production build passed. Pages-specific build is being checked separately.
+- Status: Premium RTL landing page scaffolded; Pages-specific Vite build passes; deployment is blocked only because GitHub Pages is not yet enabled/configured for this repository.
+- Latest implementation/config commit: 30636f218b282b4bcc0e28bf136c29a577054586 (Pages workflow).
+- Last verified standard build: 41606497593 — success.
+- Latest Pages workflow: 41606497639 — `npm run build:pages` succeeded; `actions/configure-pages` returned 404 because the repository Pages site/source has not been enabled.
+- Preview build output is static-only. It has no working API, D1 database, customer booking or owner authentication.
+- Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
 - Real client data: must not be entered until security and launch gates pass.
@@ -59,17 +60,19 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | First CI attempt | Failed before dependency install because setup-node npm cache expected a lockfile; workflow corrected |
 | 2026-11-03 | CI correction | Fixed missing lockfile cache assumption and pinned a published Workers Types v5 release after npm registry rejected the initial version |
 | 2026-11-03 | Build verification | GitHub Actions run 41605843217 passed: dependency install, TypeScript project build and Vite production build |
-| 2026-11-03 | Pages preview setup | Added Vite Pages base path, demo-only banner, and automated Pages workflow; build/deploy run 41606411700 started |
+| 2026-11-03 | Pages preview setup | Added Vite Pages base path, demo-only banner, and automated Pages workflow |
+| 2026-11-03 | Pages build | Pages build passed and generated `dist/`; deploy stopped at Pages setup because the repository has not yet enabled GitHub Pages |
+| 2026-11-03 | Standard CI | Run 41606497593 passed after the Pages workflow and path configuration were added |
 
 ## Current blockers / owner actions
 
-- [!] One-time GitHub Pages setting may be required: repository Settings → Pages → Build and deployment → Source → GitHub Actions. Check the Pages workflow outcome first.
+- [!] Owner action required: open https://github.com/pooya16pg-spec/salon-booking/settings/pages and set Build and deployment → Source to **GitHub Actions**. The workflow uses the repository's existing Pages-compatible build; after this one-time setting, rerun the failed Pages workflow.
 - [ ] Before production: salon content and schedule must be supplied.
 - [ ] Before production: repository owner must connect Cloudflare and provision D1.
 
 ## Next actions
 
-1. Verify GitHub Pages build and deployment; give owner the preview URL once live.
+1. Owner enables GitHub Pages source as GitHub Actions; rerun deployment and verify preview URL.
 2. Refine landing page and brand; keep sample services/prices clearly provisional.
 3. Build complete booking flow, API, D1 schema and conflict-safe scheduling.
 4. Build protected owner dashboard and full security controls.
