@@ -10,7 +10,9 @@
     "typecheck": "tsc -b --pretty",
     "deploy": "npm run build && wrangler deploy",
     "db:local": "wrangler d1 migrations apply salon-booking --local",
-    "db:remote": "wrangler d1 migrations apply salon-booking --remote"
+    "db:remote": "wrangler d1 migrations apply salon-booking --remote",
+    "build:pages": "tsc -b && vite build --mode pages",
+    "preview:pages": "vite preview --base /salon-booking/"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
