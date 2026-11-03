@@ -26,17 +26,19 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Establish product scope and non-goals.
 - [x] Choose GitHub + Cloudflare Workers + D1 architecture.
 - [x] Establish durable roadmap and project-state handoff.
-- [ ] Bootstrap Vite + React + TypeScript application.
-- [ ] Add Tailwind and design tokens.
-- [ ] Add lint/typecheck/build scripts.
-- [ ] Add Cloudflare Worker static asset configuration.
-- [ ] Add migration structure and environment example.
-- [ ] Add contribution and operational documentation.
+- [x] Bootstrap Vite + React + TypeScript application.
+- [x] Add Tailwind CSS integration and initial design tokens.
+- [~] Add typecheck/build scripts and verify in GitHub Actions (first CI attempt exposed a missing npm lockfile cache assumption; workflow corrected, latest run pending).
+- [x] Add Cloudflare Worker static asset configuration.
+- [~] Add initial D1 migration structure; production database ID still requires Cloudflare provisioning.
+- [x] Add README, deployment guide, and durable project-state handoff.
+- [ ] Add linting and a documented local environment example.
 
 **Exit criteria:** clean build, typed application shell, documented deployment prerequisites.
 
 ## R01 — Brand and visual system
 
+- [~] Create initial premium visual direction and responsive design tokens (provisional brand: «فُرم»).
 - [ ] Confirm salon name, barber/salon category and brand direction with owner.
 - [ ] Create distinctive wordmark and compact mark.
 - [ ] Define typography with Persian and Latin coverage.
@@ -50,10 +52,10 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R02 — Public salon website
 
-- [ ] Hero section with clear booking call-to-action.
-- [ ] Services list with duration and configurable price.
-- [ ] About/studio section.
-- [ ] Working-hours and location/contact sections.
+- [x] Initial hero section with clear booking call-to-action.
+- [x] Initial services list with duration and explicitly provisional prices.
+- [x] Initial about/studio section.
+- [~] Initial contact/location section; real address and working hours still need owner details.
 - [ ] Gallery support (only owner-approved photos).
 - [ ] Mobile-first layout and lightweight assets.
 - [ ] SEO metadata, social preview and favicon.
