@@ -100,7 +100,6 @@ function BookingWizard({
     const timezone = salonTimezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
     const todayKey = dateKeyInTimezone(new Date(), timezone)
     const [year, month, day] = todayKey.split('-').map(Number)
-    const today = new Date(Date.UTC(year, month - 1, day, 12))
     const jalaliWeekday = new Intl.DateTimeFormat('fa-IR', { weekday: 'short', timeZone: 'UTC' })
     const jalaliDay = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { day: 'numeric', timeZone: 'UTC' })
     const jalaliMonth = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short', timeZone: 'UTC' })
