@@ -15,7 +15,7 @@ A polished, mobile-first appointment booking platform for an independent hair sa
 **Production target:** Cloudflare Workers + Static Assets + D1  
 **Frontend:** React, TypeScript, Vite, Tailwind CSS
 
-Preview URL: https://pooya16pg-spec.github.io/salon-booking/ (available after the Pages workflow publishes successfully).
+Live preview: https://pooya16pg-spec.github.io/salon-booking/ (GitHub Pages deployment verified on 2026-11-03).
 
 See [ROADMAP.md](./ROADMAP.md) for the full delivery plan and [docs/PROJECT-STATE.md](./docs/PROJECT-STATE.md) for the exact handoff checkpoint.
 
