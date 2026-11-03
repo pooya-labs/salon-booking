@@ -98,7 +98,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Availability calculated on the server from service duration, opening hours, exceptions, settings and active bookings.
 - [x] Database triggers reject overlapping active reservations on insert and update.
 - [x] Service duration and configurable buffers respected.
-- [~] Snapshot service duration at booking creation; migration 0009 backfills existing bookings, and Worker+D1/SQLite regressions verify later service edits do not rewrite existing reservation duration. Awaiting green CI on the latest main head.
+- [x] Snapshot service duration at booking creation; migration 0009 backfills existing bookings, and Worker+D1/SQLite regressions verify later service edits do not rewrite existing reservation duration. [CI run 41673140817](https://github.com/pooya-labs/salon-booking/actions/runs/41673140817) and [Pages run 41673140699](https://github.com/pooya-labs/salon-booking/actions/runs/41673140699) passed on the same main commit.
 - [x] Closed dates and one-off opening windows supported through schedule exceptions.
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
