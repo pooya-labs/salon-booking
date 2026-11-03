@@ -14,12 +14,12 @@
 
 ## Current checkpoint
 
-- Phase: **R01 — Visual system and R02 — Public site / moving into R03 — Client booking journey**
-- Status: Premium RTL landing page is deployed successfully to GitHub Pages. Standard CI and Pages-specific build/deploy both pass.
+- Phase: **R03 — Client booking journey (interactive preview implemented; API integration pending)**
+- Status: Guided four-step booking flow committed to main. Includes service selection, 14-day Jalali date labels, sample time slots, client name/phone validation and a final review screen.
 - Public preview: https://pooya16pg-spec.github.io/salon-booking/
-- Latest Pages deployment: run 41607233352 — success; build, Pages setup, artifact upload and deploy all completed successfully.
-- Latest standard CI: run 41607233200 — success.
-- Preview output is static-only. It has no working API, D1 database, real customer booking or owner authentication yet.
+- Latest verified standard CI: run 41607904598 — success (TypeScript + Vite production build).
+- Latest Pages deployment: run 41607904608 — success; updated interactive preview published.
+- Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations. There is no connected D1 database or owner authentication yet.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -66,19 +66,24 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | Pages retry after owner setting | Run 41606718648 reproduced the Pages API 404; build itself passed |
 | 2026-11-03 | Pages enabled and deployment verified | Owner enabled GitHub Actions as Pages source; run 41607233352 passed all deployment steps and published the public preview URL |
 | 2026-11-03 | Standard CI | Run 41607233200 passed |
+| 2026-11-03 | Booking flow UI | Added four-step booking preview, Jalali date labels, sample slots, client input validation and review screen |
+| 2026-11-03 | Initial booking-flow CI | Run 41607813191 failed only for an unused CalendarDays import; import removed |
+| 2026-11-03 | Booking-flow build verification | Run 41607904598 passed dependency install, TypeScript check and Vite build |
+| 2026-11-03 | Booking-flow Pages deployment | Run 41607904608 passed build, artifact upload and deploy; public preview updated |
 
 ## Current blockers / owner actions
 
 - [x] GitHub Pages source is configured as GitHub Actions; no further Pages setup action is required.
 - [ ] Before production: salon content and schedule must be supplied.
+- [ ] Booking preview uses placeholder service prices and sample slots only; not for real appointments.
 - [ ] Before production: repository owner must connect Cloudflare and provision D1.
 
 ## Next actions
 
-1. Refine landing page and brand; keep sample services/prices clearly provisional.
-2. Implement the real service/availability API and booking flow with D1.
-3. Build protected owner dashboard and full security controls.
-4. Finish QA, then switch production deployment to Cloudflare Workers + D1.
+1. Connect the booking flow to API-backed service catalog and availability endpoints.
+2. Implement secure, conflict-safe booking creation and booking-reference lookup in D1.
+3. Build protected owner dashboard and scheduling controls.
+4. Complete security/privacy QA and transfer production hosting to Cloudflare Workers + D1.
 5. Before production, obtain salon content and owner acceptance.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
