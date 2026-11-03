@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { AdminManagement } from './AdminManagement'
+import { addDateKeyDays } from './date-range'
 import type { FormEvent } from 'react'
 import {
-  ArrowLeft, CalendarDays, Check, Clock3, LogOut, RefreshCw,
+  ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, LogOut, RefreshCw,
   Scissors, ShieldCheck, UserRound, X,
 } from 'lucide-react'
 
@@ -22,6 +23,7 @@ type Booking = {
 }
 
 type View = 'checking' | 'demo' | 'login' | 'bootstrap' | 'setup-blocked' | 'dashboard'
+type BookingRange = { from: string; to: string }
 
 const statusLabels: Record<BookingStatus, string> = {
   pending: 'در انتظار تأیید',
@@ -54,6 +56,13 @@ const formatDateTime = (value: string, timezone: string) => {
   }).format(date)
 }
 
+const formatDateKey = (value: string) => new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(`${value}T12:00:00.000Z`))
+
 const formatClock = (value: string, timezone: string) =>
   new Intl.DateTimeFormat('fa-IR', {
     hour: '2-digit',
@@ -81,15 +90,24 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [timezone, setTimezone] = useState('UTC')
   const [filter, setFilter] = useState('all')
+  const [bookingRange, setBookingRange] = useState<BookingRange | null>(null)
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [dashboardError, setDashboardError] = useState('')
   const [updatingBooking, setUpdatingBooking] = useState<string | null>(null)
 
-  const loadBookings = async (status = filter) => {
+  const loadBookings = async (
+    status = filter,
+    range: BookingRange | null = bookingRange,
+  ) => {
     setLoadingBookings(true)
     setDashboardError('')
     try {
-      const response = await fetch(`/api/admin/bookings?status=${encodeURIComponent(status)}`, {
+      const params = new URLSearchParams({ status })
+      if (range) {
+        params.set('from', range.from)
+        params.set('to', range.to)
+      }
+      const response = await fetch(`/api/admin/bookings?${params.toString()}`, {
         credentials: 'same-origin',
         headers: { accept: 'application/json' },
       })
@@ -99,14 +117,36 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
         return
       }
       if (!response.ok) throw new Error(await apiMessage(response, 'دریافت فهرست نوبت‌ها ممکن نشد.'))
-      const payload = await response.json() as { bookings?: Booking[]; timezone?: string }
+      const payload = await response.json() as {
+        bookings?: Booking[]
+        timezone?: string
+        from?: string
+        to?: string
+      }
       setBookings(Array.isArray(payload.bookings) ? payload.bookings : [])
       setTimezone(payload.timezone || 'UTC')
+      if (payload.from && payload.to) setBookingRange({ from: payload.from, to: payload.to })
     } catch (error) {
       setDashboardError(error instanceof Error ? error.message : 'ارتباط با سرور برقرار نشد.')
     } finally {
       setLoadingBookings(false)
     }
+  }
+
+  const shiftBookingRange = (days: number) => {
+    if (!bookingRange || loadingBookings) return
+    const from = addDateKeyDays(bookingRange.from, days)
+    const to = addDateKeyDays(bookingRange.to, days)
+    if (!from || !to) return
+    const nextRange = { from, to }
+    setBookingRange(nextRange)
+    void loadBookings(filter, nextRange)
+  }
+
+  const resetBookingRange = () => {
+    if (loadingBookings) return
+    setBookingRange(null)
+    void loadBookings(filter, null)
   }
 
   useEffect(() => {
@@ -308,7 +348,19 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
         <AdminManagement />
 
         <section className="admin-bookings-panel">
-          <div className="admin-bookings-heading"><div><h2>نوبت‌ها</h2><p>نمایش ۷ روز آینده · منطقه زمانی {timezone}</p></div><label className="admin-filter"><span>فیلتر</span><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">همه وضعیت‌ها</option><option value="pending">در انتظار تأیید</option><option value="confirmed">تأییدشده</option><option value="cancelled">لغوشده</option><option value="completed">انجام‌شده</option><option value="no_show">عدم مراجعه</option></select></label></div>
+          <div className="admin-bookings-heading">
+            <div>
+              <h2>نوبت‌ها</h2>
+              <p>منطقه زمانی سالن: {timezone}</p>
+              <div className="admin-date-navigation" aria-label="جابجایی بازه نوبت‌ها">
+                <button type="button" aria-label="هفت روز قبل" title="هفت روز قبل" disabled={!bookingRange || loadingBookings} onClick={() => shiftBookingRange(-7)}><ChevronRight size={15} /></button>
+                <span role="status" aria-live="polite">{bookingRange ? `${formatDateKey(bookingRange.from)} تا ${formatDateKey(bookingRange.to)}` : 'در حال دریافت بازه…'}</span>
+                <button type="button" aria-label="هفت روز بعد" title="هفت روز بعد" disabled={!bookingRange || loadingBookings} onClick={() => shiftBookingRange(7)}><ChevronLeft size={15} /></button>
+                <button type="button" className="admin-date-reset" disabled={loadingBookings || !bookingRange} onClick={resetBookingRange}>هفت روز آینده</button>
+              </div>
+            </div>
+            <label className="admin-filter"><span>فیلتر</span><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">همه وضعیت‌ها</option><option value="pending">در انتظار تأیید</option><option value="confirmed">تأییدشده</option><option value="cancelled">لغوشده</option><option value="completed">انجام‌شده</option><option value="no_show">عدم مراجعه</option></select></label>
+          </div>
 
           {dashboardError && <p className="admin-error" role="alert">{dashboardError}</p>}
           {loadingBookings ? <div className="admin-empty-state"><span className="booking-spinner" /> در حال دریافت نوبت‌ها…</div> : bookings.length === 0 ? <div className="admin-empty-state"><CalendarDays size={26} /><strong>هنوز نوبتی در این بازه نیست.</strong><span>با ثبت رزرو جدید، نوبت‌ها اینجا نمایش داده می‌شوند.</span></div> : (

@@ -72,6 +72,16 @@ const getFreePort = async () => {
   return address.port
 }
 
+const addDateKeyDaysForTest = (value, amount) => {
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day + amount))
+  return [
+    String(date.getUTCFullYear()).padStart(4, '0'),
+    String(date.getUTCMonth() + 1).padStart(2, '0'),
+    String(date.getUTCDate()).padStart(2, '0'),
+  ].join('-')
+}
+
 const expectJson = async (response, expectedStatus, label) => {
   const body = await response.json()
   assert.equal(
@@ -368,11 +378,27 @@ try {
   ])
   assert.match(expiredRateLimitCheck.stdout, /EXPIRED_ADMIN_LIMIT_CLEARED/)
 
+  const rangeEndDate = new Date(bookingDate)
+  rangeEndDate.setUTCDate(rangeEndDate.getUTCDate() + 6)
+  const rangeEnd = [
+    String(rangeEndDate.getUTCFullYear()).padStart(4, '0'),
+    String(rangeEndDate.getUTCMonth() + 1).padStart(2, '0'),
+    String(rangeEndDate.getUTCDate()).padStart(2, '0'),
+  ].join('-')
   const ownerBookings = await expectJson(await request(
     baseUrl,
-    `/api/admin/bookings?from=${date}&to=${date}`,
+    `/api/admin/bookings?from=${date}&to=${rangeEnd}`,
     { headers: ownerHeaders },
   ), 200, 'owner booking list')
+  assert.equal(ownerBookings.from, date, 'owner booking list should preserve the selected range start')
+  assert.equal(ownerBookings.to, rangeEnd, 'owner booking list should preserve the selected range end')
+
+  const invalidOwnerRange = await expectJson(await request(
+    baseUrl,
+    `/api/admin/bookings?from=${date}&to=${addDateKeyDaysForTest(date, 32)}`,
+    { headers: ownerHeaders },
+  ), 400, 'owner booking range exceeds server limit')
+  assert.equal(invalidOwnerRange.error, 'invalid_date_range')
   const ownerBooking = ownerBookings.bookings.find((item) => item.reference === booking.reference)
   assert.ok(ownerBooking, 'authenticated owner should see the new booking')
   assert.equal(ownerBooking.name, 'Integration Client')

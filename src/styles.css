@@ -374,6 +374,11 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
 .admin-bookings-heading { min-height:80px; padding:17px 21px; display:flex; align-items:center; justify-content:space-between; gap:14px; border-bottom:1px solid #e8e3d9; }
 .admin-bookings-heading h2 { margin:0; font-size:16px; font-weight:500; }
 .admin-bookings-heading p { margin:5px 0 0; color:#969084; font-size:9px; }
+.admin-date-navigation { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.admin-date-navigation button { min-width:31px; min-height:29px; display:flex; align-items:center; justify-content:center; border:1px solid #e1dacf; background:#fffefa; color:#72695d; font:9px Tahoma,sans-serif; cursor:pointer; }
+.admin-date-navigation button:disabled { opacity:.45; cursor:not-allowed; }
+.admin-date-navigation span { padding:0 4px; color:#70685b; font-size:10px; font-variant-numeric:tabular-nums; }
+.admin-date-navigation .admin-date-reset { padding:0 9px; }
 .admin-filter { display:flex; align-items:center; gap:8px; color:#8b8478; font-size:9px; }
 .admin-filter select { min-height:35px; max-width:160px; padding:0 9px; border:1px solid #e1dacf; background:#fffefa; color:#5f594f; font:10px Tahoma,sans-serif; }
 .admin-empty-state { min-height:220px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#9a9387; font-size:10px; }
@@ -416,7 +421,9 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
   .admin-stat-grid article { min-height:100px; padding:13px 10px; }
   .admin-stat-grid article span { font-size:8px; }
   .admin-stat-grid article strong { font-size:22px; }
-  .admin-bookings-heading { align-items:flex-start; padding:15px 13px; }
+  .admin-bookings-heading { align-items:flex-start; flex-wrap:wrap; padding:15px 13px; }
+  .admin-filter { width:100%; justify-content:flex-end; }
+  .admin-date-navigation span { font-size:9px; }
   .admin-booking-list { padding:0 12px; }
   .admin-booking-card { grid-template-columns:69px minmax(0,1fr); gap:10px; position:relative; padding:15px 0; }
   .admin-booking-time { grid-row:1; grid-column:1; min-height:45px; }
