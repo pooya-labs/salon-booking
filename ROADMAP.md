@@ -165,7 +165,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] GitHub-to-Cloudflare deployment configured.
 - [ ] Production URL and custom domain decision documented (custom domain optional).
 - [ ] Smoke tests run against production.
-- [ ] Backup/export procedure verified.
+- [~] Wrangler local D1 export/restore smoke test passes in CI; owner production backup/restore validation remains pending.
 - [ ] Rollback procedure documented.
 - [ ] Owner receives concise operating instructions.
 - [ ] Launch approval recorded.

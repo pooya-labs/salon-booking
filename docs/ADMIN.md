@@ -76,7 +76,7 @@ Personal-data export, backup, retention and deletion safeguards are documented i
 ## Remaining release blockers
 
 - Confirm the salon's customer cancellation policy and any desired notice period. The current endpoint allows cancellation before the appointment starts.
-- Owner-approved retention periods, a published privacy contact, verified backup/restore and production security review. The operational procedure is documented in [PRIVACY-OPERATIONS.md](./PRIVACY-OPERATIONS.md).
+- Owner-approved retention periods, a published privacy contact, production D1 backup/restore verification and production security review. The local Wrangler D1 export/restore smoke test passes in CI. The operational procedure is documented in [PRIVACY-OPERATIONS.md](./PRIVACY-OPERATIONS.md).
 - Security headers review, threat model and full security review.
 - Production Cloudflare deployment, real D1, secrets, actual salon services, timezone, hours and owner acceptance.
 - Password recovery and multiple owner accounts are not in the initial scope.

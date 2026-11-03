@@ -153,6 +153,7 @@ The procedure intentionally excludes pending and confirmed bookings from bulk re
 
 - [ ] Owner approved jurisdiction, privacy notice and retention schedule.
 - [ ] Owner contact for privacy requests is published.
+- [x] Wrangler local D1 export/restore smoke test passed in CI with synthetic data; this does not verify the production database.
 - [ ] Production D1 backup/export was restored successfully in an isolated test database.
 - [ ] Retention preview was reviewed before any delete operation.
 - [ ] Individual erasure and status-event cascade were verified on a synthetic local database.

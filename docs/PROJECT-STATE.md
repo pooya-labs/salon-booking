@@ -158,6 +158,15 @@ Use clearly marked placeholders until the owner supplies these details.
 - Implementation commit: `bf00678eaabe20d7a2696340bc9dd4fb3fd1f641`.
 - Production D1 remains unprovisioned; no real customer data has been processed, no remote export/restore has been exercised, and no production deletion has been attempted.
 
+## Latest local D1 backup/restore smoke-test checkpoint (2026-11-03)
+
+- Extended `tests/worker-integration.mjs` to run Wrangler's local D1 SQL export, then restore the export into a separate temporary local D1 persistence directory.
+- The harness uses a temporary Wrangler config in the OS temporary directory so `d1 export --local` reads its own isolated `.wrangler/state`; the existing user/repository local Wrangler state is not used or modified.
+- After restore, a verification query confirms both the synthetic owner account and the synthetic cancelled booking exist in the restored database.
+- CI run 41635952879 passed, including 25/25 unit tests, SQLite privacy/migration checks, TypeScript/Vite build, Worker+D1 HTTP tests, expiry pruning and D1 export/restore smoke test.
+- Pages run 41635952873 passed. Current implementation/test commit: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a`.
+- This verifies local Wrangler export/restore only. It does not replace an encrypted production D1 backup, remote export, isolated production restore drill, or owner-approved backup expiry policy.
+
 ## Resume instructions for the next assistant/session
 
 1. Read `README.md`, `ROADMAP.md` and this file.
