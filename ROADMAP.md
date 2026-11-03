@@ -82,7 +82,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Owner-confirmed cancellation notice period and customer-facing policy copy (current behavior permits cancellation before appointment start).
 - [x] Accessible field labels, validation error message and step navigation.
 - [x] SQLite overlap triggers reject conflicting active reservations; booking UI uses a synchronous submission lock to prevent rapid duplicate clicks.
-- [~] Server-side idempotency-key replay is implemented with migration 0008 and Worker tests; final CI verification is pending.
+- [x] Server-side idempotency-key replay is implemented and verified with migration 0008, D1 transaction tests and concurrent Worker requests.
 
 **Preview safety:** GitHub Pages shows the full client-side journey for design review only. It never stores or transmits customer details and must not be used for real appointments.
 
