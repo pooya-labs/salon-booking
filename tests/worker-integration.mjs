@@ -595,6 +595,79 @@ try {
   assert.ok(splitAvailability.slots.includes('13:00'), 'afternoon interval should be bookable')
   assert.equal(splitAvailability.slots.includes('12:00'), false, 'break must not be bookable')
 
+  console.log('Checking owner weekly-hour conflict guards beyond the previous 2,000-row cap...')
+  const weeklyOverflowDates = [0, 7, 14, 21].map((offset) => addDateKeyDaysForTest(date, offset))
+  const weeklyOverflowSeedSql = `
+    WITH RECURSIVE slots(x) AS (
+      VALUES (0)
+      UNION ALL
+      SELECT x + 1 FROM slots WHERE x < 499
+    ),
+    dates(day_index, date_value) AS (
+      VALUES
+        (0, '${weeklyOverflowDates[0]}'),
+        (1, '${weeklyOverflowDates[1]}'),
+        (2, '${weeklyOverflowDates[2]}'),
+        (3, '${weeklyOverflowDates[3]}')
+    )
+    INSERT INTO bookings (
+      id, reference_code, service_id, client_name, client_phone,
+      starts_at, ends_at, status, client_note
+    )
+    SELECT
+      'weekly-overflow-' || dates.day_index || '-' || slots.x,
+      'SB-' || printf('%07d', 8000000 + dates.day_index * 500 + slots.x),
+      'integration-service',
+      'Synthetic weekly overflow QA',
+      '+491234567899',
+      strftime('%Y-%m-%dT%H:%M:%SZ', dates.date_value || ' 00:00:00', '+' || slots.x || ' minutes'),
+      strftime('%Y-%m-%dT%H:%M:%SZ', dates.date_value || ' 00:00:00', '+' || (slots.x + 1) || ' minutes'),
+      'pending',
+      ''
+    FROM dates CROSS JOIN slots;
+    INSERT INTO bookings (
+      id, reference_code, service_id, client_name, client_phone,
+      starts_at, ends_at, status, client_note
+    ) VALUES (
+      'weekly-overflow-late', 'SB-8002000', 'integration-service',
+      'Synthetic weekly overflow QA', '+491234567899',
+      '${weeklyOverflowDates[3]}T23:30:00.000Z', '${weeklyOverflowDates[3]}T23:31:00.000Z',
+      'pending', ''
+    );
+  `
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command', weeklyOverflowSeedSql,
+  ])
+
+  const expandedWeeklyHours = await expectJson(await request(
+    baseUrl,
+    `/api/admin/schedule/weekly/${weekday}`,
+    {
+      method: 'PUT',
+      headers: ownerHeaders,
+      body: JSON.stringify({
+        isClosed: false,
+        intervals: [{ startsAt: '00:00', endsAt: '23:59' }],
+      }),
+    },
+  ), 200, 'weekly hours may expand to contain every future booking')
+  assert.equal(expandedWeeklyHours.ok, true)
+
+  const cappedWeeklyHours = await expectJson(await request(
+    baseUrl,
+    `/api/admin/schedule/weekly/${weekday}`,
+    {
+      method: 'PUT',
+      headers: ownerHeaders,
+      body: JSON.stringify({
+        isClosed: false,
+        intervals: [{ startsAt: '00:00', endsAt: '23:00' }],
+      }),
+    },
+  ), 409, 'weekly-hour guard must inspect bookings beyond the previous 2,000-row cap')
+  assert.equal(cappedWeeklyHours.error, 'hours_conflict')
+
   const exceptionDateObject = new Date(`${date}T00:00:00.000Z`)
   exceptionDateObject.setUTCDate(exceptionDateObject.getUTCDate() + 1)
   const exceptionDate = [
@@ -639,6 +712,63 @@ try {
   }), 409, 'schedule exception must inspect bookings beyond the old 200-row cap')
   assert.equal(overflowException.error, 'exception_has_bookings')
 
+  console.log('Checking owner schedule reads beyond the previous 180-exception and 1,440-interval caps...')
+  const bulkExceptionStartDate = addDateKeyDaysForTest(date, 40)
+  const bulkExceptionSeedSql = `
+    WITH RECURSIVE days(x) AS (
+      VALUES (0)
+      UNION ALL
+      SELECT x + 1 FROM days WHERE x < 180
+    )
+    INSERT INTO schedule_exceptions (
+      id, local_date, starts_at, ends_at, is_closed, note
+    )
+    SELECT
+      'bulk-exception-' || x,
+      strftime('%Y-%m-%d', '${bulkExceptionStartDate}', '+' || x || ' days'),
+      NULL, NULL, 0, 'Synthetic schedule overflow QA'
+    FROM days;
+
+    WITH RECURSIVE days(x) AS (
+      VALUES (0)
+      UNION ALL
+      SELECT x + 1 FROM days WHERE x < 180
+    ),
+    positions(p) AS (
+      VALUES (0)
+      UNION ALL
+      SELECT p + 1 FROM positions WHERE p < 7
+    )
+    INSERT INTO schedule_exception_intervals (
+      id, exception_id, starts_at, ends_at, position
+    )
+    SELECT
+      'bulk-interval-' || days.x || '-' || positions.p,
+      'bulk-exception-' || days.x,
+      printf('%02d:00', positions.p * 2),
+      printf('%02d:30', positions.p * 2),
+      positions.p
+    FROM days CROSS JOIN positions;
+  `
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command', bulkExceptionSeedSql,
+  ])
+
+  const bulkSchedule = await expectJson(await request(baseUrl, '/api/admin/schedule', {
+    headers: ownerHeaders,
+  }), 200, 'owner reads all high-volume schedule exceptions and intervals')
+  const bulkExceptions = bulkSchedule.exceptions.filter((item) => item.id.startsWith('bulk-exception-'))
+  assert.equal(bulkExceptions.length, 181,
+    'schedule read must return all 181 exceptions beyond the former 180-row cap')
+  assert.equal(
+    bulkExceptions.reduce((count, item) => count + item.intervals.length, 0),
+    1448,
+    'schedule read must return all 1,448 intervals beyond the former 1,440-row cap',
+  )
+  assert.equal(bulkExceptions.at(-1)?.intervals.length, 8,
+    'the last high-volume exception must retain all eight intervals')
+
   const deletedException = await expectJson(await request(
     baseUrl,
     `/api/admin/schedule/exceptions/${savedException.id}`,
@@ -649,7 +779,9 @@ try {
   await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
     '--config', configPath, '--command',
-    "DELETE FROM bookings WHERE id LIKE 'overflow-%'",
+    `DELETE FROM bookings WHERE id LIKE 'overflow-%' OR id LIKE 'weekly-overflow-%';
+     DELETE FROM schedule_exception_intervals WHERE exception_id LIKE 'bulk-exception-%';
+     DELETE FROM schedule_exceptions WHERE id LIKE 'bulk-exception-%';`,
   ])
 
   const auditVerification = await runWrangler([
