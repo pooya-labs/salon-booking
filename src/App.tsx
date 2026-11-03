@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AdminApp } from './Admin'
 import { BookingManagement } from './BookingManagement'
+import { useDialogAccessibility } from './useDialogAccessibility'
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
   Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
@@ -83,6 +84,7 @@ function BookingWizard({
   demoMode: boolean
   salonTimezone: string | null
 }) {
+  const dialogRef = useDialogAccessibility<HTMLElement>(onClose)
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<BookingDraft>({
     serviceId: initialServiceId ?? '',
@@ -237,7 +239,7 @@ function BookingWizard({
     <div className="booking-flow-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose()
     }}>
-      <section className="booking-flow" role="dialog" aria-modal="true" aria-labelledby="booking-flow-title">
+      <section ref={dialogRef} tabIndex={-1} className="booking-flow" role="dialog" aria-modal="true" aria-labelledby="booking-flow-title">
         <header className="booking-flow-header">
           <div className="booking-flow-brand">
             <span className="brand-mark"><Scissors size={18} /></span>
