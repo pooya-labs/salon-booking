@@ -32,7 +32,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Add Cloudflare Worker static asset configuration.
 - [x] Add initial D1 migration structure; production database ID still requires Cloudflare provisioning.
 - [x] Add README, deployment guide, and durable project-state handoff.
-- [ ] Add linting and a documented local environment example.
+- [x] Add ESLint 10 flat-config linting (TypeScript + React Hooks) and a documented local Worker/D1 environment; local/prod config separation is covered by automated tests and CI run 41649150974.
 - [x] Add a separate GitHub Pages preview build target (repository subpath) without changing the future Cloudflare root build.
 - [x] Add automated GitHub Pages deployment workflow for `main`; first publish is subject to one-time Pages source setting in repository settings.
 

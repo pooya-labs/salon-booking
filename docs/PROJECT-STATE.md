@@ -17,8 +17,9 @@
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
 - Latest security code commit on `main`: `5a0fc7273cfb35d22e3d1f70df29ad9f71a11eee` — narrowed HTML CSP to same-origin/data resources and added integration assertions against arbitrary HTTPS and unsafe-eval.
-- Latest CI: [run 41647018808](https://github.com/pooya-labs/salon-booking/actions/runs/41647018808) — success: 30 unit tests, SQLite migration/privacy/idempotency/CSP checks, typecheck/build, local Worker+D1 integration and full Chromium responsive/RTL/timezone/accessibility/browser-network checks.
-- Latest GitHub Pages deployment: [run 41647019000](https://github.com/pooya-labs/salon-booking/actions/runs/41647019000) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- Latest tooling/local-environment commit on `main`: `1991e11cf778a8d46cab08e1489bca3a6fa5ec66`, with local config guard tests in `44de8c78a40edc3d7feef5fe15350f5cfa7c4ecf`.
+- Latest CI: [run 41649150974](https://github.com/pooya-labs/salon-booking/actions/runs/41649150974) — success: ESLint, 34 unit tests, SQLite migration/privacy/idempotency/CSP/local-config checks, typecheck/build, local Worker+D1 integration and full Chromium responsive/RTL/timezone/accessibility/browser-network checks.
+- Latest GitHub Pages deployment: [run 41649150617](https://github.com/pooya-labs/salon-booking/actions/runs/41649150617) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - The automated browser run passed viewport widths 320–1440 px, mobile navigation, full sample booking journey, both dialog focus/keyboard flows, Jalali/Persian dates and local-day boundaries in Tehran/Berlin/Los Angeles, and the demo-only admin gate.
 - Latest static asset sizes: JavaScript 224,547 bytes (65.06 kB gzip); CSS 49,586 bytes (11.38 kB gzip). Browser console/network checks reported no uncaught exceptions, console errors, failed requests, HTTP errors, API requests or third-party requests.
 - Automated browser results represent Chromium viewport emulation, not physical iOS/Android devices or a real screen-reader certification. The local DCL measurement is not a production-network performance benchmark.
@@ -60,6 +61,17 @@
 - Implementation commits include migration `a2f208c`, Worker `df891ec` / `a66dde0` / `33dcc56`, frontend `7977b61` / `6b68de5`, unit/migration/integration tests and API/deployment docs.
 - Final verified code commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`; final test/docs commit: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
 - CI [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) and Pages [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) both passed.
+
+## Latest lint and local-development checkpoint (2026-11-03)
+
+- Added ESLint 10 flat config, `typescript-eslint` and React Hooks rules; `npm run lint` runs against the React application, Worker and Vite config. CI runs lint before tests and build.
+- Added a separate `wrangler.dev.toml.example` with a local-only D1 UUID and `.dev.vars.example` for two distinct local secrets. The actual `wrangler.dev.toml` and `.dev.vars` are gitignored.
+- `npm run db:local` explicitly applies migrations with `--local` and the local config; `npm run dev:worker` starts Wrangler with that same local config. The production `wrangler.toml` placeholder and production deploy command remain separate.
+- README and deployment guide now describe Vite-only preview vs Worker+D1 local development, local secrets generation, migrations and safe use.
+- Added four automated local-environment regression tests for config separation, script safety, ignored local files and secret example presence.
+- Verification: [CI run 41649150974](https://github.com/pooya-labs/salon-booking/actions/runs/41649150974) passed lint, 34 unit tests, SQLite checks, TypeScript/Vite build, local Worker+D1 integration, and Chromium browser QA. [Pages run 41649150617](https://github.com/pooya-labs/salon-booking/actions/runs/41649150617) succeeded.
+- Current browser asset sizes: JavaScript 224,547 bytes; CSS 49,609 bytes. All configured asset budgets and browser runtime/network checks passed.
+- This closes the R00 lint/local-environment item. It does not configure a production Cloudflare account or provision remote D1.
 
 ## Latest security review and operational runbook checkpoint (2026-11-03)
 
@@ -114,6 +126,8 @@ Use clearly marked placeholders until the owner supplies these details.
 
 | Date | Checkpoint | Result |
 |---|---|---|
+| 2026-11-03 | Lint and local development environment | ESLint passed, four local-config guard tests passed, and CI run 41649150974 completed the full suite successfully. |
+| 2026-11-03 | Local config separation | The local Worker/D1 example, local-only secrets and gitignore rules passed automated regression checks; production Wrangler config remains unchanged. |
 | 2026-11-03 | CSP hardening | HTML CSP now limits scripts/connections to self and images/fonts to self/data; CI integration assertions passed in run 41647018808. |
 | 2026-11-03 | Security and rollback documentation | Added internal threat model/residual-risk register and documented version rollback plus separate D1 recovery process. |
 | 2026-11-03 | Phone normalization regression | Shared Persian/Arabic digit and punctuation normalization used by both validation and booking payload; 4 focused unit cases added. |
