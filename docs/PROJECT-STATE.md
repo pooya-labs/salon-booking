@@ -16,6 +16,15 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Latest inspected product-code commit before the handoff documentation sync: `f3bfc847d83e2233e241d104d6c2b1c8a6f236a4` — final decorative booking-banner contrast adjustment. The roadmap and handoff were then synchronized on `main` in documentation commits `c329111e41f142e5db4fa39caee576910de5d114` and `863e7a85308aa712cee76bf26a663d7c87cda893`.
+
+## Latest high-volume scheduling safety checkpoint (2026-11-03)
+
+- Removed fixed 200-row and 2,000-row caps from booking-versus-schedule conflict scans. An owner can no longer close or narrow hours while an out-of-hours future appointment is silently beyond the fetched window.
+- Removed the 200-row cap from the owner booking list so the selected date range is not silently truncated.
+- Removed fixed 180-exception/1,440-interval caps from the owner schedule response so saved date exceptions are not hidden after arbitrary thresholds.
+- Added a Worker+D1 regression fixture with 202 synthetic appointments: the owner list must return all 202 and a proposed 09:00–17:00 exception must reject an 18:00 appointment even though it appears after the former 200-row scan window.
+- The new code and integration test are committed below; the regression is not marked complete until a green full CI run verifies the current main head.
+
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
 - Latest verified owner-dashboard commit on `main`: `2178056a13e4f06298a63392c5d56a032b30be69` — explicit confirmation for cancellation, completion and no-show transitions, with dedicated browser assertions.
 - Latest audit-test commit: `269d6667fcfec33b5e07037d882d5e5c49cdc288` — the local Worker+D1 integration test reads back and verifies all seven owner audit event types.
