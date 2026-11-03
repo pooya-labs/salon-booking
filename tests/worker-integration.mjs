@@ -208,7 +208,7 @@ try {
     phone: '+491234567890',
     note: 'Automated integration fixture',
   }
-  const idempotencyKey = '550e8400-e29b-41d4-a716-446655440000'
+  const idempotencyKey = 'a'.repeat(64)
   const bookingRequestOptions = {
     method: 'POST',
     headers: { 'idempotency-key': idempotencyKey },
@@ -247,7 +247,7 @@ try {
 
   const conflict = await expectJson(await request(baseUrl, '/api/public/bookings', {
     method: 'POST',
-    headers: { 'idempotency-key': '550e8400-e29b-41d4-a716-446655440001' },
+    headers: { 'idempotency-key': 'b'.repeat(64) },
     body: JSON.stringify(bookingInput),
   }), 409, 'different idempotency key cannot double-book a slot')
   assert.equal(conflict.error, 'slot_unavailable')
