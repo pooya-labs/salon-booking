@@ -132,3 +132,39 @@ export const isValidIanaTimeZone = (timeZone: string): boolean => {
     return false
   }
 }
+
+
+export interface ClockInterval {
+  start: string
+  end: string
+}
+
+/**
+ * Validate and sort one to eight non-overlapping wall-clock intervals.
+ * Adjacent intervals are allowed; overlapping intervals are not.
+ */
+export const normalizeClockIntervals = (value: unknown): ClockInterval[] | null => {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 8) return null
+
+  const intervals: ClockInterval[] = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return null
+    const row = item as Record<string, unknown>
+    const start = row.start
+    const end = row.end
+    if (
+      typeof start !== 'string' ||
+      typeof end !== 'string' ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(start) ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) ||
+      start >= end
+    ) return null
+    intervals.push({ start, end })
+  }
+
+  intervals.sort((left, right) => left.start.localeCompare(right.start))
+  for (let index = 1; index < intervals.length; index += 1) {
+    if (intervals[index - 1].end > intervals[index].start) return null
+  }
+  return intervals
+}

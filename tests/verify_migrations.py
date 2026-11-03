@@ -57,6 +57,24 @@ db.execute(
 )
 assert db.execute("SELECT COUNT(*) FROM admin_audit_log").fetchone()[0] == 1
 
+# Split working windows are normalized, ordered and protected from overlap.
+db.execute(
+    "INSERT INTO opening_hour_intervals (id, weekday, position, starts_at, ends_at) VALUES (?, ?, ?, ?, ?)",
+    ("hours-a", 1, 0, "09:00", "13:00"),
+)
+db.execute(
+    "INSERT INTO opening_hour_intervals (id, weekday, position, starts_at, ends_at) VALUES (?, ?, ?, ?, ?)",
+    ("hours-b", 1, 1, "15:00", "19:00"),
+)
+try:
+    db.execute(
+        "INSERT INTO opening_hour_intervals (id, weekday, position, starts_at, ends_at) VALUES (?, ?, ?, ?, ?)",
+        ("hours-c", 1, 2, "12:00", "16:00"),
+    )
+    raise AssertionError("overlapping weekly interval unexpectedly succeeded")
+except sqlite3.IntegrityError as error:
+    assert "schedule_interval_overlap" in str(error)
+
 # Schedule exceptions are unique by salon-local date.
 db.execute(
     "INSERT INTO schedule_exceptions (id, local_date, is_closed, note) VALUES (?, ?, ?, ?)",
@@ -70,6 +88,19 @@ try:
     raise AssertionError("duplicate schedule exception unexpectedly succeeded")
 except sqlite3.IntegrityError:
     pass
+
+db.execute(
+    "INSERT INTO schedule_exception_intervals (id, exception_id, position, starts_at, ends_at) VALUES (?, ?, ?, ?, ?)",
+    ("exception-window-a", "exception-a", 0, "10:00", "13:00"),
+)
+try:
+    db.execute(
+        "INSERT INTO schedule_exception_intervals (id, exception_id, position, starts_at, ends_at) VALUES (?, ?, ?, ?, ?)",
+        ("exception-window-b", "exception-a", 1, "12:00", "14:00"),
+    )
+    raise AssertionError("overlapping exception interval unexpectedly succeeded")
+except sqlite3.IntegrityError as error:
+    assert "schedule_interval_overlap" in str(error)
 
 db.execute(
     "INSERT INTO services (id, name, duration_minutes, price_amount) VALUES (?, ?, ?, ?)",
@@ -108,3 +139,28 @@ db.execute("UPDATE bookings SET status = 'cancelled' WHERE id = 'booking-a'")
 insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
 
 print("PASS: D1 migrations, overlap triggers, rate-limit buckets, audit log and unique schedule exceptions behave as expected.")
+
+
+# Migration 0005 preserves legacy one-window weekly schedules and date overrides.
+legacy_db = sqlite3.connect(":memory:")
+legacy_db.execute("PRAGMA foreign_keys = ON")
+for migration in sorted(MIGRATIONS.glob("*.sql")):
+    if migration.name == "0005_multi_interval_schedule.sql":
+        continue
+    legacy_db.executescript(migration.read_text(encoding="utf-8"))
+legacy_db.execute(
+    "INSERT INTO opening_hours (id, weekday, opens_at, closes_at, is_closed) VALUES (?, ?, ?, ?, ?)",
+    ("legacy-hours", 1, "08:30", "16:30", 0),
+)
+legacy_db.execute(
+    "INSERT INTO schedule_exceptions (id, local_date, starts_at, ends_at, is_closed, note) VALUES (?, ?, ?, ?, ?, ?)",
+    ("legacy-date", "2027-01-02", "10:00", "14:00", 0, "Legacy override"),
+)
+legacy_db.executescript((MIGRATIONS / "0005_multi_interval_schedule.sql").read_text(encoding="utf-8"))
+assert legacy_db.execute(
+    "SELECT starts_at, ends_at FROM opening_hour_intervals WHERE weekday = 1"
+).fetchone() == ("08:30", "16:30")
+assert legacy_db.execute(
+    "SELECT starts_at, ends_at FROM schedule_exception_intervals WHERE exception_id = 'legacy-date'"
+).fetchone() == ("10:00", "14:00")
+legacy_db.close()

@@ -53,3 +53,43 @@ test('adds minutes without allowing a booking to cross midnight', () => {
   assert.equal(minutesBetweenTimes('09:00', '09:45'), 45)
   assert.equal(minutesBetweenTimes('10:00', '09:00'), null)
 })
+
+
+import { normalizeClockIntervals } from '../worker/scheduling.ts'
+
+test('normalizes multiple daily intervals while preserving valid breaks', () => {
+  assert.deepEqual(
+    normalizeClockIntervals([
+      { start: '15:00', end: '19:00' },
+      { start: '09:00', end: '13:00' },
+    ]),
+    [
+      { start: '09:00', end: '13:00' },
+      { start: '15:00', end: '19:00' },
+    ],
+  )
+})
+
+test('allows adjacent intervals but rejects overlapping intervals', () => {
+  assert.deepEqual(
+    normalizeClockIntervals([
+      { start: '09:00', end: '12:00' },
+      { start: '12:00', end: '17:00' },
+    ]),
+    [
+      { start: '09:00', end: '12:00' },
+      { start: '12:00', end: '17:00' },
+    ],
+  )
+  assert.equal(normalizeClockIntervals([
+    { start: '09:00', end: '13:00' },
+    { start: '12:30', end: '17:00' },
+  ]), null)
+})
+
+test('rejects invalid clocks, reversed ranges, empty lists and excessive intervals', () => {
+  assert.equal(normalizeClockIntervals([]), null)
+  assert.equal(normalizeClockIntervals([{ start: '09:00', end: '08:59' }]), null)
+  assert.equal(normalizeClockIntervals([{ start: '24:00', end: '25:00' }]), null)
+  assert.equal(normalizeClockIntervals(Array.from({ length: 9 }, () => ({ start: '09:00', end: '10:00' }))), null)
+})
