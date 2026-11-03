@@ -48,3 +48,8 @@ Use versioned SQL migrations under `migrations/`. Apply them to development and 
 ## Rollback
 
 Keep the previous successful deployment available in Cloudflare deployment history. For database changes, prefer forward-compatible migrations; restore from a verified export only after assessing data loss implications.
+
+
+## Temporary GitHub Pages preview
+
+GitHub Pages is only for reviewing the static UI. Enable it once in repository Settings → Pages → Build and deployment → Source → GitHub Actions. The Pages workflow uses `npm run build:pages` and publishes `dist/` at `https://pooya16pg-spec.github.io/salon-booking/`. The regular `npm run build` keeps the root base path required by the eventual Cloudflare Worker deployment. Never collect real bookings or personal data on the Pages preview.
