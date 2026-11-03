@@ -360,7 +360,8 @@ function BookingWizard({
 }
 
 function App() {
-  const isAdminRoute = window.location.pathname.replace(/\\/+$/, '') === '/admin'
+  const isAdminRoute = window.location.pathname === '/admin'
+    || window.location.pathname === '/admin/'
     || new URLSearchParams(window.location.search).get('admin') === '1'
   const [menuOpen, setMenuOpen] = useState(false)
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
