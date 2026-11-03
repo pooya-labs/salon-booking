@@ -1,52 +1,35 @@
-import sqlite3
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-MIGRATIONS = ROOT / "migrations"
-
-db = sqlite3.connect(":memory:")
-db.execute("PRAGMA foreign_keys = ON")
-
-for migration in sorted(MIGRATIONS.glob("*.sql")):
-    db.executescript(migration.read_text(encoding="utf-8"))
-
-settings = dict(db.execute("SELECT setting_key, setting_value FROM salon_settings"))
-assert settings["local_timezone"] == "unset"
-assert settings["slot_interval_minutes"] == "15"
-assert settings["min_booking_notice_minutes"] == "120"
-
-db.execute(
-    "INSERT INTO services (id, name, duration_minutes, price_amount) VALUES (?, ?, ?, ?)",
-    ("service-test", "Test service", 30, 100),
-)
-
-def insert_booking(identifier, reference, starts_at, ends_at, status="pending"):
-    db.execute(
-        """INSERT INTO bookings
-           (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (identifier, reference, "service-test", "Test Client", "+491234567890", starts_at, ends_at, status),
-    )
-
-insert_booking("booking-a", "SB-AAAAAAA", "2026-11-03T09:00:00.000Z", "2026-11-03T10:00:00.000Z")
-insert_booking("booking-b", "SB-BBBBBBB", "2026-11-03T10:00:00.000Z", "2026-11-03T11:00:00.000Z")
-
-try:
-    insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
-    raise AssertionError("overlapping insert unexpectedly succeeded")
-except sqlite3.IntegrityError as error:
-    assert "booking_time_conflict" in str(error)
-
-try:
-    db.execute(
-        "UPDATE bookings SET starts_at = ?, ends_at = ? WHERE id = ?",
-        ("2026-11-03T09:45:00.000Z", "2026-11-03T10:30:00.000Z", "booking-b"),
-    )
-    raise AssertionError("overlapping update unexpectedly succeeded")
-except sqlite3.IntegrityError as error:
-    assert "booking_time_conflict" in str(error)
-
-db.execute("UPDATE bookings SET status = 'cancelled' WHERE id = 'booking-a'")
-insert_booking("booking-c", "SB-CCCCCCC", "2026-11-03T09:30:00.000Z", "2026-11-03T09:45:00.000Z")
-
-print("PASS: all D1 migrations apply; settings defaults and insert/update overlap triggers behave as expected.")
+{
+  "name": "salon-booking",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty",
+    "deploy": "npm run build && wrangler deploy",
+    "db:local": "wrangler d1 migrations apply salon-booking --local",
+    "db:remote": "wrangler d1 migrations apply salon-booking --remote",
+    "build:pages": "tsc -b && vite build --mode pages",
+    "preview:pages": "vite preview --base /salon-booking/",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:migrations": "python tests/verify_migrations.py"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261103.1",
+    "@tailwindcss/vite": "^4.1.17",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.1.17",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.7",
+    "wrangler": "^4.45.0"
+  }
+}

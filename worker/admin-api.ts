@@ -55,7 +55,6 @@ interface AdminRequestBody {
 }
 
 const SESSION_TTL_SECONDS = 12 * 60 * 60
-const SESSION_COOKIE_NAME = '__Host-salon_session'
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',

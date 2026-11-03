@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import {
   ArrowLeft, CalendarDays, Check, Clock3, LogOut, RefreshCw,
   Scissors, ShieldCheck, UserRound, X,
@@ -152,7 +153,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, view, filter])
 
-  const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (formBusy) return
     setFormBusy(true)
