@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   ArrowLeft, ArrowUpLeft, CalendarDays, Check, ChevronLeft, Clock3,
   Instagram, MapPin, Menu, Scissors, ShieldCheck, Sparkles, Star,
-  UserRound, X,
+  X,
 } from 'lucide-react'
 
 const services = [
