@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
   Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
@@ -21,11 +21,39 @@ type BookingDraft = {
   phone: string
 }
 
-const services: Service[] = [
+const demoServices: Service[] = [
   { id: 'cut', name: 'کوتاهی و فرم‌دهی', detail: 'متناسب با فرم چهره و سلیقه شما', duration: 45, price: 'از ۳۵۰ هزار' },
   { id: 'trim', name: 'اصلاح و مرتب‌سازی', detail: 'جزئیات دقیق، نتیجه تمیز', duration: 30, price: 'از ۲۵۰ هزار' },
   { id: 'complete', name: 'پکیج کامل', detail: 'یک تجربه کامل برای رسیدگی به استایل', duration: 75, price: 'از ۵۵۰ هزار' },
 ]
+
+const DEMO_MODE = import.meta.env.MODE !== 'production'
+
+type ApiService = {
+  id: string
+  name: string
+  description: string
+  durationMinutes: number
+  priceAmount: number
+  priceCurrency: string
+}
+
+const toPersianDigits = (value: string | number) =>
+  String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)])
+
+const priceLabel = (amount: number, currency: string) => {
+  if (amount <= 0) return 'قیمت توافقی'
+  const unit = currency === 'IRR' ? 'ریال' : currency
+  return `${new Intl.NumberFormat('fa-IR').format(amount)} ${unit}`
+}
+
+const dateKeyInTimezone = (date: Date, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
 
 const faqs = [
   { q: 'چطور نوبتم را رزرو کنم؟', a: 'خدمت و زمان دلخواهتان را انتخاب کنید و اطلاعات تماس را وارد کنید. جزئیات نهایی رزرو پیش از ثبت نمایش داده می‌شود.' },
@@ -33,21 +61,26 @@ const faqs = [
   { q: 'چقدر زودتر باید در محل حاضر باشم؟', a: 'پیشنهاد می‌کنیم حدود پنج دقیقه پیش از زمان رزرو در استودیو باشید.' },
 ]
 
-const timeSlots = ['۰۹:۰۰', '۰۹:۴۵', '۱۰:۳۰', '۱۱:۱۵', '۱۲:۰۰', '۱۲:۴۵', '۱۴:۰۰', '۱۴:۴۵', '۱۵:۳۰', '۱۶:۱۵', '۱۷:۰۰', '۱۷:۴۵']
-const unavailableSlots = new Set(['۱۰:۳۰', '۱۲:۴۵'])
-
-const toDateKey = (date: Date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
+const timeSlots = ['09:00', '09:45', '10:30', '11:15', '12:00', '12:45', '14:00', '14:45', '15:30', '16:15', '17:00', '17:45']
+const unavailableSlots = new Set(['10:30', '12:45'])
 
 const normalizeDigits = (value: string) =>
   value.replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
 
-function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; initialServiceId?: string }) {
+function BookingWizard({
+  onClose,
+  initialServiceId,
+  services,
+  demoMode,
+  salonTimezone,
+}: {
+  onClose: () => void
+  initialServiceId?: string
+  services: Service[]
+  demoMode: boolean
+  salonTimezone: string | null
+}) {
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<BookingDraft>({
     serviceId: initialServiceId ?? '',
@@ -57,22 +90,72 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
     phone: '',
   })
   const [error, setError] = useState('')
+  const [availableSlots, setAvailableSlots] = useState<string[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [slotsMessage, setSlotsMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [bookingReference, setBookingReference] = useState<string | null>(null)
 
   const dates = useMemo(() => {
-    const today = new Date()
-    today.setHours(12, 0, 0, 0)
+    const timezone = salonTimezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+    const todayKey = dateKeyInTimezone(new Date(), timezone)
+    const [year, month, day] = todayKey.split('-').map(Number)
+    const today = new Date(Date.UTC(year, month - 1, day, 12))
+    const jalaliWeekday = new Intl.DateTimeFormat('fa-IR', { weekday: 'short', timeZone: 'UTC' })
+    const jalaliDay = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { day: 'numeric', timeZone: 'UTC' })
+    const jalaliMonth = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short', timeZone: 'UTC' })
+    const jalaliFull = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC',
+    })
+
     return Array.from({ length: 14 }, (_, index) => {
-      const date = new Date(today)
-      date.setDate(today.getDate() + index)
+      const date = new Date(Date.UTC(year, month - 1, day + index, 12))
+      const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`
       return {
-        key: toDateKey(date),
-        weekday: new Intl.DateTimeFormat('fa-IR', { weekday: 'short' }).format(date),
-        day: new Intl.DateTimeFormat('fa-IR-u-ca-persian', { day: 'numeric' }).format(date),
-        month: new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short' }).format(date),
-        full: new Intl.DateTimeFormat('fa-IR-u-ca-persian', { weekday: 'long', day: 'numeric', month: 'long' }).format(date),
+        key,
+        weekday: jalaliWeekday.format(date),
+        day: jalaliDay.format(date),
+        month: jalaliMonth.format(date),
+        full: jalaliFull.format(date),
       }
     })
-  }, [])
+  }, [salonTimezone])
+
+  useEffect(() => {
+    if (step !== 1 || !draft.date || !draft.serviceId) return
+
+    if (demoMode) {
+      setAvailableSlots([])
+      setSlotsMessage('')
+      setSlotsLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    const loadAvailability = async () => {
+      setSlotsLoading(true)
+      setSlotsMessage('')
+      setAvailableSlots([])
+      try {
+        const query = new URLSearchParams({ date: draft.date, serviceId: draft.serviceId })
+        const response = await fetch(`/api/public/availability?${query.toString()}`, {
+          signal: controller.signal,
+          headers: { accept: 'application/json' },
+        })
+        const payload = await response.json() as { slots?: string[]; message?: string }
+        if (!response.ok) throw new Error(payload.message ?? 'دریافت زمان‌های آزاد ممکن نشد.')
+        setAvailableSlots(Array.isArray(payload.slots) ? payload.slots : [])
+      } catch (loadError) {
+        if (controller.signal.aborted) return
+        setSlotsMessage(loadError instanceof Error ? loadError.message : 'دریافت زمان‌های آزاد ممکن نشد.')
+      } finally {
+        if (!controller.signal.aborted) setSlotsLoading(false)
+      }
+    }
+
+    void loadAvailability()
+    return () => controller.abort()
+  }, [step, draft.date, draft.serviceId, demoMode])
 
   const selectedService = services.find((service) => service.id === draft.serviceId)
   const selectedDate = dates.find((date) => date.key === draft.date)
@@ -112,6 +195,41 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
     setStep((current) => Math.max(current - 1, 0))
   }
 
+  const confirmBooking = async () => {
+    if (demoMode) {
+      onClose()
+      return
+    }
+    if (submitting || bookingReference) return
+    setSubmitting(true)
+    setError('')
+    try {
+      const response = await fetch('/api/public/bookings', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          serviceId: draft.serviceId,
+          date: draft.date,
+          time: draft.time,
+          name: draft.name.trim(),
+          phone: normalizeDigits(draft.phone).replace(/[\\s()-]/g, ''),
+        }),
+      })
+      const payload = await response.json() as {
+        booking?: { reference?: string }
+        message?: string
+      }
+      if (!response.ok || !payload.booking?.reference) {
+        throw new Error(payload.message ?? 'ثبت نوبت انجام نشد. دوباره تلاش کنید.')
+      }
+      setBookingReference(payload.booking.reference)
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'ثبت نوبت انجام نشد.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="booking-flow-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose()
@@ -140,7 +258,7 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
               <div className="eyebrow"><span className="eyebrow-line" /> STEP 01 · SERVICE</div>
               <h2 id="booking-flow-title">چه خدمتی مدنظرتونه؟</h2>
               <p className="booking-step-intro">خدمت موردنظرتان را انتخاب کنید تا زمان مناسب را پیدا کنیم.</p>
-              <div className="booking-service-options">
+              {services.length > 0 ? <div className="booking-service-options">
                 {services.map((service, index) => (
                   <button type="button" className={draft.serviceId === service.id ? 'booking-service-option is-selected' : 'booking-service-option'} key={service.id} onClick={() => updateDraft('serviceId', service.id)}>
                     <span className="booking-service-number">۰{index + 1}</span>
@@ -148,8 +266,8 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
                     <span className="booking-radio">{draft.serviceId === service.id && <span />}</span>
                   </button>
                 ))}
-              </div>
-              <p className="booking-demo-note"><ShieldCheck size={14} /> قیمت‌ها و خدمات فعلی نمونه‌اند و پیش از راه‌اندازی نهایی تأیید می‌شوند.</p>
+              </div> : <p className="booking-inline-state">فهرست خدمات هنوز در سامانه ثبت نشده است.</p>}
+              <p className="booking-demo-note"><ShieldCheck size={14} /> {demoMode ? 'قیمت‌ها و خدمات فعلی نمونه‌اند و پیش از راه‌اندازی نهایی تأیید می‌شوند.' : 'خدمات و قیمت‌ها از سامانه استودیو دریافت می‌شوند.'}</p>
             </div>
           )}
 
@@ -169,13 +287,19 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
                 ))}
               </div>
               <div className="booking-date-heading booking-time-heading"><strong>ساعت‌های قابل انتخاب</strong><span>{selectedDate?.full ?? 'ابتدا روز را انتخاب کنید'}</span></div>
-              <div className="booking-time-grid">
-                {timeSlots.map((time) => {
-                  const unavailable = unavailableSlots.has(time)
-                  return <button type="button" key={time} disabled={unavailable} className={draft.time === time ? 'booking-time-option is-selected' : 'booking-time-option'} onClick={() => updateDraft('time', time)}>{time}{unavailable && <small>پر</small>}</button>
-                })}
-              </div>
-              <p className="booking-demo-note"><Clock3 size={14} /> ساعت‌ها در این پیش‌نمایش نمونه هستند؛ موجودی واقعی پس از اتصال دیتابیس نمایش داده می‌شود.</p>
+              {!draft.date && <p className="booking-inline-state">ابتدا یک روز را انتخاب کنید.</p>}
+              {draft.date && slotsLoading && <p className="booking-inline-state"><span className="booking-spinner" /> در حال بررسی زمان‌های آزاد…</p>}
+              {draft.date && slotsMessage && <p className="booking-inline-state is-error">{slotsMessage}</p>}
+              {draft.date && !slotsLoading && !slotsMessage && (
+                <div className="booking-time-grid">
+                  {(demoMode ? timeSlots : availableSlots).map((time) => {
+                    const unavailable = demoMode && unavailableSlots.has(time)
+                    return <button type="button" key={time} disabled={unavailable} className={draft.time === time ? 'booking-time-option is-selected' : 'booking-time-option'} onClick={() => updateDraft('time', time)}>{toPersianDigits(time)}{unavailable && <small>پر</small>}</button>
+                  })}
+                </div>
+              )}
+              {draft.date && !slotsLoading && !slotsMessage && !demoMode && availableSlots.length === 0 && <p className="booking-inline-state">برای این روز زمان آزادی ثبت نشده است.</p>}
+              <p className="booking-demo-note"><Clock3 size={14} /> {demoMode ? 'ساعت‌ها در این پیش‌نمایش نمونه هستند.' : 'زمان‌های نمایش‌داده‌شده از برنامه کاری استودیو محاسبه شده‌اند.'}</p>
             </div>
           )}
 
@@ -190,13 +314,13 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && !bookingReference && (
             <div className="booking-step">
               <div className="eyebrow"><span className="eyebrow-line" /> STEP 04 · REVIEW</div>
               <h2 id="booking-flow-title">همه‌چیز آماده‌ست؟</h2>
               <p className="booking-step-intro">جزئیات انتخابتان را یک بار بررسی کنید.</p>
               <div className="booking-review-card">
-                <div className="booking-review-top"><span className="review-mark"><Scissors size={18} /></span><span><small>FORM STUDIO</small><strong>خلاصه انتخاب شما</strong></span><span className="review-preview-label">پیش‌نمایش</span></div>
+                <div className="booking-review-top"><span className="review-mark"><Scissors size={18} /></span><span><small>FORM STUDIO</small><strong>خلاصه انتخاب شما</strong></span><span className="review-preview-label">{demoMode ? 'پیش‌نمایش' : 'بازبینی'}</span></div>
                 <div className="booking-review-row"><span>خدمت</span><strong>{selectedService?.name}</strong></div>
                 <div className="booking-review-row"><span>تاریخ</span><strong>{selectedDate?.full}</strong></div>
                 <div className="booking-review-row"><span>ساعت</span><strong>{draft.time}</strong></div>
@@ -204,7 +328,22 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
                 <div className="booking-review-row"><span>نام</span><strong>{draft.name}</strong></div>
                 <div className="booking-review-row"><span>شماره تماس</span><strong dir="ltr">{draft.phone}</strong></div>
               </div>
-              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>این یک پیش‌نمایش تعاملی است.</strong><small>هنوز نوبتی ثبت نشده و اطلاعات شما به سرور ارسال نمی‌شود. ثبت واقعی پس از راه‌اندازی Cloudflare فعال خواهد شد.</small></span></div>
+              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>{demoMode ? 'این یک پیش‌نمایش تعاملی است.' : 'پیش از ثبت نهایی بررسی کنید.'}</strong><small>{demoMode ? 'هنوز نوبتی ثبت نشده و اطلاعات شما به سرور ارسال نمی‌شود.' : 'با انتخاب ثبت نوبت، اطلاعات ضروری برای ایجاد رزرو به سامانه استودیو ارسال می‌شود.'}</small></span></div>
+            </div>
+          )}
+
+          {step === 3 && bookingReference && (
+            <div className="booking-step booking-success">
+              <div className="booking-success-icon"><Check size={28} /></div>
+              <div className="eyebrow"><span className="eyebrow-line" /> BOOKING REQUESTED</div>
+              <h2 id="booking-flow-title">درخواست نوبت ثبت شد.</h2>
+              <p className="booking-step-intro">کد پیگیری را نگه دارید تا بعداً بتوانید نوبت خود را بررسی کنید.</p>
+              <div className="booking-reference-card">
+                <small>کد پیگیری رزرو</small>
+                <strong dir="ltr">{bookingReference}</strong>
+                <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingReference) }}>کپی کد</button>
+              </div>
+              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>وضعیت درخواست: در انتظار تأیید</strong><small>این درخواست در سامانه ثبت شده است. جزئیات تأیید نهایی باید از پنل مدیریت پیگیری شود.</small></span></div>
             </div>
           )}
 
@@ -213,7 +352,7 @@ function BookingWizard({ onClose, initialServiceId }: { onClose: () => void; ini
 
         <footer className="booking-flow-footer">
           {step > 0 ? <button className="booking-back-button" onClick={goBack}><ChevronRight size={16} /> مرحله قبل</button> : <span className="booking-footer-caption">ساده، شفاف و در چند قدم</span>}
-          {step < 3 ? <button className="button button-dark" onClick={goNext}>ادامه <ArrowLeft size={16} /></button> : <button className="button button-dark" onClick={onClose}>پایان پیش‌نمایش <Check size={16} /></button>}
+          {step < 3 ? <button className="button button-dark" onClick={goNext}>ادامه <ArrowLeft size={16} /></button> : <button className="button button-dark" onClick={bookingReference ? onClose : confirmBooking} disabled={submitting}>{bookingReference ? 'پایان' : demoMode ? 'پایان پیش‌نمایش' : submitting ? 'در حال ثبت…' : 'ثبت نوبت'} <Check size={16} /></button>}
         </footer>
       </section>
     </div>
@@ -225,6 +364,44 @@ function App() {
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
   const [bookingOpen, setBookingOpen] = useState(false)
   const [initialServiceId, setInitialServiceId] = useState<string | undefined>()
+  const [services, setServices] = useState<Service[]>(DEMO_MODE ? demoServices : [])
+  const [salonTimezone, setSalonTimezone] = useState<string | null>(null)
+  const [catalogMessage, setCatalogMessage] = useState('')
+
+  useEffect(() => {
+    if (DEMO_MODE) return
+    const controller = new AbortController()
+
+    const loadPublicData = async () => {
+      try {
+        const [servicesResponse, configResponse] = await Promise.all([
+          fetch('/api/public/services', { signal: controller.signal, headers: { accept: 'application/json' } }),
+          fetch('/api/public/config', { signal: controller.signal, headers: { accept: 'application/json' } }),
+        ])
+        const [servicesPayload, configPayload] = await Promise.all([
+          servicesResponse.json() as Promise<{ services?: ApiService[]; message?: string }>,
+          configResponse.json() as Promise<{ configured?: boolean; timezone?: string | null }>,
+        ])
+        if (!servicesResponse.ok) throw new Error(servicesPayload.message ?? 'دریافت خدمات ممکن نیست.')
+        const loadedServices = (servicesPayload.services ?? []).map((service) => ({
+          id: service.id,
+          name: service.name,
+          detail: service.description || 'جزئیات این خدمت در استودیو اعلام می‌شود.',
+          duration: service.durationMinutes,
+          price: priceLabel(service.priceAmount, service.priceCurrency),
+        }))
+        setServices(loadedServices)
+        setSalonTimezone(configResponse.ok && configPayload.configured ? configPayload.timezone ?? null : null)
+        setCatalogMessage(loadedServices.length ? '' : 'هنوز خدمتی برای رزرو در سامانه ثبت نشده است.')
+      } catch (loadError) {
+        if (controller.signal.aborted) return
+        setCatalogMessage(loadError instanceof Error ? loadError.message : 'اتصال به سامانه رزرو ممکن نیست.')
+      }
+    }
+
+    void loadPublicData()
+    return () => controller.abort()
+  }, [])
 
   const startBooking = (serviceId?: string) => {
     setInitialServiceId(serviceId)
@@ -233,7 +410,7 @@ function App() {
 
   return (
     <div className="site-shell">
-      <div className="announcement"><span className="status-dot" /> پیش‌نمایش طراحی · سامانه رزرو در حال توسعه است <span className="announcement-separator">✳</span> فرم استودیو</div>
+      <div className="announcement"><span className="status-dot" /> {DEMO_MODE ? 'پیش‌نمایش طراحی · سامانه رزرو در حال توسعه است' : 'سامانه نوبت‌دهی آنلاین'} <span className="announcement-separator">✳</span> فرم استودیو</div>
       <header className="site-header">
         <a className="brand" href="#home" aria-label="صفحه اصلی استودیو">
           <span className="brand-mark"><Scissors size={20} strokeWidth={1.5} /></span>
@@ -277,8 +454,8 @@ function App() {
 
         <section className="services-section section-wrap" id="services">
           <div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> WHAT WE DO</div><h2>خدماتی برای <em>حالِ بهتر.</em></h2></div><p>هر خدمت با توجه به نیاز شما و با دقت به جزئیات ارائه می‌شود. خدمت موردنظرتان را انتخاب کنید.</p></div>
-          <div className="service-grid">{services.map((service, index) => <article className="service-card" key={service.id}><div className="service-top"><span className="service-index">۰{index + 1}</span><span className="service-icon"><Scissors size={19} strokeWidth={1.4} /></span></div><h3>{service.name}</h3><p>{service.detail}</p><div className="service-meta"><span><Clock3 size={14} />{service.duration} دقیقه</span><strong>{service.price}</strong></div><button className="service-cta" onClick={() => startBooking(service.id)}>رزرو این خدمت <ArrowLeft size={15} /></button></article>)}</div>
-          <p className="price-note">* خدمات و قیمت‌های نمایش‌داده‌شده فعلاً نمونه هستند و پیش از انتشار نهایی با اطلاعات واقعی آرایشگاه جایگزین می‌شوند.</p>
+          {services.length > 0 ? <div className="service-grid">{services.map((service, index) => <article className="service-card" key={service.id}><div className="service-top"><span className="service-index">{toPersianDigits(String(index + 1).padStart(2, '0'))}</span><span className="service-icon"><Scissors size={19} strokeWidth={1.4} /></span></div><h3>{service.name}</h3><p>{service.detail}</p><div className="service-meta"><span><Clock3 size={14} />{toPersianDigits(service.duration)} دقیقه</span><strong>{service.price}</strong></div><button className="service-cta" onClick={() => startBooking(service.id)}>رزرو این خدمت <ArrowLeft size={15} /></button></article>)}</div> : <p className="service-empty">{catalogMessage || 'در حال دریافت فهرست خدمات…'}</p>}
+          {DEMO_MODE && <p className="price-note">* خدمات و قیمت‌های نمایش‌داده‌شده فعلاً نمونه هستند و پیش از انتشار نهایی با اطلاعات واقعی آرایشگاه جایگزین می‌شوند.</p>}
         </section>
 
         <section className="manifesto" id="about"><div className="manifesto-mark">“</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> OUR PHILOSOPHY</div><h2>کیفیت، در جزئیات<br /><em>خودش را نشان می‌دهد.</em></h2><p>قرار نیست تجربه‌ای پیچیده داشته باشید. از لحظه انتخاب زمان تا وقتی که با رضایت از استودیو بیرون می‌روید، همه‌چیز باید ساده، دقیق و خوشایند باشد.</p><span className="manifesto-signature">FORM STUDIO — A PERSONAL EXPERIENCE</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><Sparkles size={28} /></div></div></section>
@@ -292,7 +469,7 @@ function App() {
 
       <footer className="site-footer"><a className="footer-brand" href="#home"><span className="brand-mark"><Scissors size={18} /></span><strong>فُرم</strong></a><span className="footer-note">یک تجربه شخصی، با دقت و سلیقه.</span><span className="footer-credit">Crafted with care by <strong>Pooya</strong> <span>© ۲۰۲۶</span></span></footer>
 
-      {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} />}
+      {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} services={services} demoMode={DEMO_MODE} salonTimezone={salonTimezone} />}
       <div className="mobile-book-bar"><span><strong>وقت خودت رو رزرو کن</strong><small>سریع، ساده، آنلاین</small></span><button className="button button-dark" onClick={() => startBooking()}>رزرو نوبت <ChevronLeft size={17} /></button></div>
     </div>
   )

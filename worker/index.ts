@@ -399,6 +399,22 @@ export default {
       return json({ ok: true, service: 'salon-booking-api', version: '0.2.0' })
     }
 
+    if (url.pathname === '/api/public/config') {
+      if (request.method !== 'GET') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
+      try {
+        const settings = await getSettings(env.DB)
+        return json({
+          ok: true,
+          configured: settings.timezone !== 'unset',
+          timezone: settings.timezone === 'unset' ? null : settings.timezone,
+          bookingWindowDays: settings.maxDaysAhead,
+          slotIntervalMinutes: settings.slotInterval,
+        })
+      } catch {
+        return errorResponse('configuration_unavailable', 'تنظیمات رزرو در دسترس نیست.', 503)
+      }
+    }
+
     if (url.pathname === '/api/public/services') {
       if (request.method !== 'GET') return errorResponse('method_not_allowed', 'روش درخواست پشتیبانی نمی‌شود.', 405)
       try {
