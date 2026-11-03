@@ -210,19 +210,19 @@ function BookingWizard({
     submissionLock.current = true
     setSubmitting(true)
     setError('')
-    const bookingPayload = {
+    try {
+      const bookingPayload = {
       serviceId: draft.serviceId,
       date: draft.date,
       time: draft.time,
       name: draft.name.trim(),
       phone: normalizeDigits(draft.phone).replace(/[\\s()-]/g, ''),
     }
-    const fingerprint = JSON.stringify(bookingPayload)
-    if (!submissionAttempt.current || submissionAttempt.current.fingerprint !== fingerprint) {
-      submissionAttempt.current = { fingerprint, key: crypto.randomUUID() }
-    }
+      const fingerprint = JSON.stringify(bookingPayload)
+      if (!submissionAttempt.current || submissionAttempt.current.fingerprint !== fingerprint) {
+        submissionAttempt.current = { fingerprint, key: crypto.randomUUID() }
+      }
 
-    try {
       const response = await fetch('/api/public/bookings', {
         method: 'POST',
         headers: {
@@ -231,6 +231,7 @@ function BookingWizard({
           'idempotency-key': submissionAttempt.current.key,
         },
         body: JSON.stringify(bookingPayload),
+      })
       const payload = await response.json() as {
         booking?: { reference?: string; managementToken?: string }
         message?: string
