@@ -124,6 +124,33 @@ try {
   await page.goto(homeUrl, { waitUntil: 'networkidle' })
   await page.locator('.site-header').waitFor({ state: 'visible' })
 
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const reducedMotion = await page.evaluate(() => ({
+    scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+    buttonTransition: getComputedStyle(document.querySelector('.header-book')).transitionDuration,
+  }))
+  assert.equal(reducedMotion.scrollBehavior, 'auto', 'reduced-motion preference should disable smooth scrolling')
+  assert.ok(reducedMotion.buttonTransition.split(',').every(value => Number.parseFloat(value) === 0),
+    'reduced-motion preference should disable animated button transitions')
+  console.log('[browser] reduced-motion preference disables smooth scroll and button transitions')
+
+  await page.keyboard.press('Tab')
+  const focusIndicator = await page.evaluate(() => {
+    const active = document.activeElement
+    return active ? {
+      tag: active.tagName,
+      outlineStyle: getComputedStyle(active).outlineStyle,
+      outlineWidth: getComputedStyle(active).outlineWidth,
+      shadow: getComputedStyle(active).boxShadow,
+    } : null
+  })
+  assert.ok(focusIndicator, 'keyboard Tab should place focus on a page control')
+  assert.notEqual(focusIndicator.outlineStyle, 'none', 'keyboard-focused controls should expose a visible outline')
+  assert.ok(Number.parseFloat(focusIndicator.outlineWidth) >= 3, 'keyboard focus outline should be at least 3px')
+  assert.notEqual(focusIndicator.shadow, 'none', 'a contrasting outer focus ring should be present')
+  console.log('[browser] keyboard focus indicator is visible with a contrasting dual ring')
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await assertNoAccessibilityViolations(page, 'public homepage')
 
   assert.equal(await page.locator('html').getAttribute('lang'), 'fa', 'document language must be Persian')
