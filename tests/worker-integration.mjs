@@ -875,6 +875,32 @@ try {
     'cancelling a booking should release its slot',
   )
 
+  console.log('Checking that later service edits do not rewrite existing booking duration...')
+  await expectJson(await request(baseUrl, '/api/admin/services/integration-service', {
+    method: 'PATCH',
+    headers: { origin, cookie: loginCookie },
+    body: JSON.stringify({ durationMinutes: 90 }),
+  }), 200, 'owner edits service duration after booking')
+
+  const customerAfterServiceEdit = await expectJson(await request(baseUrl, '/api/public/bookings/lookup', {
+    method: 'POST',
+    headers: managementHeaders,
+    body: JSON.stringify({ reference: booking.reference, managementToken: booking.managementToken }),
+  }), 200, 'customer lookup after service duration edit')
+  assert.equal(customerAfterServiceEdit.booking.durationMinutes, 30,
+    'customer lookup must show the duration reserved at booking time')
+
+  const ownerBookingsAfterServiceEdit = await expectJson(await request(
+    baseUrl,
+    `/api/admin/bookings?from=${date}&to=${date}`,
+    { headers: { origin, cookie: loginCookie } },
+  ), 200, 'owner booking list after service duration edit')
+  const ownerBookingAfterServiceEdit = ownerBookingsAfterServiceEdit.bookings.find(
+    (item) => item.reference === booking.reference,
+  )
+  assert.equal(ownerBookingAfterServiceEdit?.durationMinutes, 30,
+    'owner booking list must show the duration reserved at booking time')
+
   console.log('Checking exact elapsed booking duration across spring-forward and fall-back clock changes...')
   const dstSeedSql = `
     UPDATE salon_settings SET setting_value = 'Europe/Berlin' WHERE setting_key = 'local_timezone';
