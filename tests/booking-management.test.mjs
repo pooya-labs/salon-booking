@@ -68,11 +68,12 @@ test('customer management mutations require same-origin requests', () => {
   assert.equal(isSameOriginRequest(missing), false)
 })
 
-test('booking idempotency accepts UUID v4 keys and rejects malformed or low-entropy values', () => {
-  assert.equal(isValidIdempotencyKey('550e8400-e29b-41d4-a716-446655440000'), true)
-  assert.equal(isValidIdempotencyKey('550E8400-E29B-41D4-A716-446655440000'), true)
-  assert.equal(isValidIdempotencyKey('booking-attempt-1'), false)
-  assert.equal(isValidIdempotencyKey('550e8400-e29b-11d4-a716-446655440000'), false)
-  assert.equal(isValidIdempotencyKey('550e8400-e29b-41d4-c716-446655440000'), false)
+test('booking idempotency keys require 256 bits of hexadecimal entropy', () => {
+  assert.equal(isValidIdempotencyKey('a'.repeat(64)), true)
+  assert.equal(isValidIdempotencyKey('A'.repeat(64)), true)
+  assert.equal(isValidIdempotencyKey('a'.repeat(63)), false)
+  assert.equal(isValidIdempotencyKey('a'.repeat(65)), false)
+  assert.equal(isValidIdempotencyKey('550e8400-e29b-41d4-a716-446655440000'), false)
+  assert.equal(isValidIdempotencyKey('g'.repeat(64)), false)
   assert.equal(isValidIdempotencyKey(null), false)
 })
