@@ -100,7 +100,7 @@ All `/api/admin/*` routes except `GET /api/admin/setup-status` require a valid o
 - `POST /api/admin/login`: validates credentials and sets the owner session cookie.
 - `GET /api/admin/me`: returns the authenticated owner.
 - `POST /api/admin/logout`: revokes the current session and clears its cookie.
-- `GET /api/admin/bookings?status=all`: returns up to 200 appointments for the salon-local current day through six days ahead. Status filter: `all`, `pending`, `confirmed`, `cancelled`, `completed`, or `no_show`.
+- `GET /api/admin/bookings?from=YYYY-MM-DD&to=YYYY-MM-DD&status=all`: returns every appointment whose start time falls inside the selected salon-local date range. `from` and `to` are optional Gregorian dates; when omitted, the range defaults to the salon-local current day through six days ahead. The end date is inclusive, must not precede the start date, and may be at most 31 days after it. `status` is optional and defaults to `all`; accepted values are `all`, `pending`, `confirmed`, `cancelled`, `completed`, and `no_show`. The response has no arbitrary 200-row cap or pagination, so the full selected range is returned.
 - `PATCH /api/admin/bookings/{booking-uuid}/status`: accepts `confirmed`, `cancelled`, `completed` or `no_show`, subject to state-transition rules. Successful changes are audited.
 
 ### Services
@@ -113,7 +113,7 @@ Validation: service name 2–80 characters, description up to 300, duration 5–
 
 ### Schedule
 
-- `GET /api/admin/schedule`: returns salon settings, weekly hours (Saturday first in the UI), and up to 180 date exceptions.
+- `GET /api/admin/schedule`: returns salon settings, all seven weekly-hours entries (Saturday first in the UI), every saved date exception, and all intervals belonging to those exceptions. There are no arbitrary 180-exception or 1,440-interval response caps; the endpoint returns the saved schedule in full.
 - `PUT /api/admin/settings`: updates timezone, slot interval (5–120 minutes), minimum booking notice (0–10080), booking horizon (1–365 days), and buffer (0–240 minutes). Timezone changes are rejected while active future reservations exist.
 - `PUT /api/admin/schedule/weekly/{weekday}`: saves one weekday. `weekday` is Sunday=0 through Saturday=6. Body:
   
@@ -127,7 +127,7 @@ Validation: service name 2–80 characters, description up to 300, duration 5–
   }
   ```
 
-- `POST /api/admin/schedule/exceptions`: creates or replaces the exception for a salon-local date. Supports `isClosed`, up to eight non-overlapping `intervals`, and an optional note.
+- `POST /api/admin/schedule/exceptions`: creates or replaces the exception for a salon-local date from today through 365 days ahead. Supports `isClosed`, up to eight non-overlapping `intervals`, and an optional note. A change is rejected if it would exclude an active booking on that date.
 - `DELETE /api/admin/schedule/exceptions/{exception-uuid}`: removes an exception only when no pending/confirmed booking exists on that date.
 
 Weekly and exception intervals are sorted and checked server-side. Overlapping or malformed ranges are rejected. Weekly changes are blocked if they would place a future active appointment outside the allowed hours; exception changes are similarly checked against that date's active bookings. Each implemented owner mutation writes an audit record.
