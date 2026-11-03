@@ -76,7 +76,7 @@ The Cloudflare production build includes the public booking API and secure owner
 
 ## Deployment
 
-Production deployment is intentionally documented but not activated until a Cloudflare account is connected and a D1 database is provisioned. Apply migrations 0001–0008 in order; migration 0005 introduces split daily opening intervals, migration 0006 adds public API rate-limit storage, migration 0007 adds customer booking credentials and status history, and migration 0008 adds server-side booking idempotency.
+Production deployment is intentionally documented but not activated until a Cloudflare account is connected and a D1 database is provisioned. Apply migrations 0001–0009 in order; migration 0005 introduces split daily opening intervals, migration 0006 adds public API rate-limit storage, migration 0007 adds customer booking credentials and status history, migration 0008 adds server-side booking idempotency, and migration 0009 snapshots service duration on each booking.
 
 1. Create a Cloudflare D1 database.
 2. Put its database ID in the local/deployment Wrangler configuration (never commit API tokens).
