@@ -150,7 +150,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 ## R08 — Deployment and launch
 
 - [x] Temporary static preview pipeline committed for GitHub Pages (not the production runtime).
-- [ ] Enable GitHub Pages publishing source as GitHub Actions in repository Settings → Pages (one-time owner action if workflow reports Pages source disabled).
+- [x] Enable GitHub Pages publishing source as GitHub Actions (owner completed the one-time setting; deployment verified successful).
 - [ ] Cloudflare account connected by repository owner.
 - [ ] D1 database created and database ID configured.
 - [ ] Production migrations applied.
@@ -179,7 +179,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. It is a static visual preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. The deployment workflow completed successfully on 2026-11-03 (run 41607233352). Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static visual preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 
