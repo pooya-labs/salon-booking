@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  ArrowLeft, ArrowUpLeft, CalendarDays, Check, ChevronLeft, ChevronRight,
+  ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
   Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
   Sparkles, Star, UserRound, X,
 } from 'lucide-react'
