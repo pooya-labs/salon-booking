@@ -591,7 +591,7 @@ try {
     'database_name = "salon-booking"',
     'database_id = "00000000-0000-4000-8000-000000000001"',
     '',
-  ].join('\\n'), 'utf8')
+  ].join('\n'), 'utf8')
 
   const backupPath = join(tempDirectory, 'salon-booking-local-backup.sql')
   await runWrangler([
