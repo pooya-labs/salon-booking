@@ -42,7 +42,6 @@ export const isBookingCancellable = (
   return Number.isFinite(startMilliseconds) && startMilliseconds > nowMilliseconds
 }
 
-/** Accept only high-entropy UUID v4 keys generated for one booking attempt. */
+/** Accept only 256-bit hexadecimal keys generated for one booking attempt. */
 export const isValidIdempotencyKey = (value: unknown): value is string =>
-  typeof value === 'string'
-  && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+  typeof value === 'string' && /^[0-9a-f]{64}$/i.test(value)
