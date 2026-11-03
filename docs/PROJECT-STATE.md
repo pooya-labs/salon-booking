@@ -23,7 +23,9 @@
 - Removed the 200-row cap from the owner booking list so the selected date range is not silently truncated.
 - Removed fixed 180-exception/1,440-interval caps from the owner schedule response so saved date exceptions are not hidden after arbitrary thresholds.
 - Added a Worker+D1 regression fixture with 202 synthetic appointments: the owner list must return all 202 and a proposed 09:00–17:00 exception must reject an 18:00 appointment even though it appears after the former 200-row scan window.
-- The new code and integration test are committed below; the regression is not marked complete until a green full CI run verifies the current main head.
+- Implementation commit: `bfdbcd9dadec121401e2e777abe57d5f0320a0d4`; Worker+D1 regression commit: `69131a8f9ca30e80163597712ea1588761feff90`.
+- The SQL seed was separately exercised in an isolated SQLite simulation (202 adjacent synthetic rows plus one 18:00 booking); this validates fixture SQL and the overflow scenario, not the Wrangler Worker+D1 integration test.
+- The last confirmed green full CI remains run `41654596006`, which predates these commits. GitHub Actions results for the current `main` head were not available through the connected GitHub actions tools; do not mark the regression complete until a green current-head run is observed.
 
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
 - Latest verified owner-dashboard commit on `main`: `2178056a13e4f06298a63392c5d56a032b30be69` — explicit confirmation for cancellation, completion and no-show transitions, with dedicated browser assertions.
