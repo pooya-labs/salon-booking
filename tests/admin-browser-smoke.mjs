@@ -80,6 +80,7 @@ if (!address || typeof address === 'string') throw new Error('Could not start ow
 const origin = 'http://127.0.0.1:' + address.port
 const apiCalls = []
 const statusUpdates = []
+let forceLoginView = false
 const qaBookings = [
   {
     id: 'qa-pending',
@@ -146,8 +147,18 @@ try {
     const url = new URL(route.request().url())
     const path = url.pathname
     if (path === '/api/admin/me') {
+      if (forceLoginView) {
+        await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'unauthorized' }) })
+      } else {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+          ok: true, user: { id: 'qa-owner', username: 'QA Owner' },
+        }) })
+      }
+      return
+    }
+    if (path === '/api/admin/setup-status') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-        ok: true, user: { id: 'qa-owner', username: 'QA Owner' },
+        ok: true, initialized: true, bootstrapAvailable: false,
       }) })
       return
     }
@@ -191,7 +202,13 @@ try {
           bookingWindowDays: 30,
           bufferMinutes: 0,
         },
-        weeklyHours: [],
+        weeklyHours: Array.from({ length: 7 }, (_, weekday) => ({
+          weekday,
+          name: ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'][weekday],
+          intervals: [{ startsAt: '09:00', endsAt: '17:00' }],
+          isClosed: false,
+          configured: true,
+        })),
         exceptions: [],
       }) })
       return
@@ -207,6 +224,15 @@ try {
   await page.locator('.admin-manage-tabs').waitFor({ state: 'visible' })
 
   await assertNoAccessibilityViolations(page, 'owner dashboard')
+
+  await page.getByRole('button', { name: 'خدمت جدید' }).click()
+  await page.locator('.admin-manage-form').waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner service editor')
+
+  await page.getByRole('button', { name: 'برنامه کاری' }).click()
+  await page.locator('.admin-weekly-list').waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner schedule management tab')
+  await page.getByRole('button', { name: 'خدمات' }).click()
 
   assert.ok(apiCalls.some(call => call.from === '2026-11-03' && call.to === '2026-11-09' && call.status === 'all'),
     'initial dashboard request should use the API default seven-day range')
@@ -305,6 +331,12 @@ try {
   assert.deepEqual(diagnostics.consoleErrors, [], 'owner dashboard console errors')
   assert.deepEqual(diagnostics.failedRequests, [], 'failed owner dashboard requests')
   assert.deepEqual(diagnostics.badResponses, [], 'owner dashboard HTTP errors')
+  forceLoginView = true
+  await page.goto(origin + '/admin', { waitUntil: 'networkidle' })
+  await page.getByRole('heading', { name: 'خوش برگشتید.' }).waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner login page')
+  forceLoginView = false
+
   assert.deepEqual(diagnostics.externalRequests, [], 'owner dashboard should not load third-party resources')
   console.log('[admin-browser] seven-day range navigation forward/back/reset passed')
   console.log('[admin-browser] status filter preserves selected range')
