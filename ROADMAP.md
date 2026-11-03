@@ -90,14 +90,15 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R04 — Scheduling and data layer
 
-- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings, normalized weekly/date intervals, public rate limits and customer management tokens/status history (migrations 0001–0008; production D1 not yet provisioned).
+- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings, normalized weekly/date intervals, public rate limits and customer management tokens/status history (migrations 0001–0009; production D1 not yet provisioned).
 - [x] Versioned SQL migrations, with SQLite migration/trigger regression tests.
 - [x] No placeholder services or business hours are seeded into production.
 - [x] Public API input validation and normalized error responses.
-- [~] IANA timezone conversion and UTC persistence implemented; salon timezone remains `unset` until owner confirmation.
+- [~] IANA timezone conversion and UTC persistence implemented; service duration and buffer use elapsed UTC minutes across DST transitions (spring-forward/fall-back Worker+D1 tests passed in CI 41670652871); salon timezone remains `unset` until owner confirmation.
 - [x] Availability calculated on the server from service duration, opening hours, exceptions, settings and active bookings.
 - [x] Database triggers reject overlapping active reservations on insert and update.
 - [x] Service duration and configurable buffers respected.
+- [x] Service duration is snapshotted when a booking is created; migration 0009 backfills existing bookings, and Worker+D1 tests confirm later service edits do not rewrite the duration shown to customers or the owner.
 - [x] Closed dates and one-off opening windows supported through schedule exceptions.
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
@@ -143,7 +144,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Unit tests for timezone/date/scheduling helpers, multi-interval normalization, HMAC rate-limit buckets, admin password/session security, customer-management credential/cancellation helpers, phone normalization, local-config guards and date-range arithmetic (37 tests; latest CI run 41654596006 passed).
 - [x] Public booking and owner-admin lifecycle/authorization HTTP tests against a local Wrangler Worker + D1 environment: service catalog, availability, booking creation/conflict, customer origin/token/privacy/cancellation/slot release, first-owner bootstrap, secure session, login/logout/revocation, protected owner booking list/status transitions, service CRUD, salon settings, timezone-change conflict protection, split weekly intervals, break-aware availability, overlap rejection and date-exception create/read/delete.
 - [x] SQLite regression test for overlapping insert/update protection.
-- [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0008 (remote Cloudflare D1 application remains pending).
+- [x] Migration regression on clean SQLite plus automated Wrangler local-D1 application of migrations 0001–0009 (remote Cloudflare D1 application remains pending).
 - [x] Production build and TypeScript checks (latest CI run 41654596006 passed).
 - [x] Automated Chromium responsive QA at 320, 360, 390, 430, 768, 1024, 1280 and 1440 px (mobile, tablet and desktop viewport emulation; not physical-device certification).
 - [x] RTL, Persian digit, Jalali calendar and visitor-local day-boundary checks across Asia/Tehran, Europe/Berlin and America/Los_Angeles.
