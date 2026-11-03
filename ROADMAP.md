@@ -185,7 +185,7 @@ These are explicitly out of the first release unless the owner asks for them.
 
 ## Preview environment — GitHub Pages
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41618574444 succeeded on 2026-11-03 and includes the split-interval management UI. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya16pg-spec.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41618574444 succeeded on 2026-11-03 and includes the split-interval management UI. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 

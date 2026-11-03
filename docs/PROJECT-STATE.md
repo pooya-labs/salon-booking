@@ -17,7 +17,7 @@
 - Phase: **R04/R05 — Multi-interval scheduling and owner management (verified build; production D1 setup pending)**
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. The availability engine calculates slots independently inside each opening interval. Responsive owner UI is available at /admin on Cloudflare; Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
-- Public preview: https://pooya16pg-spec.github.io/salon-booking/
+- Public preview: https://pooya-labs.github.io/salon-booking/
 - Latest verified standard CI: run 41617819811 — success (16 unit tests, SQLite migration/security checks including interval overlap and legacy backfill, TypeScript and Vite production build).
 - Latest Pages deployment: run 41617819683 — success; includes the updated split-interval schedule UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
