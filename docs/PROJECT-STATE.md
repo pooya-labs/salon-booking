@@ -14,21 +14,19 @@
 
 ## Current checkpoint
 
-- Phase: **R03/R04 — Customer self-service and scheduling security (verified build; production D1 setup pending)**
-- Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
-- Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
-- Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41633719836 — success (25 unit tests, privacy-focused SQLite migration checks, Wrangler local Worker + D1 HTTP integration including expired admin-session/rate-limit pruning, TypeScript and Vite production build).
-- Latest Pages deployment: run 41633720066 — success; includes the customer booking-management UI while remaining demo-only.
-- Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
-- D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
-- Worker code is not deployed to Cloudflare; owner secrets are not configured.
-- The new integration harness applies migrations 0001–0007 to an isolated temporary D1 database using Wrangler's local Worker runtime, then tests the real HTTP routes. It does not connect to or change the owner's Cloudflare account or production database.
-- Owner workspace supports login, upcoming-booking list/status transitions, service management and weekly/date-specific split schedule editing. Public availability/booking and customer lookup/cancellation are IP-HMAC rate-limited. New bookings issue a one-time 256-bit management token; the database stores only its SHA-256 digest. Customers can view a minimal booking summary and cancel pending/confirmed appointments before their start time. Full security QA remains outstanding.
-- Production build remains root-based for the future Cloudflare Worker deployment.
-- Production deployment: not configured.
-- Production database: not provisioned.
-- Real client data: must not be entered until security and launch gates pass.
+- Phase: **R07/R08 — quality, security review and production-readiness gates**.
+- Status: Core booking, customer self-service, owner workspace, multi-interval scheduling, public rate limits and local D1 backup/restore smoke coverage are implemented. The production service is not deployed.
+- Latest verified commit on `main`: `5197b32574f573bd7dc75e99d37f2c0141786eff` — local D1 backup/restore checkpoint and handoff update.
+- Latest CI: [run 41636439835](https://github.com/pooya-labs/salon-booking/actions/runs/41636439835) — success.
+- Latest GitHub Pages deployment: [run 41636439773](https://github.com/pooya-labs/salon-booking/actions/runs/41636439773) — success.
+- Latest code/test checkpoint before the documentation-only commit: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a`. CI verified 25/25 unit tests, SQLite migration/privacy checks, TypeScript/Vite build, Worker+D1 HTTP integration, expiry pruning and local D1 export/restore.
+- Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
+- Production D1 is not provisioned; migrations 0001–0007 have not been applied remotely; salon timezone remains `unset`; real services, prices, hours and contact details are not configured.
+- Worker is not deployed to Cloudflare; production secrets are not configured; no real customer data has been processed.
+- The next engineering work is R07 QA: mobile/tablet, Persian RTL/Jalali/timezone, keyboard/screen-reader, browser console/network and performance checks; then finish security/threat-model review and deployment/rollback documentation.
+- Production launch remains blocked on salon-owner decisions (business identity, location/timezone, service menu, schedule, cancellation policy, privacy contact/retention approval) and Cloudflare account/D1/secrets provisioning.
+- Do not enable real bookings or claim production readiness until all release gates and owner acceptance are complete.
 
 ## Decisions made
 
