@@ -99,3 +99,22 @@ The D1 triggers reject overlapping inserts and updates for `pending` and `confir
 In the Cloudflare production build, the React client loads the public config and services, requests server-calculated slots, and submits the final booking to this API. Development and GitHub Pages builds deliberately use sample data and never submit customer information.
 
 This initial public API does not yet include abuse/rate limiting, booking lookup, customer cancellation, owner authentication, notification delivery, or audit history. Do not treat this deployment as production-ready until the remaining security, privacy and operational roadmap gates pass. The GitHub Pages preview never invokes or hosts this API.
+
+
+## Owner API
+
+All /api/admin/* routes except GET /api/admin/setup-status require a valid owner session. Mutating requests must include a same-origin Origin header. No CORS allow-list is configured.
+
+- GET /api/admin/setup-status: reports whether an owner account exists and whether one-time bootstrap is enabled. It reveals no account name or private data.
+- POST /api/admin/bootstrap: creates the first owner only. Requires x-admin-bootstrap-token and JSON username/password; username 3–32 characters, password 12–128 characters. The insert is conditional on no existing owner.
+- POST /api/admin/login: checks credentials and sets the owner session cookie.
+- GET /api/admin/me: returns the current authenticated owner.
+- POST /api/admin/logout: revokes the current session and clears its cookie.
+- GET /api/admin/bookings?status=all: returns up to 200 appointments for the salon-local current day through six days ahead. An optional status filter is supported.
+- PATCH /api/admin/bookings/{booking-uuid}/status: accepts confirmed, cancelled, completed or no_show subject to transition rules. Changes are written with an audit-log entry in a D1 batch transaction.
+
+The cookie is named __Host-salon_session, with Path=/, HttpOnly, Secure and SameSite=Strict, and expires after 12 hours. Only a SHA-256 digest of the random 256-bit session token is stored in D1. Owner passwords are salted PBKDF2-HMAC-SHA-256 hashes (600,000 iterations), never plaintext. Login attempts are limited to 8 per IP-derived hashed bucket per 15 minutes; first-admin bootstrap is limited to 3 attempts per hour. The rate-limit table does not store raw IP addresses.
+
+The owner interface is served at /admin by the Worker. On GitHub Pages, the same link opens a demo-only notice and never contacts the owner API.
+
+Not yet implemented: owner service CRUD, weekly opening-hours/exception editing, client lookup/cancellation, password reset or multiple owner accounts. Public booking endpoint rate limiting and a full security review remain release blockers. See ADMIN.md.

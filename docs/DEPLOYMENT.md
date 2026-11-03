@@ -24,10 +24,13 @@ No VPS is required. The free tier is subject to Cloudflare's current quotas and 
 Never put secrets in Vite environment variables: anything prefixed with `VITE_` is public in the browser bundle.
 
 Production secrets belong in Worker secret storage, not Git:
-- `SESSION_SECRET` — high-entropy random value.
+- SESSION_SECRET — a unique high-entropy random value of at least 32 characters; used to HMAC rate-limit identifiers.
+- ADMIN_BOOTSTRAP_TOKEN — a separate high-entropy one-time key used only to create the first owner account.
 - Any future email/SMS provider credentials, only if the owner approves those features.
 
-Admin credentials must be provisioned through a secure setup flow; do not place a default password in source code or migrations.
+Generate two different values, for example with openssl rand -hex 32. In Cloudflare Dashboard, open Workers & Pages → salon-booking → Settings → Variables and Secrets → Add → Secret, add both names and values, then deploy the Worker. Cloudflare makes Worker secrets available through the env object and hides their values after creation. After the first owner account is created successfully at /admin, remove ADMIN_BOOTSTRAP_TOKEN; keep SESSION_SECRET in place. Never put either value into Git, a Vite VITE_* variable, an issue, or chat.
+
+Admin credentials are provisioned through the one-time bootstrap form; there is no default username or password in source code or migrations. The first owner chooses their own username and password (minimum 12 characters).
 
 ## Database
 
@@ -57,4 +60,4 @@ GitHub Pages is only for reviewing the static UI. Enable it once in repository S
  
 ## Public API and D1 scheduling setup
 
-See [API.md](./API.md) for endpoint contracts, request/response examples, error codes and D1 schedule configuration. Migration `0002_booking_engine.sql` creates the booking settings and overlap-protection triggers. The timezone value intentionally starts as `unset`; set it only after the salon owner confirms the actual location. Do not enter production customer information until rate limiting, owner authentication, lookup/cancellation privacy, backups and launch QA are complete.
+See [API.md](./API.md) for public and owner API contracts, and [ADMIN.md](./ADMIN.md) for the secure first-owner setup and dashboard behavior. Migration `0002_booking_engine.sql` creates the booking settings and overlap-protection triggers. The timezone value intentionally starts as `unset`; set it only after the salon owner confirms the actual location. Do not enter production customer information until rate limiting, owner authentication, lookup/cancellation privacy, backups and launch QA are complete.

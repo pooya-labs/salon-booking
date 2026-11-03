@@ -10,20 +10,20 @@
 - Engineering / creator credit: **Pooya**
 - Default branch: `main`
 - Deployment target: Cloudflare Workers + Static Assets + D1
-- Current release: 0.2.0
+- Current release: 0.3.0
 
 ## Current checkpoint
 
-- Phase: **R04 — Scheduling API and D1 booking engine (implementation and UI integration committed; live D1 configuration pending)**
-- Status: Worker exposes public config, active services, timezone-aware availability and booking-creation endpoints. The Cloudflare production build loads service data, requests availability and posts the final reservation. Migration 0002 adds salon settings and insert/update overlap triggers. Scheduling helpers cover IANA timezone conversion, DST gaps, date validation and slot duration.
-- GitHub Pages and local development remain isolated in demo mode: they use sample data and never submit customer details.
+- Phase: **R05/R06 — Owner workspace and admin security (first secure dashboard implementation committed; live D1 setup pending)**
+- Status: Worker now includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list and status transitions with D1 audit entries. Responsive owner UI is available at /admin on Cloudflare; Pages shows a demo-only notice.
+- Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya16pg-spec.github.io/salon-booking/
-- Latest verified standard CI: run 41607904598 — success (TypeScript + Vite production build).
-- Latest Pages deployment: run 41607904608 — success; updated interactive preview published.
+- Latest verified standard CI: run 41613207633 — success (13 unit tests, SQLite migration/security checks, TypeScript and Vite production build).
+- Latest Pages deployment: run 41613207475 — success; owner demo-only view and booking preview published.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
-- D1 is not provisioned, migration 0002 has not been applied remotely, salon timezone intentionally remains `unset`, and no real services/hours are configured.
-- D1 is not provisioned, migration 0002 has not been applied remotely, salon timezone intentionally remains `unset`, and no real services/hours are configured.
-- The Worker API and production UI integration are implemented but not production-ready: abuse/rate limiting, owner authentication, booking lookup/cancellation, audit trail, Cloudflare deploy wiring and production smoke tests are still outstanding.
+- D1 is not provisioned, migrations 0002/0003 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
+- Worker code is not deployed to Cloudflare; owner secrets are not configured.
+- Owner workspace supports login, upcoming-booking list and status transitions; service/schedule editing, client lookup/cancellation, public booking rate limits and full security QA remain outstanding.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -81,6 +81,10 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | Production UI/API integration | Cloudflare build loads public config/services, fetches available slots and submits booking requests; Pages and dev remain demo-only |
 | 2026-11-03 | UI/API integration verification | Run 41611257259 passed unit tests, migration tests and TypeScript/Vite build; Pages run 41611257334 deployed successfully |
 | 2026-11-03 | API documentation and handoff | Added public config contract, production/demo build separation and D1 provisioning guidance; CI 41611549763 and Pages 41611549999 both passed |
+| 2026-11-03 | Admin security backend | Added one-time bootstrap, PBKDF2 hashes, secure session cookies, hashed-IP rate limits, same-origin checks and protected owner endpoints |
+| 2026-11-03 | Admin dashboard UI | Added /admin sign-in/bootstrap states and responsive upcoming-bookings dashboard with status actions; Pages remains demo-only |
+| 2026-11-03 | Admin regression tests | Added six password/session/origin tests and migration checks for rate-limit buckets and audit log; CI 41613207633 passed |
+| 2026-11-03 | Admin preview publish | Pages run 41613207475 passed; no owner API is exposed or enabled in static preview |
 
 ## Current blockers / owner actions
 
@@ -91,12 +95,11 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Provision Cloudflare D1 and set its database ID; apply migrations remotely (owner action).
-2. After salon details are confirmed, set its IANA timezone, real services, weekly opening hours and exceptions.
-3. Deploy the Worker to Cloudflare and run real D1-backed API smoke/concurrency tests.
-4. Implement booking lookup, rate limiting, secure owner dashboard, service/schedule editing and audit controls.
-4. Complete security/privacy QA and transfer production hosting to Cloudflare Workers + D1.
-5. Before production, obtain salon content and owner acceptance.
+1. Provision Cloudflare D1, configure its ID and apply migrations 0001–0003 (owner action).
+2. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
+3. Confirm salon timezone/content, then add service and opening-hours management to the dashboard.
+4. Deploy and smoke-test the D1-backed public API and owner dashboard on Cloudflare.
+5. Add public booking rate limiting, client lookup/cancellation, retention, backups and full security QA.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
 ## Resume instructions for the next assistant/session

@@ -106,43 +106,43 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R05 — Salon owner dashboard
 
-- [ ] Secure owner sign-in and sign-out.
-- [ ] Session lifecycle, expiry and revocation.
-- [ ] Dashboard overview for today and upcoming bookings.
-- [ ] Calendar/list views with filters.
-- [ ] Confirm, cancel, complete and no-show states.
+- [x] Secure owner sign-in and sign-out endpoints and first-owner bootstrap flow.
+- [x] Session lifecycle, 12-hour expiry, database revocation and secure cookie.
+- [~] Dashboard overview for upcoming bookings (current view is the next seven salon-local days).
+- [~] Responsive appointment list with status filter (calendar/date-range navigation remains).
+- [x] Confirm, cancel, complete and no-show transitions with server-side state checks.
 - [ ] Create/edit/block working hours.
 - [ ] Manage breaks, holidays and time-off.
 - [ ] Manage services, duration and price.
-- [ ] View client contact details only when operationally necessary.
-- [ ] Responsive admin experience.
-- [ ] Destructive-action confirmation and audit trail.
+- [x] Client contact details are returned only inside the authenticated owner workspace.
+- [x] Responsive admin sign-in and appointment list UI.
+- [~] Status changes create D1 audit entries; destructive confirmation UI and wider audit coverage remain.
 
 **Exit criteria:** owner can run the daily schedule without touching GitHub or Cloudflare.
 
 ## R06 — Security and privacy
 
-- [ ] Admin routes protected server-side, not merely hidden in UI.
-- [ ] Passwords handled with an appropriate password-hashing approach.
-- [ ] Secure, HttpOnly, SameSite cookies and CSRF protections where applicable.
-- [ ] Strict authorization for every owner mutation.
-- [ ] Public APIs expose no private client list or admin data.
+- [x] Admin API routes require a server-validated owner session.
+- [x] Passwords stored as salted PBKDF2-HMAC-SHA-256 hashes (600,000 iterations).
+- [x] HttpOnly, Secure, SameSite=Strict host-only cookie and same-origin checks on mutations.
+- [x] Every implemented owner mutation checks the authenticated owner server-side.
+- [x] Public APIs do not expose owner booking lists or admin records.
 - [ ] Phone numbers and personal data are minimized.
-- [ ] Secrets stored only in Cloudflare secrets.
+- [x] Secrets are read only from Worker secret bindings; no defaults are committed.
 - [ ] Security headers and input/output handling reviewed.
-- [ ] Rate limits for sign-in, booking and lookup endpoints.
-- [ ] Threat review for booking enumeration and spam.
-- [ ] No real client data in screenshots, tests or seed fixtures.
+- [~] Login/bootstrap rate limits are implemented; public booking and lookup rate limits remain.
+- [~] Initial protections for bootstrap abuse, session theft and booking status mutation are implemented; public booking abuse and a full threat review remain.
+- [x] Tests contain no real client data or credentials.
 
 **Exit criteria:** documented security review with no known critical/high issues.
 
 ## R07 — Quality and acceptance
 
-- [x] Unit tests for timezone/date and scheduling helpers.
+- [x] Unit tests for timezone/date/scheduling helpers and admin password/session security (13 tests).
 - [ ] API tests for booking lifecycle and authorization against a Worker/D1 test environment.
 - [x] SQLite regression test for overlapping insert/update protection.
 - [~] Migration test against a clean SQLite database (D1-compatible SQL smoke test; actual Cloudflare D1 migration still pending).
-- [ ] Production build and TypeScript checks.
+- [x] Production build and TypeScript checks (latest CI pass).
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.

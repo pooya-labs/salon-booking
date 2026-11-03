@@ -8,8 +8,8 @@ A polished, mobile-first appointment booking platform for an independent hair sa
 
 ## Project status
 
-**Current phase:** R04 — Scheduling API and D1 booking engine  
-**Current release:** 0.2.0 — Booking API foundation  
+**Current phase:** R05/R06 — Owner dashboard and admin security  
+**Current release:** 0.3.0 — Secure owner workspace foundation  
 **Default branch:** `main`  
 **Preview:** GitHub Pages (static visual preview)  
 **Production target:** Cloudflare Workers + Static Assets + D1  
@@ -57,9 +57,9 @@ npm run build
 
 ## Preview vs production
 
-GitHub Pages is used temporarily to review the visual frontend and the interactive four-step booking journey. It does not run the Worker API or D1 database; selected services, dates and slots are sample data, and the final step explicitly does not create a reservation or transmit personal details. Do not submit real customer information there.
+GitHub Pages is used temporarily to review the visual frontend and interactive booking journey. Its admin link opens a non-functional design notice. Pages does not run the Worker API or D1 database; selected services, dates and slots are sample data, and it never creates reservations or submits personal details. Do not submit real customer information there.
 
-The production deployment will move to Cloudflare Workers + D1 after booking, admin, security and QA work is complete.
+The Cloudflare production build includes the public booking API and secure owner sign-in/dashboard. The dashboard currently lists bookings and supports approved status transitions; service and schedule editing, production provisioning, public-booking abuse controls and final security/QA gates remain.
 
 ## Deployment
 
