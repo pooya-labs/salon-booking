@@ -10,7 +10,7 @@
 - Engineering / creator credit: **Pooya**
 - Default branch: `main`
 - Deployment target: Cloudflare Workers + Static Assets + D1
-- Current release: 0.1.0
+- Current release: 0.2.0
 
 ## Current checkpoint
 
@@ -80,6 +80,7 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | Automated regression tests | CI now runs 7 date/timezone helper tests and SQLite migration/overlap-trigger tests; run 41610720053 passed |
 | 2026-11-03 | Production UI/API integration | Cloudflare build loads public config/services, fetches available slots and submits booking requests; Pages and dev remain demo-only |
 | 2026-11-03 | UI/API integration verification | Run 41611257259 passed unit tests, migration tests and TypeScript/Vite build; Pages run 41611257334 deployed successfully |
+| 2026-11-03 | API documentation and handoff | Added public config contract, production/demo build separation and D1 provisioning guidance; CI 41611549763 and Pages 41611549999 both passed |
 
 ## Current blockers / owner actions
 
