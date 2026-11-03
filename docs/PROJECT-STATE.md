@@ -16,15 +16,15 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core booking, customer self-service, owner workspace, multi-interval scheduling, public rate limits and local D1 backup/restore smoke coverage are implemented. The production service is not deployed.
-- Latest implementation commit on `main`: `33dcc56619b150af215218c3204673e0301aa588` — server-side booking idempotency, 256-bit request keys and normalized key handling; final CI verification is pending.
-- Latest fully verified CI before the current code changes: [run 41638950450](https://github.com/pooya-labs/salon-booking/actions/runs/41638950450) — success. CI for the current checkpoint is being queued.
-- Latest successful GitHub Pages deployment: [run 41638950478](https://github.com/pooya-labs/salon-booking/actions/runs/41638950478). A fresh deployment is queued for the current checkpoint.
-- Latest code/test checkpoint before the documentation-only commit: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a`. CI verified 25/25 unit tests, SQLite migration/privacy checks, TypeScript/Vite build, Worker+D1 HTTP integration, expiry pruning and local D1 export/restore.
+- Latest verified implementation commit on `main`: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276` — server-side idempotency, 256-bit request keys and concurrent replay protection.
+- Latest CI: [run 41642193392](https://github.com/pooya-labs/salon-booking/actions/runs/41642193392) — success (unit tests, SQLite migrations, TypeScript/Vite build and Worker+D1 integration including concurrent idempotency replay).
+- Latest GitHub Pages deployment: [run 41642193400](https://github.com/pooya-labs/salon-booking/actions/runs/41642193400) — success.
+- Earlier verified baseline: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a` verified 25 unit tests, privacy checks and local D1 export/restore before idempotency was added.
 - Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
 - Production D1 is not provisioned; migrations 0001–0008 have not been applied remotely; salon timezone remains `unset`; real services, prices, hours and contact details are not configured.
 - Worker is not deployed to Cloudflare; production secrets are not configured; no real customer data has been processed.
-- The next engineering work is R07 QA: mobile/tablet, Persian RTL/Jalali/timezone, keyboard/screen-reader, browser console/network and performance checks; then finish security/threat-model review and deployment/rollback documentation.
+- Next engineering work is the remaining R07 QA: mobile/tablet, Persian RTL/Jalali/timezone, keyboard/screen-reader, browser console/network and performance checks; then finish security/threat-model review and deployment/rollback documentation.
 - Production launch remains blocked on salon-owner decisions (business identity, location/timezone, service menu, schedule, cancellation policy, privacy contact/retention approval) and Cloudflare account/D1/secrets provisioning.
 - Do not enable real bookings or claim production readiness until all release gates and owner acceptance are complete.
 
@@ -45,8 +45,7 @@
 - Implementation commit: `79a457fbdcf70038e891943866583ca7cfbe474e`.
 - Follow-up focus-trap correction: `3c513c688a16b2e6c16498bd75d3a461f7acb113` now returns forward Tab and reverse Shift+Tab to the appropriate dialog boundary when focus is found outside the modal.
 - SQLite overlap triggers remain the final protection against conflicting active reservations.
-- This is not server-side idempotency: if the server commits a booking but the response is lost, a retry is not guaranteed to replay the original reference/token. A server idempotency key is tracked separately in ROADMAP.md.
-- CI and Pages workflows for this code checkpoint are triggered by the latest main update; verify their outcomes before marking this change fully verified.
+- The client-side synchronous submission lock prevents rapid duplicate clicks; server-side request replay is now implemented in the later migration 0008 checkpoint below.
 
 ## Latest server-side booking idempotency checkpoint (2026-11-03)
 
@@ -58,7 +57,8 @@
 - The booking insert and idempotency ledger insert are committed together through a D1 batch. Replaying the same key and payload returns HTTP 200 with the original reference/token; changing the payload while reusing the key returns HTTP 409 `idempotency_key_reused`.
 - Added unit coverage for key entropy/format, SQLite checks for key uniqueness and erasure cascade, and Worker integration coverage for replay, mismatched payload, missing key and distinct-key slot conflicts.
 - Implementation commits include migration `a2f208c`, Worker `df891ec` / `a66dde0` / `33dcc56`, frontend `7977b61` / `6b68de5`, unit/migration/integration tests and API/deployment docs.
-- CI and GitHub Pages results for the final code and documentation commits must be checked before marking this item verified.
+- Final verified code/test commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`.
+- CI [run 41642193392](https://github.com/pooya-labs/salon-booking/actions/runs/41642193392) and Pages [run 41642193400](https://github.com/pooya-labs/salon-booking/actions/runs/41642193400) both passed.
 
 ## Decisions made
 
