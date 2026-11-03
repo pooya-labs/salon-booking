@@ -53,3 +53,8 @@ Keep the previous successful deployment available in Cloudflare deployment histo
 ## Temporary GitHub Pages preview
 
 GitHub Pages is only for reviewing the static UI. Enable it once in repository Settings → Pages → Build and deployment → Source → GitHub Actions. The Pages workflow uses `npm run build:pages` and publishes `dist/` at `https://pooya16pg-spec.github.io/salon-booking/`. The regular `npm run build` keeps the root base path required by the eventual Cloudflare Worker deployment. Never collect real bookings or personal data on the Pages preview.
+
+ 
+## Public API and D1 scheduling setup
+
+See [API.md](./API.md) for endpoint contracts, request/response examples, error codes and D1 schedule configuration. Migration `0002_booking_engine.sql` creates the booking settings and overlap-protection triggers. The timezone value intentionally starts as `unset`; set it only after the salon owner confirms the actual location. Do not enter production customer information until rate limiting, owner authentication, lookup/cancellation privacy, backups and launch QA are complete.

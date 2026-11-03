@@ -14,12 +14,15 @@
 
 ## Current checkpoint
 
-- Phase: **R03 — Client booking journey (interactive preview implemented; API integration pending)**
-- Status: Guided four-step booking flow committed to main. Includes service selection, 14-day Jalali date labels, sample time slots, client name/phone validation and a final review screen.
+- Phase: **R04 — Scheduling API and D1 booking engine (initial implementation committed; live D1 configuration pending)**
+- Status: Worker now exposes public services, availability and booking-creation endpoints. Migration 0002 adds salon settings and insert/update overlap triggers. Scheduling helpers cover IANA timezone conversion, DST gaps, date validation and slot duration.
+- Client UI remains a clearly marked static preview and has not yet been connected to production endpoints.
 - Public preview: https://pooya16pg-spec.github.io/salon-booking/
 - Latest verified standard CI: run 41607904598 — success (TypeScript + Vite production build).
 - Latest Pages deployment: run 41607904608 — success; updated interactive preview published.
-- Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations. There is no connected D1 database or owner authentication yet.
+- Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
+- D1 is not provisioned, migration 0002 has not been applied remotely, salon timezone intentionally remains `unset`, and no real services/hours are configured.
+- The Worker API is not production-ready: abuse/rate limiting, owner authentication, booking lookup/cancellation, audit trail and production smoke tests are still outstanding.
 - Production build remains root-based for the future Cloudflare Worker deployment.
 - Production deployment: not configured.
 - Production database: not provisioned.
@@ -70,6 +73,9 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | Initial booking-flow CI | Run 41607813191 failed only for an unused CalendarDays import; import removed |
 | 2026-11-03 | Booking-flow build verification | Run 41607904598 passed dependency install, TypeScript check and Vite build |
 | 2026-11-03 | Booking-flow Pages deployment | Run 41607904608 passed build, artifact upload and deploy; public preview updated |
+| 2026-11-03 | Public Worker API | Added GET services, GET availability and POST bookings endpoints with input validation and normalized errors |
+| 2026-11-03 | D1 booking migration | Added salon settings, configurable timezone/notice/horizon/buffer, and database triggers for overlapping active bookings |
+| 2026-11-03 | Timezone engine | Added IANA timezone conversion and DST-gap rejection helpers; salon timezone remains unset pending owner confirmation |
 
 ## Current blockers / owner actions
 
@@ -80,9 +86,10 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Connect the booking flow to API-backed service catalog and availability endpoints.
-2. Implement secure, conflict-safe booking creation and booking-reference lookup in D1.
-3. Build protected owner dashboard and scheduling controls.
+1. Add automated timezone, migration and overlap-trigger tests to CI; verify the new Worker API build.
+2. Provision Cloudflare D1 and configure the salon's confirmed timezone, real services and working hours (owner action).
+3. Connect the booking UI to API services/availability and real confirmation response.
+4. Implement booking lookup, rate limiting, secure owner dashboard and scheduling controls.
 4. Complete security/privacy QA and transfer production hosting to Cloudflare Workers + D1.
 5. Before production, obtain salon content and owner acceptance.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.

@@ -25,5 +25,9 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Unit tests
+        run: npm run test:unit
+      - name: SQLite migration and conflict tests
+        run: npm run test:migrations
       - name: Typecheck and build
         run: npm run build

@@ -74,12 +74,12 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Client name and international phone-number format validation in the form.
 - [x] Booking review screen with service, date, time, duration and contact summary.
 - [~] Preview completion state is explicit and does not submit/save personal data; real confirmation and reference code require the production API.
-- [ ] Server-provided available time slots.
-- [ ] Booking reference generation from the backend.
+- [~] Server-provided available time slots (API implemented; frontend still uses demo slots until the production host is configured).
+- [~] Booking creation endpoint and random reference generation implemented; requires configured D1 and salon schedule.
 - [ ] Lookup booking by reference + verified contact detail.
 - [ ] Clear cancellation/reschedule policy supplied and displayed.
 - [x] Accessible field labels, validation error message and step navigation.
-- [ ] Prevent duplicate submissions and double booking in the backend/database.
+- [~] Double-booking prevention enforced in SQLite triggers; frontend idempotency/duplicate-submit guard remains.
 
 **Preview safety:** GitHub Pages shows the full client-side journey for design review only. It never stores or transmits customer details and must not be used for real appointments.
 
@@ -87,15 +87,16 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R04 — Scheduling and data layer
 
-- [ ] D1 schema for services, opening hours, exceptions, bookings and admin identity.
-- [ ] Versioned SQL migrations.
-- [ ] Seed/development data kept separate from production.
-- [ ] API input validation and normalized error responses.
-- [ ] Timezone policy documented and applied consistently.
-- [ ] Availability calculated on the server.
-- [ ] Atomic conflict protection for overlapping bookings.
-- [ ] Service duration and configurable buffers respected.
-- [ ] Closed days, breaks, leave and manual blocks supported.
+- [~] D1 schema for services, opening hours, exceptions, bookings, admin identity and salon settings (v1/v2 migrations added; production D1 not yet provisioned).
+- [x] Versioned SQL migrations, with SQLite migration/trigger regression tests.
+- [x] No placeholder services or business hours are seeded into production.
+- [x] Public API input validation and normalized error responses.
+- [~] IANA timezone conversion and UTC persistence implemented; salon timezone remains `unset` until owner confirmation.
+- [x] Availability calculated on the server from service duration, opening hours, exceptions, settings and active bookings.
+- [x] Database triggers reject overlapping active reservations on insert and update.
+- [x] Service duration and configurable buffers respected.
+- [x] Closed dates and one-off opening windows supported through schedule exceptions.
+- [ ] Breaks as multiple daily intervals (current schema supports one open interval per weekday/exception).
 - [ ] Booking state transitions audited.
 - [ ] Rate limiting and abuse controls.
 - [ ] Data retention and export/deletion procedure documented.
@@ -136,10 +137,10 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R07 — Quality and acceptance
 
-- [ ] Unit tests for scheduling and validation.
-- [ ] API tests for booking lifecycle and authorization.
-- [ ] Concurrent booking conflict test.
-- [ ] Migration test against a clean D1 database.
+- [x] Unit tests for timezone/date and scheduling helpers.
+- [ ] API tests for booking lifecycle and authorization against a Worker/D1 test environment.
+- [x] SQLite regression test for overlapping insert/update protection.
+- [~] Migration test against a clean SQLite database (D1-compatible SQL smoke test; actual Cloudflare D1 migration still pending).
 - [ ] Production build and TypeScript checks.
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.

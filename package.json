@@ -12,7 +12,9 @@
     "db:local": "wrangler d1 migrations apply salon-booking --local",
     "db:remote": "wrangler d1 migrations apply salon-booking --remote",
     "build:pages": "tsc -b && vite build --mode pages",
-    "preview:pages": "vite preview --base /salon-booking/"
+    "preview:pages": "vite preview --base /salon-booking/",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:migrations": "python tests/verify_migrations.py"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

@@ -223,11 +223,12 @@ const makeReference = () => {
 
 const readJsonBody = async (request: Request): Promise<BookingInput | null> => {
   const contentType = request.headers.get('content-type') ?? ''
-  const contentLength = Number(request.headers.get('content-length') ?? '0')
-  if (!contentType.toLowerCase().includes('application/json') || contentLength > 8192) return null
+  if (!contentType.toLowerCase().includes('application/json')) return null
 
   try {
-    const body: unknown = await request.json()
+    const raw = await request.text()
+    if (raw.length > 8192) return null
+    const body: unknown = JSON.parse(raw)
     if (!body || typeof body !== 'object' || Array.isArray(body)) return null
     return body as BookingInput
   } catch {
@@ -277,8 +278,18 @@ const handleAvailability = async (request: Request, db: D1Database) => {
   if (!service) return errorResponse('service_not_found', 'این خدمت در دسترس نیست.', 404)
 
   const settings = await getSettings(db)
-  const availability = await getAvailability(db, settings, service, date)
-  return json({ ok: true, ...availability })
+  try {
+    const availability = await getAvailability(db, settings, service, date)
+    return json({ ok: true, ...availability })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'date_out_of_range') {
+      return errorResponse('date_out_of_range', 'این تاریخ خارج از بازه رزرو است.', 400)
+    }
+    if (error instanceof Error && error.message === 'schedule_not_configured') {
+      return errorResponse('schedule_not_configured', 'برنامه کاری استودیو هنوز تنظیم نشده است.', 503)
+    }
+    throw error
+  }
 }
 
 const handleCreateBooking = async (request: Request, db: D1Database) => {
