@@ -16,9 +16,9 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core booking, customer self-service, owner workspace, multi-interval scheduling, public rate limits and local D1 backup/restore smoke coverage are implemented. The production service is not deployed.
-- Latest verified code checkpoint on `main`: `9a0b2105c361253d6b34f437392c2c0870cb1435` — accessible booking dialogs plus synchronized roadmap/handoff.
-- Latest CI: [run 41638704919](https://github.com/pooya-labs/salon-booking/actions/runs/41638704919) — success on the accessibility checkpoint (unit, SQLite migration, TypeScript/Vite build and Worker+D1 integration all passed).
-- Latest GitHub Pages deployment: [run 41638704945](https://github.com/pooya-labs/salon-booking/actions/runs/41638704945) — success.
+- Latest code checkpoint on `main`: `3c513c688a16b2e6c16498bd75d3a461f7acb113` — synchronous duplicate-submit protection and robust focus-trap recovery.
+- Latest fully verified CI before the current code changes: [run 41638950450](https://github.com/pooya-labs/salon-booking/actions/runs/41638950450) — success. CI for the current checkpoint is being queued.
+- Latest successful GitHub Pages deployment: [run 41638950478](https://github.com/pooya-labs/salon-booking/actions/runs/41638950478). A fresh deployment is queued for the current checkpoint.
 - Latest code/test checkpoint before the documentation-only commit: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a`. CI verified 25/25 unit tests, SQLite migration/privacy checks, TypeScript/Vite build, Worker+D1 HTTP integration, expiry pruning and local D1 export/restore.
 - Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
@@ -43,6 +43,7 @@
 - The visible pending state continues to disable the submit control; the ref lock closes the gap before React has rendered the disabled state.
 - Corrected the request-side phone normalization expression so it uses the same whitespace, parenthesis and hyphen removal as the validation step.
 - Implementation commit: `79a457fbdcf70038e891943866583ca7cfbe474e`.
+- Follow-up focus-trap correction: `3c513c688a16b2e6c16498bd75d3a461f7acb113` now returns forward Tab and reverse Shift+Tab to the appropriate dialog boundary when focus is found outside the modal.
 - SQLite overlap triggers remain the final protection against conflicting active reservations.
 - This is not server-side idempotency: if the server commits a booking but the response is lost, a retry is not guaranteed to replay the original reference/token. A server idempotency key is tracked separately in ROADMAP.md.
 - CI and Pages workflows for this code checkpoint are triggered by the latest main update; verify their outcomes before marking this change fully verified.
