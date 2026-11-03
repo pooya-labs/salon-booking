@@ -28,6 +28,15 @@
 - Production launch remains blocked on salon-owner decisions (business identity, location/timezone, service menu, schedule, cancellation policy, privacy contact/retention approval) and Cloudflare account/D1/secrets provisioning.
 - Do not enable real bookings or claim production readiness until all release gates and owner acceptance are complete.
 
+## Latest accessibility checkpoint (2026-11-03)
+
+- Added `src/useDialogAccessibility.ts` and applied it to the public booking wizard and customer booking-management dialog.
+- Both dialogs now move focus inside on open, contain Tab/Shift+Tab navigation, close on Escape, lock background body scrolling and restore the previously focused element on close.
+- Dialog sections are programmatically focusable as a safe fallback; accessible dialog names remain connected to their visible headings.
+- Implementation commits: `0bcde6bfa69300efa7f95496d4b868f990a9bba2`, `2e316f55b44068a29e12413b10d379f51d4f07d1`, and `4c22831e27b518d1d1c3e55b31bea9c6bc23e067`.
+- CI and GitHub Pages checks for the final implementation commit were triggered as runs [41638628014](https://github.com/pooya-labs/salon-booking/actions/runs/41638628014) and [41638628019](https://github.com/pooya-labs/salon-booking/actions/runs/41638628019); results must be checked before calling this change verified.
+- This is an implementation checkpoint, not a completed manual screen-reader audit. Test with keyboard-only navigation and at least one screen reader before marking R07 complete.
+
 ## Decisions made
 
 1. Keep the product focused on appointment booking and salon-owner scheduling.
