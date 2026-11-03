@@ -4,12 +4,12 @@ import { once } from 'node:events'
 import { createServer } from 'node:net'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 const root = process.cwd()
-const runId = \`${process.pid}-${Date.now()}\`
+const runId = `${process.pid}-${Date.now()}`
 const tempDirectory = await mkdtemp(join(tmpdir(), 'salon-booking-worker-'))
-const configPath = join(root, \`.wrangler.integration-\${runId}.toml\`)
+const configPath = join(root, `.wrangler.integration-${runId}.toml`)
 const persistPath = join(tempDirectory, 'd1-state')
 const sessionSecret = 'local-worker-integration-secret-'.padEnd(64, 'x')
 const baseHeaders = { 'cf-connecting-ip': '203.0.113.42' }
@@ -31,7 +31,7 @@ const runWrangler = (args, timeoutMs = 120_000) => new Promise((resolvePromise, 
   let stderr = ''
   const timer = setTimeout(() => {
     child.kill('SIGTERM')
-    rejectPromise(new Error(\`Wrangler command timed out: \${args.join(' ')}\\n\${stderr}\`))
+    rejectPromise(new Error(`Wrangler command timed out: ${args.join(' ')}\n${stderr}`))
   }, timeoutMs)
   child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
   child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
@@ -43,7 +43,7 @@ const runWrangler = (args, timeoutMs = 120_000) => new Promise((resolvePromise, 
     clearTimeout(timer)
     if (code === 0) resolvePromise({ stdout, stderr })
     else rejectPromise(new Error(
-      \`Wrangler command failed (\${code}): \${args.join(' ')}\\n\${stdout}\\n\${stderr}\`,
+      `Wrangler command failed (${code}): ${args.join(' ')}\n${stdout}\n${stderr}`,
     ))
   })
 })
@@ -63,7 +63,7 @@ const expectJson = async (response, expectedStatus, label) => {
   assert.equal(
     response.status,
     expectedStatus,
-    \`\${label}: expected HTTP \${expectedStatus}, received \${response.status}: \${JSON.stringify(body)}\`,
+    `${label}: expected HTTP ${expectedStatus}, received ${response.status}: ${JSON.stringify(body)}`,
   )
   return body
 }
@@ -79,26 +79,24 @@ const waitForWorker = async (baseUrl) => {
   let lastError = ''
   while (Date.now() < deadline) {
     if (workerProcess.exitCode !== null || workerProcess.signalCode !== null) {
-      throw new Error(\`Wrangler exited before becoming ready.\\n\${workerLogs}\`)
+      throw new Error(`Wrangler exited before becoming ready.\n${workerLogs}`)
     }
     try {
       const response = await fetch(new URL('/api/health', baseUrl), { signal: AbortSignal.timeout(1500) })
       if (response.ok) return
-      lastError = \`health endpoint returned \${response.status}\`
+      lastError = `health endpoint returned ${response.status}`
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error)
     }
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 400))
   }
-  throw new Error(\`Worker did not become ready: \${lastError}\\n\${workerLogs}\`)
+  throw new Error(`Worker did not become ready: ${lastError}\n${workerLogs}`)
 }
-
-const sqlQuote = (value) => \`'\${String(value).replaceAll("'", "''")}'\`
 
 try {
   const originalConfig = await readFile(join(root, 'wrangler.toml'), 'utf8')
   const testConfig = originalConfig.replace(
-    /database_id\\s*=\\s*"[^"]+"/,
+    /database_id\s*=\s*"[^"]+"/,
     'database_id = "00000000-0000-4000-8000-000000000001"',
   )
   assert.notEqual(testConfig, originalConfig, 'wrangler.toml must contain a D1 database_id')
@@ -118,26 +116,26 @@ try {
   ].join('-')
   const weekday = bookingDate.getUTCDay()
   const seedSql = [
-    \`INSERT INTO services (id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order) VALUES ('integration-service', 'Integration service', '', 30, 10000, 'IRR', 1, 0)\`,
-    \`UPDATE salon_settings SET setting_value = 'UTC' WHERE setting_key = 'local_timezone'\`,
-    \`UPDATE salon_settings SET setting_value = '0' WHERE setting_key = 'min_booking_notice_minutes'\`,
-    \`UPDATE salon_settings SET setting_value = '30' WHERE setting_key = 'booking_window_days'\`,
-    \`UPDATE salon_settings SET setting_value = '30' WHERE setting_key = 'slot_interval_minutes'\`,
-    \`UPDATE salon_settings SET setting_value = '0' WHERE setting_key = 'buffer_minutes'\`,
-    \`INSERT INTO opening_hours (id, weekday, opens_at, closes_at, is_closed) VALUES ('integration-hours', \${weekday}, '09:00', '17:00', 0)\`,
-  ].join(';\\n')
+    `INSERT INTO services (id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order) VALUES ('integration-service', 'Integration service', '', 30, 10000, 'IRR', 1, 0)`,
+    `UPDATE salon_settings SET setting_value = 'UTC' WHERE setting_key = 'local_timezone'`,
+    `UPDATE salon_settings SET setting_value = '0' WHERE setting_key = 'min_booking_notice_minutes'`,
+    `UPDATE salon_settings SET setting_value = '30' WHERE setting_key = 'booking_window_days'`,
+    `UPDATE salon_settings SET setting_value = '30' WHERE setting_key = 'slot_interval_minutes'`,
+    `UPDATE salon_settings SET setting_value = '0' WHERE setting_key = 'buffer_minutes'`,
+    `INSERT INTO opening_hours (id, weekday, opens_at, closes_at, is_closed) VALUES ('integration-hours', ${weekday}, '09:00', '17:00', 0)`,
+  ].join(';\n')
   await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
     '--config', configPath, '--command', seedSql,
   ])
 
   const port = await getFreePort()
-  const baseUrl = \`http://127.0.0.1:\${port}\`
+  const baseUrl = `http://127.0.0.1:${port}`
   const executable = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   workerProcess = spawn(executable, [
     'wrangler', 'dev', '--config', configPath, '--ip', '127.0.0.1',
     '--port', String(port), '--persist-to', persistPath,
-    '--var', \`SESSION_SECRET:\${sessionSecret}\`,
+    '--var', `SESSION_SECRET:${sessionSecret}`,
   ], {
     cwd: root,
     env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
@@ -160,7 +158,7 @@ try {
   assert.equal(services.services.length, 1)
   assert.equal(services.services[0].id, 'integration-service')
 
-  const availabilityPath = \`/api/public/availability?date=\${date}&serviceId=integration-service\`
+  const availabilityPath = `/api/public/availability?date=${date}&serviceId=integration-service`
   const availability = await expectJson(await request(baseUrl, availabilityPath), 200, 'availability')
   assert.ok(availability.slots.includes('09:00'), 'first valid local opening slot should be returned')
 
@@ -214,7 +212,7 @@ try {
   assert.equal(lookup.booking.durationMinutes, 30)
   assert.equal(lookup.booking.status, 'pending')
   for (const privateField of ['name', 'phone', 'note', 'clientName', 'clientPhone', 'clientNote']) {
-    assert.equal(Object.hasOwn(lookup.booking, privateField), false, \`customer lookup must not expose \${privateField}\`)
+    assert.equal(Object.hasOwn(lookup.booking, privateField), false, `customer lookup must not expose ${privateField}`)
   }
 
   const cancelled = await expectJson(await request(baseUrl, '/api/public/bookings/cancel', {
