@@ -52,7 +52,7 @@
 - Added migration `0008_booking_idempotency.sql`. Each booking's idempotency row is linked by foreign key and is deleted automatically when its booking is erased.
 - `POST /api/public/bookings` now requires an `Idempotency-Key` header containing 64 hexadecimal characters (256 random bits).
 - The browser creates one key for a normalized booking payload, reuses it after an uncertain network outcome, and generates a new one when the payload changes.
-- The Worker stores only domain-separated SHA-256 digests for the key and request fingerprint plus a non-sensitive response snapshot. The raw idempotency key and customer request body are not persisted.
+- The idempotency ledger stores only domain-separated SHA-256 digests and a non-sensitive response snapshot; it does not duplicate the raw key or request body. The ordinary bookings table continues to hold the client details needed to manage appointments.
 - The customer-management token is deterministically derived from the same 256-bit key with domain separation; only the token's SHA-256 digest is stored on the booking.
 - The booking insert and idempotency ledger insert are committed together through a D1 batch. Replaying the same key and payload returns HTTP 200 with the original reference/token; changing the payload while reusing the key returns HTTP 409 `idempotency_key_reused`.
 - Added unit coverage for key entropy/format, SQLite checks for key uniqueness and erasure cascade, and Worker integration coverage for replay, mismatched payload, missing key and distinct-key slot conflicts.
