@@ -582,7 +582,27 @@ try {
     'cancelling a booking should release its slot',
   )
 
-  console.log('PASS: local Worker + D1 migrations, public booking lifecycle, customer self-service, owner bootstrap/login/logout/session revocation, owner service CRUD, booking status authorization, salon settings, split weekly hours and date exceptions.')
+  const backupPath = join(tempDirectory, 'salon-booking-local-backup.sql')
+  await runWrangler([
+    'd1', 'export', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--output', backupPath,
+  ])
+  const backupSql = await readFile(backupPath, 'utf8')
+  assert.match(backupSql, /CREATE TABLE.*bookings/i, 'D1 export should include the bookings schema')
+
+  const restorePath = join(tempDirectory, 'restored-d1-state')
+  await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', restorePath,
+    '--config', configPath, '--file', backupPath,
+  ])
+  const restoreVerification = await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', restorePath,
+    '--config', configPath, '--command',
+    `SELECT CASE WHEN EXISTS (SELECT 1 FROM bookings WHERE reference_code = '${booking.reference}' AND status = 'cancelled') AND EXISTS (SELECT 1 FROM admin_users WHERE username = 'integration-owner') THEN 'RESTORE_VERIFIED' ELSE 'RESTORE_MISMATCH' END AS result`,
+  ])
+  assert.match(restoreVerification.stdout, /RESTORE_VERIFIED/)
+
+  console.log('PASS: local Worker + D1 migrations, public booking lifecycle, customer self-service, owner authentication and APIs, schedule management, expired-record pruning, and local D1 export/restore smoke test.')
 } catch (error) {
   console.error(error)
   if (workerLogs) console.error(workerLogs)
