@@ -11,6 +11,7 @@ import { createRateLimitBucketHash, getRateLimitWindow } from './rate-limit'
 import {
   isBookingCancellable,
   isValidBookingReference,
+  isValidIdempotencyKey,
   verifyBookingManagementToken,
 } from './customer-booking-security'
 import {
@@ -402,9 +403,65 @@ const handleAvailability = async (request: Request, db: D1Database) => {
   }
 }
 
-const handleCreateBooking = async (request: Request, db: D1Database) => {
+interface BookingIdempotencyRow {
+  request_hash: string
+  response_json: string
+}
+
+interface StoredBookingResponse {
+  reference: string
+  status: 'pending'
+  serviceName: string
+  date: string
+  time: string
+  durationMinutes: number
+}
+
+const replayIdempotentBooking = async (
+  db: D1Database,
+  idempotencyKeyHash: string,
+  requestHash: string,
+  idempotencyKey: string,
+  sessionSecret: string,
+): Promise<Response | null> => {
+  const record = await db.prepare(
+    `SELECT request_hash, response_json
+     FROM booking_idempotency
+     WHERE idempotency_key_hash = ?
+     LIMIT 1`,
+  ).bind(idempotencyKeyHash).first<BookingIdempotencyRow>()
+
+  if (!record) return null
+  if (record.request_hash !== requestHash) {
+    return errorResponse(
+      'idempotency_key_reused',
+      'کلید ثبت قبلاً برای اطلاعات دیگری استفاده شده است.',
+      409,
+    )
+  }
+
+  const booking = JSON.parse(record.response_json) as StoredBookingResponse
+  const managementToken = await createRateLimitBucketHash(
+    sessionSecret,
+    'booking_management_token',
+    idempotencyKey,
+  )
+
+  return json({
+    ok: true,
+    booking: { ...booking, managementToken },
+    replayed: true,
+  }, 200)
+}
+
+const handleCreateBooking = async (request: Request, db: D1Database, sessionSecret: string) => {
   const input = await readJsonBody(request)
   if (!input) return errorResponse('invalid_request', 'درخواست معتبر نیست.', 400)
+
+  const idempotencyKey = request.headers.get('idempotency-key')
+  if (!isValidIdempotencyKey(idempotencyKey)) {
+    return errorResponse('idempotency_key_required', 'کلید یکتای ثبت نوبت معتبر نیست؛ دوباره تلاش کنید.', 400)
+  }
 
   const serviceId = typeof input.serviceId === 'string' ? input.serviceId.trim() : ''
   const date = typeof input.date === 'string' ? input.date : ''
@@ -426,6 +483,26 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
   if (typeof input.note === 'string' && input.note.length > 1000) {
     return errorResponse('invalid_note', 'متن توضیحات بیش از حد طولانی است.', 400)
   }
+
+  const idempotencyKeyHash = await createRateLimitBucketHash(
+    sessionSecret,
+    'booking_idempotency',
+    idempotencyKey,
+  )
+  const requestFingerprint = JSON.stringify({ serviceId, date, time, name, phone, note })
+  const requestHash = await createRateLimitBucketHash(
+    sessionSecret,
+    'booking_request',
+    `${idempotencyKey}:${requestFingerprint}`,
+  )
+  const replay = await replayIdempotentBooking(
+    db,
+    idempotencyKeyHash,
+    requestHash,
+    idempotencyKey,
+    sessionSecret,
+  )
+  if (replay) return replay
 
   const service = await db
     .prepare(
@@ -468,18 +545,51 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
 
   const id = crypto.randomUUID()
   const reference = makeReference()
-  const managementToken = createSessionToken()
+  const managementToken = await createRateLimitBucketHash(
+    sessionSecret,
+    'booking_management_token',
+    idempotencyKey,
+  )
   const managementTokenHash = await sha256Hex(managementToken)
+  const bookingResponse: StoredBookingResponse = {
+    reference,
+    status: 'pending',
+    serviceName: service.name,
+    date,
+    time,
+    durationMinutes: service.duration_minutes,
+  }
+
   try {
-    await db
-      .prepare(
+    // D1 batch is transactional: the booking and its idempotency record either
+    // commit together or roll back together if either unique constraint fails.
+    await db.batch([
+      db.prepare(
         `INSERT INTO bookings
           (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status, client_note, client_manage_token_hash)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-      )
-      .bind(id, reference, serviceId, name, phone, startsAt.toISOString(), endsAt.toISOString(), note, managementTokenHash)
-      .run()
+      ).bind(
+        id, reference, serviceId, name, phone,
+        startsAt.toISOString(), endsAt.toISOString(), note, managementTokenHash,
+      ),
+      db.prepare(
+        `INSERT INTO booking_idempotency
+          (idempotency_key_hash, request_hash, booking_id, response_json)
+         VALUES (?, ?, ?, ?)`,
+      ).bind(idempotencyKeyHash, requestHash, id, JSON.stringify(bookingResponse)),
+    ])
   } catch (error) {
+    // A concurrent request with the same key may have committed first. Read
+    // its result before interpreting the database error as a slot conflict.
+    const concurrentReplay = await replayIdempotentBooking(
+      db,
+      idempotencyKeyHash,
+      requestHash,
+      idempotencyKey,
+      sessionSecret,
+    )
+    if (concurrentReplay) return concurrentReplay
+
     const message = error instanceof Error ? error.message : String(error)
     if (message.includes('booking_time_conflict')) {
       return errorResponse('slot_unavailable', 'این زمان هم‌اکنون رزرو شده است؛ زمان دیگری انتخاب کنید.', 409)
@@ -492,15 +602,7 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
 
   return json({
     ok: true,
-    booking: {
-      reference,
-      managementToken,
-      status: 'pending',
-      serviceName: service.name,
-      date,
-      time,
-      durationMinutes: service.duration_minutes,
-    },
+    booking: { ...bookingResponse, managementToken },
   }, 201)
 }
 
@@ -676,7 +778,7 @@ const handleWorkerRequest = async (request: Request, env: Env): Promise<Response
       const limitResponse = await enforcePublicRateLimit(env.DB, request, env.SESSION_SECRET, 'booking', 10, 900)
       if (limitResponse) return limitResponse
       try {
-        return await handleCreateBooking(request, env.DB)
+        return await handleCreateBooking(request, env.DB, env.SESSION_SECRET)
       } catch {
         return errorResponse('booking_unavailable', 'ثبت نوبت در حال حاضر ممکن نیست.', 503)
       }
