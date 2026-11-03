@@ -37,6 +37,16 @@
 - Final verification on commit `9a0b2105c361253d6b34f437392c2c0870cb1435`: [CI run 41638704919](https://github.com/pooya-labs/salon-booking/actions/runs/41638704919) and [Pages run 41638704945](https://github.com/pooya-labs/salon-booking/actions/runs/41638704945) both succeeded.
 - This is an implementation checkpoint, not a completed manual screen-reader audit. Test with keyboard-only navigation and at least one screen reader before marking R07 complete.
 
+## Latest booking submission protection checkpoint (2026-11-03)
+
+- The booking wizard now uses a synchronous React ref lock before sending `POST /api/public/bookings`, preventing rapid repeated click handlers from issuing overlapping requests.
+- The visible pending state continues to disable the submit control; the ref lock closes the gap before React has rendered the disabled state.
+- Corrected the request-side phone normalization expression so it uses the same whitespace, parenthesis and hyphen removal as the validation step.
+- Implementation commit: `79a457fbdcf70038e891943866583ca7cfbe474e`.
+- SQLite overlap triggers remain the final protection against conflicting active reservations.
+- This is not server-side idempotency: if the server commits a booking but the response is lost, a retry is not guaranteed to replay the original reference/token. A server idempotency key is tracked separately in ROADMAP.md.
+- CI and Pages workflows for this code checkpoint are triggered by the latest main update; verify their outcomes before marking this change fully verified.
+
 ## Decisions made
 
 1. Keep the product focused on appointment booking and salon-owner scheduling.
