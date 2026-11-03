@@ -33,12 +33,15 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Add initial D1 migration structure; production database ID still requires Cloudflare provisioning.
 - [x] Add README, deployment guide, and durable project-state handoff.
 - [ ] Add linting and a documented local environment example.
+- [x] Add a separate GitHub Pages preview build target (repository subpath) without changing the future Cloudflare root build.
+- [x] Add automated GitHub Pages deployment workflow for `main`; first publish is subject to one-time Pages source setting in repository settings.
 
 **Exit criteria:** clean build, typed application shell, documented deployment prerequisites.
 
 ## R01 — Brand and visual system
 
-- [~] Create initial premium visual direction and responsive design tokens (provisional brand: «فُرم»).
+- [x] Establish initial premium visual direction and responsive design tokens (provisional brand: «فُرم»).
+- [x] Add a temporary preview banner and mark the not-yet-built admin entry as unavailable.
 - [ ] Confirm salon name, barber/salon category and brand direction with owner.
 - [ ] Create distinctive wordmark and compact mark.
 - [ ] Define typography with Persian and Latin coverage.
@@ -57,8 +60,8 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Initial about/studio section.
 - [~] Initial contact/location section; real address and working hours still need owner details.
 - [ ] Gallery support (only owner-approved photos).
-- [ ] Mobile-first layout and lightweight assets.
-- [ ] SEO metadata, social preview and favicon.
+- [~] Mobile-first layout and lightweight assets (responsive CSS implemented; screenshot/device QA remains).
+- [~] Add basic page title, description and social metadata; custom favicon/social artwork remains.
 - [ ] Replace all placeholder copy/content before public launch.
 
 **Exit criteria:** visitor understands the salon and can start booking immediately.
@@ -146,6 +149,8 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R08 — Deployment and launch
 
+- [x] Temporary static preview pipeline committed for GitHub Pages (not the production runtime).
+- [ ] Enable GitHub Pages publishing source as GitHub Actions in repository Settings → Pages (one-time owner action if workflow reports Pages source disabled).
 - [ ] Cloudflare account connected by repository owner.
 - [ ] D1 database created and database ID configured.
 - [ ] Production migrations applied.
@@ -171,6 +176,10 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Additional language support if required.
 
 These are explicitly out of the first release unless the owner asks for them.
+
+## Preview environment — GitHub Pages
+
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. It is a static visual preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
 
 ---
 
