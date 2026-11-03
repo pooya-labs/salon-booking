@@ -98,7 +98,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Availability calculated on the server from service duration, opening hours, exceptions, settings and active bookings.
 - [x] Database triggers reject overlapping active reservations on insert and update.
 - [x] Service duration and configurable buffers respected.
-- [x] Service duration is snapshotted when a booking is created; migration 0009 backfills existing bookings, and Worker+D1 tests confirm later service edits do not rewrite the duration shown to customers or the owner.
+- [~] Snapshot service duration at booking creation; migration 0009 backfills existing bookings, and Worker+D1/SQLite regressions verify later service edits do not rewrite existing reservation duration. Awaiting green CI on the latest main head.
 - [x] Closed dates and one-off opening windows supported through schedule exceptions.
 - [x] Multiple non-overlapping daily intervals per weekday and date exception (up to eight each), including breaks; migration 0005 backfills legacy single-window schedules.
 - [x] Booking state transitions audited.
