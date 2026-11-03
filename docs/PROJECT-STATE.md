@@ -15,9 +15,10 @@
 ## Current checkpoint
 
 - Phase: **R00 — Foundation**
-- Status: Initial scaffold and first visual pass committed to main; automated CI build is pending.
-- Last code commit: ce4fc3e11fdf87c106a722cc66da81466085b45e.
-- Last verified commit: none yet; CI has not completed successfully.
+- Status: Initial scaffold, responsive visual pass, D1 schema and Worker entry committed to main; CI build passes.
+- Last code commit: bf435c1577a12a05642d5148f96183911149c021.
+- Last verified commit: bf435c1577a12a05642d5148f96183911149c021 (GitHub Actions CI success, run #6).
+- Frontend and Worker TypeScript projects are included in `tsc -b`; Vite production build succeeds.
 - Production deployment: not configured.
 - Production database: not provisioned.
 - Real client data: must not be entered until security and launch gates pass.
@@ -55,7 +56,8 @@ Use clearly marked placeholders until the owner supplies these details.
 | 2026-11-03 | Repository discovery | Empty repository confirmed; default branch `main` |
 | 2026-11-03 | Bootstrap | React/Vite app, Worker entry, initial D1 schema, docs and CI workflow committed to `main` |
 | 2026-11-03 | First CI attempt | Failed before dependency install because setup-node npm cache expected a lockfile; workflow corrected |
-| 2026-11-03 | Current CI | Latest run pending; build result not yet verified |
+| 2026-11-03 | CI correction | Fixed missing lockfile cache assumption and pinned a published Workers Types v5 release after npm registry rejected the initial version |
+| 2026-11-03 | Build verification | GitHub Actions run 41605843217 passed: dependency install, TypeScript project build and Vite production build |
 
 ## Current blockers / owner actions
 
@@ -65,9 +67,10 @@ Use clearly marked placeholders until the owner supplies these details.
 
 ## Next actions
 
-1. Finish CI verification and fix any real build/type errors.
-2. Refine public landing page and brand system; keep sample services/prices clearly provisional.
-3. Implement real service and availability API backed by D1 migrations.
+1. Refine public landing page and brand system; keep sample services/prices clearly provisional.
+2. Implement real service and availability API backed by D1 migrations.
+3. Build client booking flow and protected owner dashboard.
+4. Provision Cloudflare D1/Workers only when ready for deployment.
 4. Build protected owner dashboard.
 5. Test, harden and document.
 6. Deploy only after Cloudflare account/database setup and owner acceptance.
