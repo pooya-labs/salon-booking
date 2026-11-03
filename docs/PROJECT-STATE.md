@@ -16,9 +16,9 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core booking, customer self-service, owner workspace, multi-interval scheduling, public rate limits and local D1 backup/restore smoke coverage are implemented. The production service is not deployed.
-- Latest verified commit on `main`: `5197b32574f573bd7dc75e99d37f2c0141786eff` — local D1 backup/restore checkpoint and handoff update.
-- Latest CI: [run 41636439835](https://github.com/pooya-labs/salon-booking/actions/runs/41636439835) — success.
-- Latest GitHub Pages deployment: [run 41636439773](https://github.com/pooya-labs/salon-booking/actions/runs/41636439773) — success.
+- Latest verified code checkpoint on `main`: `9a0b2105c361253d6b34f437392c2c0870cb1435` — accessible booking dialogs plus synchronized roadmap/handoff.
+- Latest CI: [run 41638704919](https://github.com/pooya-labs/salon-booking/actions/runs/41638704919) — success on the accessibility checkpoint (unit, SQLite migration, TypeScript/Vite build and Worker+D1 integration all passed).
+- Latest GitHub Pages deployment: [run 41638704945](https://github.com/pooya-labs/salon-booking/actions/runs/41638704945) — success.
 - Latest code/test checkpoint before the documentation-only commit: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a`. CI verified 25/25 unit tests, SQLite migration/privacy checks, TypeScript/Vite build, Worker+D1 HTTP integration, expiry pruning and local D1 export/restore.
 - Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
@@ -34,7 +34,7 @@
 - Both dialogs now move focus inside on open, contain Tab/Shift+Tab navigation, close on Escape, lock background body scrolling and restore the previously focused element on close.
 - Dialog sections are programmatically focusable as a safe fallback; accessible dialog names remain connected to their visible headings.
 - Implementation commits: `0bcde6bfa69300efa7f95496d4b868f990a9bba2`, `2e316f55b44068a29e12413b10d379f51d4f07d1`, and `4c22831e27b518d1d1c3e55b31bea9c6bc23e067`.
-- CI and GitHub Pages checks for the final implementation commit were triggered as runs [41638628014](https://github.com/pooya-labs/salon-booking/actions/runs/41638628014) and [41638628019](https://github.com/pooya-labs/salon-booking/actions/runs/41638628019); results must be checked before calling this change verified.
+- Final verification on commit `9a0b2105c361253d6b34f437392c2c0870cb1435`: [CI run 41638704919](https://github.com/pooya-labs/salon-booking/actions/runs/41638704919) and [Pages run 41638704945](https://github.com/pooya-labs/salon-booking/actions/runs/41638704945) both succeeded.
 - This is an implementation checkpoint, not a completed manual screen-reader audit. Test with keyboard-only navigation and at least one screen reader before marking R07 complete.
 
 ## Decisions made
