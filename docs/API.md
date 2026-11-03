@@ -39,7 +39,7 @@ Example:
 }
 ```
 
-Slots are salon-local `HH:mm` strings. A proposed appointment including its configured buffer must fit entirely inside one opening interval; a slot cannot bridge a break. Cancelled, completed and no-show bookings do not block availability; pending and confirmed bookings do.
+Slots are salon-local `HH:mm` strings. Service duration and buffer are elapsed minutes: the Worker converts the start once and adds the duration in UTC, preserving the booked length across daylight-saving transitions. The resulting local end must remain inside the same opening interval; a slot cannot bridge a break. Cancelled, completed and no-show bookings do not block availability; pending and confirmed bookings do.
 
 ### `POST /api/public/bookings`
 
@@ -145,8 +145,9 @@ Apply every migration in order:
 6. `0006_public_rate_limits.sql`
 7. `0007_customer_booking_access.sql`
 8. `0008_booking_idempotency.sql`
+9. `0009_booking_service_duration_snapshot.sql`
 
-Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Migration 0007 adds the customer-management token hash, a minimal booking status history and an automatic status-change trigger. Migration 0008 adds a one-key-per-booking idempotency ledger with an erasure cascade. The ledger stores one-way, domain-separated SHA-256 hashes and response metadata only, not the raw key or customer payload. Existing bookings remain intact; bookings created before migration 0007 have no customer management token, and bookings created before migration 0008 have no idempotency record.
+Migration 0005 creates normalized weekly/date interval tables, prevents overlapping intervals with SQLite triggers and backfills existing single-window schedules. Migration 0006 creates the public API rate-limit bucket table and expiry index. Migration 0007 adds the customer-management token hash, a minimal booking status history and an automatic status-change trigger. Migration 0008 adds a one-key-per-booking idempotency ledger with an erasure cascade. Migration 0009 snapshots the service duration into each booking and backfills existing rows from the current service catalog; later service-duration edits no longer change the duration displayed for reservations already made. The idempotency ledger stores one-way, domain-separated SHA-256 hashes and response metadata only, not the raw key or customer payload. Existing bookings remain intact; bookings created before migration 0007 have no customer management token, and bookings created before migration 0008 have no idempotency record.
 
 ## Runtime and preview boundaries
 
