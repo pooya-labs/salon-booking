@@ -6,6 +6,8 @@ test('shifts date keys across month and year boundaries', () => {
   assert.equal(addDateKeyDays('2026-11-03', 7), '2026-11-10')
   assert.equal(addDateKeyDays('2026-12-29', 7), '2027-01-05')
   assert.equal(addDateKeyDays('2027-01-05', -7), '2026-12-29')
+  assert.equal(addDateKeyDays('2026-11-01', -7), '2026-10-25')
+  assert.equal(addDateKeyDays('2027-03-01', -1), '2027-02-28')
 })
 
 test('handles leap days and month lengths', () => {
@@ -19,5 +21,7 @@ test('rejects invalid date keys and unsafe offsets', () => {
   assert.equal(addDateKeyDays('2027-13-01', 1), null)
   assert.equal(addDateKeyDays('not-a-date', 1), null)
   assert.equal(addDateKeyDays('2027-01-01', 1.5), null)
+  assert.equal(addDateKeyDays('2027-01-01', Number.MAX_SAFE_INTEGER), null)
+  assert.equal(addDateKeyDays('2027-01-01', 0), '2027-01-01')
   assert.equal(addDateKeyDays('9999-12-31', 1), null)
 })
