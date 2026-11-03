@@ -71,6 +71,11 @@ const normalizeDigits = (value: string) =>
   value.replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
 
+const createIdempotencyKey = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(32))
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
 function BookingWizard({
   onClose,
   initialServiceId,
@@ -220,7 +225,7 @@ function BookingWizard({
     }
       const fingerprint = JSON.stringify(bookingPayload)
       if (!submissionAttempt.current || submissionAttempt.current.fingerprint !== fingerprint) {
-        submissionAttempt.current = { fingerprint, key: crypto.randomUUID() }
+        submissionAttempt.current = { fingerprint, key: createIdempotencyKey() }
       }
 
       const response = await fetch('/api/public/bookings', {
