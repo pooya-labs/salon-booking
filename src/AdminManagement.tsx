@@ -13,11 +13,12 @@ type Service = {
   sortOrder: number
 }
 
+type TimeInterval = { startsAt: string; endsAt: string }
+
 type WeeklyHour = {
   weekday: number
   name: string
-  opensAt: string
-  closesAt: string
+  intervals: TimeInterval[]
   isClosed: boolean
   configured: boolean
 }
@@ -27,6 +28,7 @@ type ScheduleException = {
   date: string
   startsAt: string | null
   endsAt: string | null
+  intervals: TimeInterval[]
   isClosed: boolean
   note: string
 }
@@ -90,8 +92,9 @@ export function AdminManagement() {
   const [exceptionSaving, setExceptionSaving] = useState(false)
   const [exceptionDate, setExceptionDate] = useState('')
   const [exceptionClosed, setExceptionClosed] = useState(true)
-  const [exceptionStart, setExceptionStart] = useState('09:00')
-  const [exceptionEnd, setExceptionEnd] = useState('17:00')
+  const [exceptionIntervals, setExceptionIntervals] = useState<TimeInterval[]>([
+    { startsAt: '09:00', endsAt: '17:00' },
+  ])
   const [exceptionNote, setExceptionNote] = useState('')
   const [busyException, setBusyException] = useState<string | null>(null)
 
@@ -213,6 +216,57 @@ export function AdminManagement() {
     setWeeklyHours((current) => current.map((day) => day.weekday === weekday ? { ...day, ...patch } : day))
   }
 
+  const addIntervalAfter = (intervals: TimeInterval[]): TimeInterval | null => {
+    const start = intervals[intervals.length - 1]?.endsAt ?? '09:00'
+    const [hours, minutes] = start.split(':').map(Number)
+    const startMinutes = hours * 60 + minutes
+    const endMinutes = Math.min(startMinutes + 60, 23 * 60 + 59)
+    if (endMinutes <= startMinutes) return null
+    return {
+      startsAt: start,
+      endsAt: String(Math.floor(endMinutes / 60)).padStart(2, '0') + ':' + String(endMinutes % 60).padStart(2, '0'),
+    }
+  }
+
+  const updateWeekdayInterval = (weekday: number, index: number, patch: Partial<TimeInterval>) => {
+    setWeeklyHours((current) => current.map((day) => day.weekday !== weekday ? day : ({
+      ...day,
+      intervals: day.intervals.map((interval, intervalIndex) =>
+        intervalIndex === index ? { ...interval, ...patch } : interval,
+      ),
+    })))
+  }
+
+  const addWeekdayInterval = (weekday: number) => {
+    setWeeklyHours((current) => current.map((day) => {
+      if (day.weekday !== weekday || day.isClosed || day.intervals.length >= 8) return day
+      const next = addIntervalAfter(day.intervals)
+      return next ? { ...day, intervals: [...day.intervals, next] } : day
+    }))
+  }
+
+  const removeWeekdayInterval = (weekday: number, index: number) => {
+    setWeeklyHours((current) => current.map((day) => day.weekday === weekday
+      ? { ...day, intervals: day.intervals.filter((_, intervalIndex) => intervalIndex !== index) }
+      : day))
+  }
+
+  const updateExceptionInterval = (index: number, patch: Partial<TimeInterval>) => {
+    setExceptionIntervals((current) => current.map((interval, intervalIndex) =>
+      intervalIndex === index ? { ...interval, ...patch } : interval,
+    ))
+  }
+
+  const addExceptionInterval = () => {
+    if (exceptionIntervals.length >= 8) return
+    const next = addIntervalAfter(exceptionIntervals)
+    if (next) setExceptionIntervals((current) => [...current, next])
+  }
+
+  const removeExceptionInterval = (index: number) => {
+    setExceptionIntervals((current) => current.filter((_, intervalIndex) => intervalIndex !== index))
+  }
+
   const saveWeekday = async (day: WeeklyHour) => {
     setSavingWeekday(day.weekday)
     setError('')
@@ -224,8 +278,7 @@ export function AdminManagement() {
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({
           isClosed: day.isClosed,
-          opensAt: day.opensAt,
-          closesAt: day.closesAt,
+          intervals: day.intervals,
         }),
       })
       if (!response.ok) throw new Error(await requestError(response, 'ذخیره ساعات این روز ممکن نشد.'))
@@ -283,14 +336,14 @@ export function AdminManagement() {
         body: JSON.stringify({
           date: exceptionDate,
           isClosed: exceptionClosed,
-          startsAt: exceptionStart,
-          endsAt: exceptionEnd,
+          intervals: exceptionIntervals,
           note: exceptionNote,
         }),
       })
       if (!response.ok) throw new Error(await requestError(response, 'ثبت استثنای برنامه ممکن نشد.'))
       setExceptionDate('')
       setExceptionClosed(true)
+      setExceptionIntervals([{ startsAt: '09:00', endsAt: '17:00' }])
       setExceptionNote('')
       setNotice('استثنای برنامه ذخیره شد.')
       await loadSchedule()
@@ -403,17 +456,35 @@ export function AdminManagement() {
               <div className="admin-weekly-list">
                 {weeklyHours.map((day) => (
                   <article className={day.isClosed ? 'admin-weekday-row is-closed' : 'admin-weekday-row'} key={day.weekday}>
-                    <div className="admin-weekday-name"><strong>{day.name}</strong><label><input type="checkbox" checked={!day.isClosed} onChange={(event) => changeWeekday(day.weekday, { isClosed: !event.target.checked })} /><span>{day.isClosed ? 'تعطیل' : 'فعال'}</span></label></div>
+                    <div className="admin-weekday-name">
+                      <strong>{day.name}</strong>
+                      <label>
+                        <input type="checkbox" checked={!day.isClosed} onChange={(event) => changeWeekday(day.weekday, {
+                          isClosed: !event.target.checked,
+                          intervals: !event.target.checked && day.intervals.length === 0
+                            ? [{ startsAt: '09:00', endsAt: '17:00' }]
+                            : day.intervals,
+                        })} />
+                        <span>{day.isClosed ? 'تعطیل' : 'فعال'}</span>
+                      </label>
+                    </div>
                     <div className="admin-weekday-hours">
-                      <input type="time" aria-label={`شروع ${day.name}`} disabled={day.isClosed} value={day.opensAt} onChange={(event) => changeWeekday(day.weekday, { opensAt: event.target.value })} />
-                      <span>تا</span>
-                      <input type="time" aria-label={`پایان ${day.name}`} disabled={day.isClosed} value={day.closesAt} onChange={(event) => changeWeekday(day.weekday, { closesAt: event.target.value })} />
+                      {day.intervals.map((interval, index) => (
+                        <div className="admin-form-two-cols admin-interval-row" key={index}>
+                          <label><span>شروع بازه {toPersianDigits(index + 1)}</span><input type="time" aria-label={`شروع بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.startsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { startsAt: event.target.value })} /></label>
+                          <label><span>پایان</span><input type="time" aria-label={`پایان بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.endsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { endsAt: event.target.value })} /></label>
+                          {day.intervals.length > 1 && <button type="button" className="admin-icon-button" aria-label="حذف بازه" onClick={() => removeWeekdayInterval(day.weekday, index)}><Trash2 size={14} /></button>}
+                        </div>
+                      ))}
+                      {!day.isClosed && day.intervals.length === 0 && <p className="admin-form-hint">برای این روز هنوز بازه‌ای ثبت نشده است.</p>}
+                      <button type="button" className="admin-light-button" disabled={day.isClosed || day.intervals.length >= 8} onClick={() => addWeekdayInterval(day.weekday)}><Plus size={13} /> افزودن بازه</button>
                     </div>
                     <button type="button" className="admin-save-day" disabled={savingWeekday === day.weekday} onClick={() => void saveWeekday(day)}>{savingWeekday === day.weekday ? '…' : <Save size={14} />} ذخیره</button>
                   </article>
                 ))}
               </div>
             )}
+          </section>            )}
           </section>
 
           <section className="admin-manage-panel admin-exceptions-panel">
@@ -421,14 +492,25 @@ export function AdminManagement() {
             <form className="admin-exception-form" onSubmit={saveException}>
               <label><span>تاریخ</span><input type="date" required value={exceptionDate} onChange={(event) => setExceptionDate(event.target.value)} /></label>
               <label className="admin-check-line"><input type="checkbox" checked={exceptionClosed} onChange={(event) => setExceptionClosed(event.target.checked)} /><span>این روز کاملاً تعطیل است</span></label>
-              {!exceptionClosed && <div className="admin-form-two-cols"><label><span>از ساعت</span><input type="time" required value={exceptionStart} onChange={(event) => setExceptionStart(event.target.value)} /></label><label><span>تا ساعت</span><input type="time" required value={exceptionEnd} onChange={(event) => setExceptionEnd(event.target.value)} /></label></div>}
+              {!exceptionClosed && (
+                <div className="admin-exception-intervals">
+                  {exceptionIntervals.map((interval, index) => (
+                    <div className="admin-form-two-cols admin-interval-row" key={index}>
+                      <label><span>شروع بازه {toPersianDigits(index + 1)}</span><input type="time" required value={interval.startsAt} onChange={(event) => updateExceptionInterval(index, { startsAt: event.target.value })} /></label>
+                      <label><span>پایان</span><input type="time" required value={interval.endsAt} onChange={(event) => updateExceptionInterval(index, { endsAt: event.target.value })} /></label>
+                      {exceptionIntervals.length > 1 && <button type="button" className="admin-icon-button" aria-label="حذف بازه" onClick={() => removeExceptionInterval(index)}><Trash2 size={14} /></button>}
+                    </div>
+                  ))}
+                  <button type="button" className="admin-light-button" disabled={exceptionIntervals.length >= 8} onClick={addExceptionInterval}><Plus size={13} /> افزودن بازه</button>
+                </div>
+              )}
               <label><span>توضیحات (اختیاری)</span><input maxLength={160} value={exceptionNote} onChange={(event) => setExceptionNote(event.target.value)} placeholder="مثلاً تعطیلی رسمی یا ساعت کاری ویژه" /></label>
               <button className="button button-dark admin-manage-submit" disabled={exceptionSaving || settings.timezone === 'unset'}>{exceptionSaving ? 'در حال ذخیره…' : 'ثبت استثنای برنامه'} <Plus size={15} /></button>
             </form>
             <div className="admin-exception-list">
               {exceptions.length === 0 ? <p className="admin-manage-empty">هنوز تعطیلی یا ساعت استثنایی ثبت نشده است.</p> : exceptions.map((exception) => (
                 <article className="admin-exception-row" key={exception.id}>
-                  <div><strong dir="ltr">{exception.date}</strong><small>{exception.isClosed ? 'تعطیل' : `${exception.startsAt} تا ${exception.endsAt}`}{exception.note ? ` · ${exception.note}` : ''}</small></div>
+                  <div><strong dir="ltr">{exception.date}</strong><small>{exception.isClosed ? 'تعطیل' : exception.intervals.map((interval) => `${interval.startsAt} تا ${interval.endsAt}`).join('، ')}{exception.note ? ` · ${exception.note}` : ''}</small></div>
                   <button type="button" aria-label="حذف استثنا" disabled={busyException === exception.id} onClick={() => void deleteException(exception)}><Trash2 size={15} /></button>
                 </article>
               ))}
