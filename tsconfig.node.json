@@ -10,6 +10,7 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "composite": true,
     "strict": true
   },
   "include": ["vite.config.ts"]
