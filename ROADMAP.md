@@ -81,7 +81,8 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Customer cancellation endpoint for pending/confirmed future bookings, with status history and IP-HMAC rate limiting.
 - [ ] Owner-confirmed cancellation notice period and customer-facing policy copy (current behavior permits cancellation before appointment start).
 - [x] Accessible field labels, validation error message and step navigation.
-- [~] Double-booking prevention enforced in SQLite triggers; frontend idempotency/duplicate-submit guard remains.
+- [x] SQLite overlap triggers reject conflicting active reservations; booking UI uses a synchronous submission lock to prevent rapid duplicate clicks.
+- [ ] Add server-side idempotency-key replay handling for safe retries after uncertain network outcomes.
 
 **Preview safety:** GitHub Pages shows the full client-side journey for design review only. It never stores or transmits customer details and must not be used for real appointments.
 
