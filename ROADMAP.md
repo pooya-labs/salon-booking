@@ -147,7 +147,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Mobile viewport QA (small phone through large phone).
 - [ ] Desktop/tablet QA.
 - [ ] RTL, Persian digits, Jalali date and timezone QA.
-- [ ] Keyboard and screen-reader smoke test.
+- [~] Booking and customer-management dialogs now support Escape close, focus trapping, initial focus, focus restoration and background scroll lock; manual keyboard/screen-reader verification remains.
 - [ ] Performance and asset-size review.
 - [ ] Browser console/network error review.
 - [ ] Owner acceptance checklist completed.
