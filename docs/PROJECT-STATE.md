@@ -15,16 +15,17 @@
 ## Current checkpoint
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
-- Status: Core booking, customer self-service, owner workspace, multi-interval scheduling, public rate limits and local D1 backup/restore smoke coverage are implemented. The production service is not deployed.
-- Latest verified code implementation on `main`: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276` — server-side idempotency, 256-bit request keys and concurrent replay protection. Latest test/docs checkpoint: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
-- Latest CI: [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) — success (26 unit tests, SQLite migration/privacy/idempotency checks, TypeScript/Vite build and Worker+D1 integration including concurrent idempotency replay).
-- Latest GitHub Pages deployment: [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) — success.
-- Earlier verified baseline: `93a07726469ecf98b1f6510b7b42c3ec6e8d057a` verified 25 unit tests, privacy checks and local D1 export/restore before idempotency was added.
-- Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
+- Latest QA commit on `main`: `25a11aa3b613243cd03e067edffa806a3c0eb11f` — autonomous Chromium coverage for responsive layouts and keyboard behavior in both booking dialogs.
+- Latest CI: [run 41646215390](https://github.com/pooya-labs/salon-booking/actions/runs/41646215390) — success: 30 unit tests, SQLite migration/privacy/idempotency checks, typecheck and production build, Worker+D1 end-to-end integration, plus Chromium responsive/RTL/timezone/accessibility/browser-network checks.
+- Latest GitHub Pages deployment: [run 41646215349](https://github.com/pooya-labs/salon-booking/actions/runs/41646215349) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- The automated browser run passed viewport widths 320–1440 px, mobile navigation, full sample booking journey, both dialog focus/keyboard flows, Jalali/Persian dates and local-day boundaries in Tehran/Berlin/Los Angeles, and the demo-only admin gate.
+- Latest static asset sizes: JavaScript 224,547 bytes (65.06 kB gzip); CSS 49,586 bytes (11.38 kB gzip). Browser console/network checks reported no uncaught exceptions, console errors, failed requests, HTTP errors, API requests or third-party requests.
+- Automated browser results represent Chromium viewport emulation, not physical iOS/Android devices or a real screen-reader certification. The local DCL measurement is not a production-network performance benchmark.
 - The local Wrangler D1 export/restore smoke test passes using synthetic data and an isolated temporary database. Production D1 backup/restore is not verified.
 - Production D1 is not provisioned; migrations 0001–0008 have not been applied remotely; salon timezone remains `unset`; real services, prices, hours and contact details are not configured.
 - Worker is not deployed to Cloudflare; production secrets are not configured; no real customer data has been processed.
-- Next engineering work is the remaining R07 QA: mobile/tablet, Persian RTL/Jalali/timezone, keyboard/screen-reader, browser console/network and performance checks; then finish security/threat-model review and deployment/rollback documentation.
+- Next engineering work: complete the full security/threat-model review, strengthen the operational rollback/runbook, and close remaining technical release gates. Cloudflare production provisioning and salon-owner approval remain external launch prerequisites.
 - Production launch remains blocked on salon-owner decisions (business identity, location/timezone, service menu, schedule, cancellation policy, privacy contact/retention approval) and Cloudflare account/D1/secrets provisioning.
 - Do not enable real bookings or claim production readiness until all release gates and owner acceptance are complete.
 
@@ -60,6 +61,20 @@
 - Final verified code commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`; final test/docs commit: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
 - CI [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) and Pages [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) both passed.
 
+## Latest autonomous frontend QA checkpoint (2026-11-03)
+
+- Consolidated phone normalization into `src/phone.ts`. Both form validation and the booking request payload now normalize Persian/Arabic digits and common formatting identically; this fixes the earlier malformed request-side whitespace regex.
+- Added unit coverage for Persian/Arabic digits, whitespace/parentheses/hyphens, international plus prefixes and unsupported punctuation.
+- Added Playwright/Chromium browser smoke coverage in `tests/browser-smoke.mjs` and the `test:browser` npm script. CI installs pinned Playwright tooling and Chromium on `ubuntu-24.04` so the browser runner does not inherit the unsupported Ubuntu 26.04 image.
+- Automated responsive viewport matrix passed at 320, 360, 390, 430, 768, 1024, 1280 and 1440 px. These are Chromium-emulated viewports, not physical devices.
+- Both the public booking dialog and customer-management dialog passed accessible-name, initial-focus, Tab/Shift+Tab containment, Escape close and focus-restoration checks. Booking dialog also passed background scroll-lock verification.
+- The four-step demo booking journey passed with Persian-digit phone input and normalized review output. Jalali/Persian date labels and visitor-local first-day boundaries passed in Asia/Tehran, Europe/Berlin and America/Los_Angeles.
+- The static Pages admin route remained demo-only (no password field); runtime checks found zero uncaught exceptions, console errors, failed requests, HTTP errors, production API calls or third-party requests.
+- Asset budgets passed: JavaScript 224,547 bytes and CSS 49,586 bytes, under the CI limits of 1 MiB and 256 KiB. The 18 ms DCL figure is from a loopback test server and is not used as a real-world performance claim.
+- Verification: 30 unit tests, SQLite migration/privacy checks, typecheck/build, local Worker+D1 integration, and Chromium QA all passed in [CI run 41646215390](https://github.com/pooya-labs/salon-booking/actions/runs/41646215390). The demo was published by [Pages run 41646215349](https://github.com/pooya-labs/salon-booking/actions/runs/41646215349).
+- Code/test commits: `628b570ee9f635387fad5fd65327991e5d83bb3e` (phone fix + browser harness), `e73f3cf2e8e6cb74f030303798dccf3e65270f68` (Ubuntu 24.04 runner), `6aadd7550f13e5208acdc0775cf324ad25466688` (timezone test sequence), and `25a11aa3b613243cd03e067edffa806a3c0eb11f` (both dialogs' keyboard QA).
+- Remaining: real screen-reader/assistive-technology and physical-device acceptance, salon-owner acceptance, full security/threat-model review, production Cloudflare/D1 verification and production backup/restore. These are not marked complete by the automated browser run.
+
 ## Decisions made
 
 1. Keep the product focused on appointment booking and salon-owner scheduling.
@@ -90,6 +105,10 @@ Use clearly marked placeholders until the owner supplies these details.
 
 | Date | Checkpoint | Result |
 |---|---|---|
+| 2026-11-03 | Phone normalization regression | Shared Persian/Arabic digit and punctuation normalization used by both validation and booking payload; 4 focused unit cases added. |
+| 2026-11-03 | Autonomous browser QA | 30 unit tests, SQLite migration tests, production build, local Worker+D1 integration and Chromium QA all passed in CI run 41646215390. |
+| 2026-11-03 | Responsive/RTL/accessibility browser matrix | 8 viewport widths, full demo booking, Tehran/Berlin/Los Angeles Jalali date checks, both dialogs' keyboard/focus flows and clean browser console/network passed. |
+| 2026-11-03 | Pages publish after QA | GitHub Pages run 41646215349 succeeded; preview remains static/demo-only. |
 | 2026-11-03 | Repository discovery | Empty repository confirmed; default branch `main` |
 | 2026-11-03 | Bootstrap | React/Vite app, Worker entry, initial D1 schema, docs and CI workflow committed to `main` |
 | 2026-11-03 | First CI attempt | Failed before dependency install because setup-node npm cache expected a lockfile; workflow corrected |
@@ -128,7 +147,7 @@ Use clearly marked placeholders until the owner supplies these details.
 
 1. Confirm the salon owner's cancellation notice period and publish the customer-facing policy.
 2. Complete data-retention, export/deletion, backup, security-header, accessibility and threat-model reviews.
-3. When owner-approved salon details are available, provision Cloudflare D1, configure its ID and apply migrations 0001–0007.
+3. When owner-approved salon details are available, provision Cloudflare D1, configure its ID and apply migrations 0001–0008.
 4. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
 5. Confirm timezone, services, prices, hours and booking horizon; then perform owner/admin API tests and a production smoke test.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
@@ -136,7 +155,7 @@ Use clearly marked placeholders until the owner supplies these details.
 ## Latest Worker + D1 integration checkpoint (2026-11-03)
 
 - Added `tests/worker-integration.mjs` and `npm run test:worker`; CI runs it after the production build.
-- The harness creates a temporary Wrangler config with a syntactically valid local-only D1 identifier and stores D1 state in an isolated OS temp directory. It applies migrations 0001–0007 locally, seeds one synthetic service and one synthetic working day, then launches the actual Worker with a test-only SESSION_SECRET.
+- The harness creates a temporary Wrangler config with a syntactically valid local-only D1 identifier and stores D1 state in an isolated OS temp directory. It applies migrations 0001–0008 locally, seeds one synthetic service and one synthetic working day, then launches the actual Worker with a test-only SESSION_SECRET.
 - HTTP coverage passed for health/config/services, availability, booking creation, duplicate-slot rejection, cross-origin rejection, invalid management token (generic 404), privacy-safe customer lookup, cancellation, repeated cancellation and slot release.
 - CI run 41628055886 passed the new integration step; CI run 41628322387 also passed on the latest main workflow configuration.
 - Latest Pages deployment on current main: run 41628322469 succeeded. Preview is still static and demo-only.
@@ -249,7 +268,7 @@ Production blockers and real salon details remain unchanged.
 - Customer cancellation is permitted for pending/confirmed bookings until the scheduled start. Repeated cancellation is idempotent. A future owner-approved notice period is still undecided.
 - Invalid/missing references and tokens share a generic HTTP 404 response. Lookup and cancellation are limited to 20 combined requests per IP per 15 minutes and require same-origin requests.
 - GitHub Pages remains demo-only and never sends booking or management details.
-- D1 must apply migrations 0001–0007; bookings created before migration 0007 do not have a self-service token.
+- D1 must apply migrations 0001–0008; bookings created before migration 0007 do not have a self-service token.
 
 
 ## Latest verification refinement (2026-11-03)
