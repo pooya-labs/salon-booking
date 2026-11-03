@@ -178,6 +178,8 @@ try {
     await zonePage.locator('.header-book').click()
     const zoneDialog = zonePage.getByRole('dialog')
     await zoneDialog.waitFor({ state: 'visible' })
+    await zoneDialog.locator('.booking-service-option').first().click()
+    await zoneDialog.getByRole('button', { name: /ادامه/ }).click()
     const expectedDateKey = await zonePage.evaluate(() => {
       const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
