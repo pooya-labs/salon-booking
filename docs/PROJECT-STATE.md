@@ -18,8 +18,8 @@
 - Status: Worker includes one-time first-owner bootstrap, PBKDF2 password hashing, secure 12-hour sessions, login/bootstrap rate limits, origin validation, authenticated booking list/status transitions, service CRUD, settings management, weekly split hours and date-specific multi-interval exceptions. Customers can look up bookings and cancel future pending/confirmed bookings using a one-time 256-bit token; only its SHA-256 hash is persisted. Customer status changes are recorded in a minimal history table. Pages shows a demo-only notice.
 - Public customer booking uses the production API only in the Cloudflare build; Pages/local remain isolated in demo mode.
 - Public preview: https://pooya-labs.github.io/salon-booking/
-- Latest verified standard CI: run 41629668032 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration for public and owner APIs, TypeScript and Vite production build).
-- Latest Pages deployment: run 41629667782 — success; includes the customer booking-management UI while remaining demo-only.
+- Latest verified standard CI: run 41630262938 — success (25 unit tests, SQLite migration/security checks, Wrangler local Worker + D1 HTTP integration for public, owner, settings and schedule APIs, TypeScript and Vite production build).
+- Latest Pages deployment: run 41630262994 — success; includes the customer booking-management UI while remaining demo-only.
 - Preview output is static-only. Time slots are sample data; the preview does not send or save personal information and does not create actual reservations.
 - D1 is not provisioned, migrations 0001–0007 have not been applied remotely, salon timezone remains `unset`, and no real services/hours are configured.
 - Worker code is not deployed to Cloudflare; owner secrets are not configured.
@@ -125,6 +125,17 @@ Use clearly marked placeholders until the owner supplies these details.
 - Integration remains local Wrangler D1/workerd only. It does not prove remote Cloudflare D1 behavior or deploy the Worker to production.
 - Owner/admin API coverage now includes authentication, booking list/status, and service CRUD. Schedule settings/weekly hours/date exceptions still need dedicated authenticated HTTP integration coverage.
 - The test fixture bootstrap password and token are synthetic CI-only values and must never be reused in production.
+
+## Latest schedule API integration checkpoint (2026-11-03)
+
+- Extended the Worker + local D1 HTTP harness to cover authenticated salon settings and schedule APIs.
+- Verified changing the salon timezone is blocked while a future active booking exists; valid settings persist and are returned correctly.
+- Verified an owner can save two non-overlapping weekly intervals around a break while an existing appointment remains inside working hours; overlapping intervals return HTTP 400.
+- Verified public availability respects the split schedule: an afternoon slot is available and the break start is not.
+- Verified date-specific split exception creation, owner schedule readback and deletion.
+- CI run 41630262938 passed all unit, SQLite migration, typecheck/build and local Worker/D1 integration steps.
+- Pages run 41630262994 passed. Both correspond to implementation/test commit `0762f1ada30fce6833e730c76d3ce07b9e2d50fa`.
+- Remaining test gap: API authorization/lifecycle around admin schedule exception conflicts with bookings, audit-log assertions and broader malformed-input paths; remote Cloudflare D1 and production smoke testing remain owner/launch gates.
 
 ## Resume instructions for the next assistant/session
 
