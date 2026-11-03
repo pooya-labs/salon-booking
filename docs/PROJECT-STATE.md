@@ -16,9 +16,9 @@
 
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Status: Core public booking, customer self-service, owner workspace, multi-interval scheduling, rate limits, idempotent booking replay and local D1 backup/restore smoke coverage are implemented. Production is not deployed.
-- Latest QA commit on `main`: `25a11aa3b613243cd03e067edffa806a3c0eb11f` — autonomous Chromium coverage for responsive layouts and keyboard behavior in both booking dialogs.
-- Latest CI: [run 41646215390](https://github.com/pooya-labs/salon-booking/actions/runs/41646215390) — success: 30 unit tests, SQLite migration/privacy/idempotency checks, typecheck and production build, Worker+D1 end-to-end integration, plus Chromium responsive/RTL/timezone/accessibility/browser-network checks.
-- Latest GitHub Pages deployment: [run 41646215349](https://github.com/pooya-labs/salon-booking/actions/runs/41646215349) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
+- Latest security code commit on `main`: `5a0fc7273cfb35d22e3d1f70df29ad9f71a11eee` — narrowed HTML CSP to same-origin/data resources and added integration assertions against arbitrary HTTPS and unsafe-eval.
+- Latest CI: [run 41647018808](https://github.com/pooya-labs/salon-booking/actions/runs/41647018808) — success: 30 unit tests, SQLite migration/privacy/idempotency/CSP checks, typecheck/build, local Worker+D1 integration and full Chromium responsive/RTL/timezone/accessibility/browser-network checks.
+- Latest GitHub Pages deployment: [run 41647019000](https://github.com/pooya-labs/salon-booking/actions/runs/41647019000) — success. Preview: https://pooya-labs.github.io/salon-booking/ — static demo only; never enter real customer data.
 - The automated browser run passed viewport widths 320–1440 px, mobile navigation, full sample booking journey, both dialog focus/keyboard flows, Jalali/Persian dates and local-day boundaries in Tehran/Berlin/Los Angeles, and the demo-only admin gate.
 - Latest static asset sizes: JavaScript 224,547 bytes (65.06 kB gzip); CSS 49,586 bytes (11.38 kB gzip). Browser console/network checks reported no uncaught exceptions, console errors, failed requests, HTTP errors, API requests or third-party requests.
 - Automated browser results represent Chromium viewport emulation, not physical iOS/Android devices or a real screen-reader certification. The local DCL measurement is not a production-network performance benchmark.
@@ -60,6 +60,15 @@
 - Implementation commits include migration `a2f208c`, Worker `df891ec` / `a66dde0` / `33dcc56`, frontend `7977b61` / `6b68de5`, unit/migration/integration tests and API/deployment docs.
 - Final verified code commit: `e56572c2f2e6eb4b4597e7f1b76f9604718e0276`; final test/docs commit: `1a9de63d73f53f0d5751fbd78ca86c53d5b33552`.
 - CI [run 41642724742](https://github.com/pooya-labs/salon-booking/actions/runs/41642724742) and Pages [run 41642724715](https://github.com/pooya-labs/salon-booking/actions/runs/41642724715) both passed.
+
+## Latest security review and operational runbook checkpoint (2026-11-03)
+
+- Narrowed HTML CSP: scripts and network connections are same-origin; images/fonts are same-origin or data URLs; arbitrary external HTTPS resources and `unsafe-eval` are not permitted. Inline styles remain allowed for the current frontend.
+- Expanded Worker+D1 integration assertions for all relevant CSP directives; full CI run 41647018808 passed after the policy change.
+- Added `docs/SECURITY-THREAT-MODEL.md` with assets, trust boundaries, code-level controls, threats, residual risks and explicit pre-launch gates. This is an internal code review, not an external penetration test or production certification.
+- Expanded `docs/DEPLOYMENT.md` with pre-release D1 export, migration/release notes, Worker version rollback, post-rollback smoke checks, and the separation between application rollback and destructive D1 recovery.
+- Cloudflare documentation confirms Worker rollback creates a new active deployment and does not roll back connected resources; D1 schema/data compatibility must be checked independently.
+- Production D1/Worker are not provisioned, so no real deployment, remote migration, production rollback or production restore has been attempted.
 
 ## Latest autonomous frontend QA checkpoint (2026-11-03)
 
@@ -105,6 +114,8 @@ Use clearly marked placeholders until the owner supplies these details.
 
 | Date | Checkpoint | Result |
 |---|---|---|
+| 2026-11-03 | CSP hardening | HTML CSP now limits scripts/connections to self and images/fonts to self/data; CI integration assertions passed in run 41647018808. |
+| 2026-11-03 | Security and rollback documentation | Added internal threat model/residual-risk register and documented version rollback plus separate D1 recovery process. |
 | 2026-11-03 | Phone normalization regression | Shared Persian/Arabic digit and punctuation normalization used by both validation and booking payload; 4 focused unit cases added. |
 | 2026-11-03 | Autonomous browser QA | 30 unit tests, SQLite migration tests, production build, local Worker+D1 integration and Chromium QA all passed in CI run 41646215390. |
 | 2026-11-03 | Responsive/RTL/accessibility browser matrix | 8 viewport widths, full demo booking, Tehran/Berlin/Los Angeles Jalali date checks, both dialogs' keyboard/focus flows and clean browser console/network passed. |

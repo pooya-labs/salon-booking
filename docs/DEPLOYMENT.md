@@ -48,9 +48,45 @@ Use versioned SQL migrations under `migrations/`. Apply them to development and 
 - [ ] Verify no test/customer data leaked.
 - [ ] Record deployed commit and URL in `docs/PROJECT-STATE.md`.
 
-## Rollback
+## Rollback and recovery runbook
 
-Keep the previous successful deployment available in Cloudflare deployment history. For database changes, prefer forward-compatible migrations; restore from a verified export only after assessing data loss implications.
+### Before a production release
+
+1. Confirm the exact `main` commit and the currently deployed Worker version. Record both in the release log.
+2. Confirm the D1 database name/ID and inspect pending migrations:
+   `npx wrangler d1 migrations list salon-booking --remote`.
+3. Export a pre-release copy of D1 to a private location:
+   `npx wrangler d1 export salon-booking --remote --output=./backups/salon-booking-before-release.sql`.
+   The export contains customer personal data. Keep it outside Git, restrict access, encrypt it at rest and remove local copies according to the owner-approved retention policy.
+4. Review every unapplied migration. Prefer additive, backward-compatible changes and deploy code that works with both the previous and new schema.
+5. Apply only the reviewed migrations:
+   `npx wrangler d1 migrations apply salon-booking --remote`.
+   Wrangler captures a backup after a successful migration apply; keep the separate pre-release export as an independently controlled recovery point.
+6. Deploy the Worker and record the new Worker version ID, deployment timestamp and Git commit.
+
+### Application-only rollback
+
+A Worker rollback immediately creates a new deployment from the selected prior version and makes it active. It does **not** roll back D1, secrets, or other bound resources. Follow this order:
+
+1. Identify the last known-good Worker version ID from the Cloudflare deployment history.
+2. Check whether the current D1 schema and data are compatible with that older application version. Do not roll back application code across a breaking schema migration.
+3. Roll back to the known-good Worker version:
+   `npx wrangler rollback <KNOWN_GOOD_VERSION_ID> --message "Rollback: <short reason>"`.
+   The command can also be run from the Cloudflare dashboard: Workers & Pages → `salon-booking` → Deployments → version menu → Rollback.
+4. Verify `GET /api/health`, the public configuration/services response, and the owner login/booking list using the approved production smoke-test account. Check Worker logs and error rates before declaring recovery.
+5. Record the rollback deployment ID, prior/current version IDs, triggering commit, reason and smoke-test result.
+
+Cloudflare documents that a rollback is a new active deployment and that connected resources are unchanged. It can fail or leave the old code incompatible when resource bindings or data structures have changed. See [Workers rollbacks](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/).
+
+### D1 recovery is a separate operation
+
+- A Worker rollback does not undo SQL migrations or restore deleted/changed booking rows.
+- Prefer a forward-fix migration whenever the data can be retained safely.
+- Before restoring any backup or point-in-time state, take a fresh export of the current database, identify the exact restore point, estimate the lost booking/update window, and obtain owner approval. A restore can overwrite current data; never run it as an automatic consequence of an application rollback.
+- Use the current Cloudflare [D1 export/import guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/) and [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) for the supported export and recovery method for the account/runtime in use.
+- After recovery, list applied migrations again and run the complete production smoke-test checklist.
+
+This runbook is documented but has **not** been exercised against a production Worker or D1 database; neither has been provisioned yet.
 
 
 ## Temporary GitHub Pages preview

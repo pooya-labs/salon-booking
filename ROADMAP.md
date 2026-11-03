@@ -131,9 +131,9 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Public APIs do not expose owner booking lists or admin records.
 - [x] Personal-data minimization documented and verified: minimal status-history schema, no direct identity fields, audit-detail checks and booking-erasure cascade tests.
 - [x] Secrets are read only from Worker secret bindings; no defaults are committed.
-- [~] Baseline Worker security headers, HTML/API CSP, and anti-framing controls are implemented and integration-tested on API, home and admin entry responses; complete CSP/source audit and input/output review remain.
+- [x] Worker security headers and HTML/API CSP are integration-tested; HTML scripts/connections are self-only, images/fonts are self/data-only, arbitrary HTTPS resources and unsafe-eval are blocked. Inline styles remain allowed.
 - [x] Login/bootstrap, public availability/booking, and customer lookup/cancellation fixed-window rate limits use HMAC-derived IP buckets.
-- [~] Initial protections for bootstrap abuse, session theft, booking status mutation, public booking abuse and customer booking self-service are implemented; a full threat review remains.
+- [~] Internal threat model and residual-risk register documented in `docs/SECURITY-THREAT-MODEL.md`; independent penetration testing and production Cloudflare/account review remain.
 - [x] Tests contain no real client data or credentials.
 
 **Exit criteria:** documented security review with no known critical/high issues.
@@ -159,6 +159,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 - [x] Temporary static preview pipeline committed for GitHub Pages (not the production runtime).
 - [x] Enable GitHub Pages publishing source as GitHub Actions (owner completed the one-time setting; deployment verified successful).
+- [x] Document Worker rollback, release backup/export and D1 recovery separation in `docs/DEPLOYMENT.md`; production rollback/restore drill remains untested because no production D1/Worker exists.
 - [ ] Cloudflare account connected by repository owner.
 - [ ] D1 database created and database ID configured.
 - [ ] Production migrations applied.
