@@ -1,7 +1,7 @@
 /** Shift a valid ISO calendar date without relying on the browser's local timezone. */
 export const addDateKeyDays = (value: string, amount: number): string | null => {
   if (!Number.isSafeInteger(amount)) return null
-  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value)
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
   if (!match) return null
 
   const year = Number(match[1])
@@ -27,5 +27,5 @@ export const addDateKeyDays = (value: string, amount: number): string | null => 
 
   const resultMonth = String(date.getUTCMonth() + 1).padStart(2, '0')
   const resultDay = String(date.getUTCDate()).padStart(2, '0')
-  return `${String(resultYear).padStart(4, '0')}-${resultMonth}-${resultDay}`
+  return String(resultYear).padStart(4, '0') + '-' + resultMonth + '-' + resultDay
 }
