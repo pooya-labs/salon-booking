@@ -144,7 +144,7 @@ try {
   ].join('-')
   const weekday = bookingDate.getUTCDay()
   const seedSql = [
-    `INSERT INTO services (id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order) VALUES ('integration-service', 'Integration service', '', 30, 10000, 'IRR', 1, 0)`,
+    `INSERT INTO services (id, name, description, duration_minutes, price_amount, price_currency, is_active, sort_order) VALUES ('11111111-1111-4111-8111-111111111111', 'Integration service', '', 30, 10000, 'IRR', 1, 0)`,
     `UPDATE salon_settings SET setting_value = 'UTC' WHERE setting_key = 'local_timezone'`,
     `UPDATE salon_settings SET setting_value = '0' WHERE setting_key = 'min_booking_notice_minutes'`,
     `UPDATE salon_settings SET setting_value = '30' WHERE setting_key = 'booking_window_days'`,
@@ -214,14 +214,14 @@ try {
 
   const services = await expectJson(await request(baseUrl, '/api/public/services'), 200, 'public services')
   assert.equal(services.services.length, 1)
-  assert.equal(services.services[0].id, 'integration-service')
+  assert.equal(services.services[0].id, '11111111-1111-4111-8111-111111111111')
 
-  const availabilityPath = `/api/public/availability?date=${date}&serviceId=integration-service`
+  const availabilityPath = `/api/public/availability?date=${date}&serviceId=11111111-1111-4111-8111-111111111111`
   const availability = await expectJson(await request(baseUrl, availabilityPath), 200, 'availability')
   assert.ok(availability.slots.includes('09:00'), 'first valid local opening slot should be returned')
 
   const bookingInput = {
-    serviceId: 'integration-service',
+    serviceId: '11111111-1111-4111-8111-111111111111',
     date,
     time: '09:00',
     name: 'Integration Client',
@@ -394,7 +394,7 @@ try {
     SELECT
       'overflow-' || x,
       'SB-' || printf('%07d', x + 1000000),
-      'integration-service',
+      '11111111-1111-4111-8111-111111111111',
       'Synthetic overflow QA',
       '+491234567899',
       strftime('%Y-%m-%dT%H:%M:%SZ', '${overflowDate} 09:00:00', '+' || x || ' minutes'),
@@ -406,7 +406,7 @@ try {
       id, reference_code, service_id, client_name, client_phone,
       starts_at, ends_at, status, client_note
     ) VALUES (
-      'overflow-late', 'SB-9999999', 'integration-service',
+      'overflow-late', 'SB-9999999', '11111111-1111-4111-8111-111111111111',
       'Synthetic overflow QA', '+491234567899',
       '${overflowDate}T18:00:00.000Z', '${overflowDate}T18:01:00.000Z',
       'pending', ''
@@ -487,7 +487,7 @@ try {
   const ownerServices = await expectJson(await request(baseUrl, '/api/admin/services', {
     headers: ownerHeaders,
   }), 200, 'owner service list')
-  assert.ok(ownerServices.services.some((service) => service.id === 'integration-service'))
+  assert.ok(ownerServices.services.some((service) => service.id === '11111111-1111-4111-8111-111111111111'))
 
   const createdService = await expectJson(await request(baseUrl, '/api/admin/services', {
     method: 'POST',
@@ -617,7 +617,7 @@ try {
     SELECT
       'weekly-overflow-' || dates.day_index || '-' || slots.x,
       'SB-' || printf('%07d', 8000000 + dates.day_index * 500 + slots.x),
-      'integration-service',
+      '11111111-1111-4111-8111-111111111111',
       'Synthetic weekly overflow QA',
       '+491234567899',
       strftime('%Y-%m-%dT%H:%M:%SZ', dates.date_value || ' 00:00:00', '+' || slots.x || ' minutes'),
@@ -629,7 +629,7 @@ try {
       id, reference_code, service_id, client_name, client_phone,
       starts_at, ends_at, status, client_note
     ) VALUES (
-      'weekly-overflow-late', 'SB-8002000', 'integration-service',
+      'weekly-overflow-late', 'SB-8002000', '11111111-1111-4111-8111-111111111111',
       'Synthetic weekly overflow QA', '+491234567899',
       '${weeklyOverflowDates[3]}T23:30:00.000Z', '${weeklyOverflowDates[3]}T23:31:00.000Z',
       'pending', ''
@@ -876,7 +876,7 @@ try {
   )
 
   console.log('Checking that later service edits do not rewrite existing booking duration...')
-  await expectJson(await request(baseUrl, '/api/admin/services/integration-service', {
+  await expectJson(await request(baseUrl, '/api/admin/services/11111111-1111-4111-8111-111111111111', {
     method: 'PATCH',
     headers: { origin, cookie: loginCookie },
     body: JSON.stringify({ durationMinutes: 90 }),
