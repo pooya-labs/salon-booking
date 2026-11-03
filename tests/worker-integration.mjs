@@ -337,6 +337,124 @@ try {
   assert.equal(updatedService.name, 'Updated integration add-on')
   assert.equal(updatedService.isActive, false)
 
+  const initialAdminSchedule = await expectJson(await request(baseUrl, '/api/admin/schedule', {
+    headers: ownerHeaders,
+  }), 200, 'owner schedule overview')
+  assert.equal(initialAdminSchedule.settings.timezone, 'UTC')
+
+  const timezoneConflict = await expectJson(await request(baseUrl, '/api/admin/settings', {
+    method: 'PUT',
+    headers: ownerHeaders,
+    body: JSON.stringify({
+      timezone: 'Europe/Berlin',
+      slotIntervalMinutes: 30,
+      minBookingNoticeMinutes: 0,
+      bookingWindowDays: 30,
+      bufferMinutes: 0,
+    }),
+  }), 409, 'timezone cannot change with an active booking')
+  assert.equal(timezoneConflict.error, 'timezone_has_bookings')
+
+  const savedSettings = await expectJson(await request(baseUrl, '/api/admin/settings', {
+    method: 'PUT',
+    headers: ownerHeaders,
+    body: JSON.stringify({
+      timezone: 'UTC',
+      slotIntervalMinutes: 30,
+      minBookingNoticeMinutes: 0,
+      bookingWindowDays: 30,
+      bufferMinutes: 0,
+    }),
+  }), 200, 'owner updates salon settings')
+  assert.equal(savedSettings.settings.timezone, 'UTC')
+  assert.equal(savedSettings.settings.slotIntervalMinutes, 30)
+
+  const weeklyUpdate = await expectJson(await request(
+    baseUrl,
+    `/api/admin/schedule/weekly/${weekday}`,
+    {
+      method: 'PUT',
+      headers: ownerHeaders,
+      body: JSON.stringify({
+        isClosed: false,
+        intervals: [
+          { startsAt: '09:00', endsAt: '12:00' },
+          { startsAt: '13:00', endsAt: '17:00' },
+        ],
+      }),
+    },
+  ), 200, 'owner saves split weekly hours')
+  assert.equal(weeklyUpdate.ok, true)
+
+  const overlappingHours = await expectJson(await request(
+    baseUrl,
+    `/api/admin/schedule/weekly/${weekday}`,
+    {
+      method: 'PUT',
+      headers: ownerHeaders,
+      body: JSON.stringify({
+        isClosed: false,
+        intervals: [
+          { startsAt: '09:00', endsAt: '13:00' },
+          { startsAt: '12:00', endsAt: '17:00' },
+        ],
+      }),
+    },
+  ), 400, 'overlapping weekly intervals are rejected')
+  assert.equal(overlappingHours.error, 'invalid_hours')
+
+  const scheduleAfterSplit = await expectJson(await request(baseUrl, '/api/admin/schedule', {
+    headers: ownerHeaders,
+  }), 200, 'owner reads split weekly hours')
+  const configuredDay = scheduleAfterSplit.weeklyHours.find((item) => item.weekday === weekday)
+  assert.deepEqual(configuredDay.intervals, [
+    { startsAt: '09:00', endsAt: '12:00' },
+    { startsAt: '13:00', endsAt: '17:00' },
+  ])
+
+  const splitAvailability = await expectJson(await request(baseUrl, availabilityPath), 200, 'availability respects split hours')
+  assert.ok(splitAvailability.slots.includes('13:00'), 'afternoon interval should be bookable')
+  assert.equal(splitAvailability.slots.includes('12:00'), false, 'break must not be bookable')
+
+  const exceptionDateObject = new Date(`${date}T00:00:00.000Z`)
+  exceptionDateObject.setUTCDate(exceptionDateObject.getUTCDate() + 1)
+  const exceptionDate = [
+    String(exceptionDateObject.getUTCFullYear()).padStart(4, '0'),
+    String(exceptionDateObject.getUTCMonth() + 1).padStart(2, '0'),
+    String(exceptionDateObject.getUTCDate()).padStart(2, '0'),
+  ].join('-')
+  const exceptionCreated = await expectJson(await request(baseUrl, '/api/admin/schedule/exceptions', {
+    method: 'POST',
+    headers: ownerHeaders,
+    body: JSON.stringify({
+      date: exceptionDate,
+      isClosed: false,
+      intervals: [
+        { startsAt: '10:00', endsAt: '12:00' },
+        { startsAt: '14:00', endsAt: '16:00' },
+      ],
+      note: 'Synthetic integration exception',
+    }),
+  }), 200, 'owner creates date exception')
+  assert.equal(exceptionCreated.date, exceptionDate)
+
+  const exceptionSchedule = await expectJson(await request(baseUrl, '/api/admin/schedule', {
+    headers: ownerHeaders,
+  }), 200, 'owner reads date exception')
+  const savedException = exceptionSchedule.exceptions.find((item) => item.date === exceptionDate)
+  assert.ok(savedException, 'date exception should be returned to owner')
+  assert.deepEqual(savedException.intervals, [
+    { startsAt: '10:00', endsAt: '12:00' },
+    { startsAt: '14:00', endsAt: '16:00' },
+  ])
+
+  const deletedException = await expectJson(await request(
+    baseUrl,
+    `/api/admin/schedule/exceptions/${savedException.id}`,
+    { method: 'DELETE', headers: ownerHeaders },
+  ), 200, 'owner deletes date exception')
+  assert.equal(deletedException.ok, true)
+
   const logout = await expectJson(await request(baseUrl, '/api/admin/logout', {
     method: 'POST',
     headers: ownerHeaders,
@@ -412,7 +530,7 @@ try {
     'cancelling a booking should release its slot',
   )
 
-  console.log('PASS: local Worker + D1 migrations, public booking lifecycle, customer self-service, owner bootstrap/login/logout/session revocation, owner service CRUD and booking status authorization.')
+  console.log('PASS: local Worker + D1 migrations, public booking lifecycle, customer self-service, owner bootstrap/login/logout/session revocation, owner service CRUD, booking status authorization, salon settings, split weekly hours and date exceptions.')
 } catch (error) {
   console.error(error)
   if (workerLogs) console.error(workerLogs)
