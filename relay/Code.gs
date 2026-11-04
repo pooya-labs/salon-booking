@@ -53,6 +53,7 @@ function proxyRequest(input) {
   const options = {
     method: method.toLowerCase(),
     headers: headers,
+    contentType: String(headers['content-type'] || 'application/json'),
     muteHttpExceptions: true,
     followRedirects: false,
   }

@@ -134,7 +134,10 @@ if (relayUrl && typeof window !== 'undefined') {
   }
 
   window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const request = new Request(input, init)
+    const requestUrl = input instanceof Request
+      ? input.url
+      : new URL(String(input), window.location.href).toString()
+    const request = input instanceof Request ? new Request(input, init) : new Request(requestUrl, init)
     const url = new URL(request.url)
     if (url.origin === window.location.origin && url.pathname.startsWith('/api/')) {
       return relayRequest(request)
