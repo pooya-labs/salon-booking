@@ -8,7 +8,7 @@ This is an operational engineering guide, not legal advice or a substitute for t
 |---|---|---|---|
 | Client name and phone | `bookings.client_name`, `bookings.client_phone` | Identify and contact the person for the appointment | Only authenticated owner booking endpoints return these fields |
 | Optional client note | `bookings.client_note` | Client-provided appointment context | Owner booking list only; max 500 characters after normalization |
-| Booking reference and appointment data | `bookings` | Scheduling, conflict prevention and lookup | Reference is public only when paired with the one-time management token; minimal summary returned to customer |
+| Booking reference and appointment data | `bookings` | Scheduling, conflict prevention and lookup | Includes the booked service-name and duration snapshots; reference is public only when paired with the one-time management token; minimal summary returned to customer |
 | Customer management credential | `bookings.client_manage_token_hash` | Prove possession for customer lookup/cancellation | Only SHA-256 digest stored; plaintext returned once at booking creation |
 | Booking status history | `booking_status_events` | Operational status trail | Booking ID, old/new status and timestamp only; no client name, phone or note; cascades when booking is deleted |
 | Owner account | `admin_users` | Authenticate the salon owner | Username and salted PBKDF2 hash; never returned by public endpoints |
@@ -83,10 +83,10 @@ SELECT
   b.starts_at,
   b.ends_at,
   b.status,
-  s.name AS service_name,
+  b.service_name_snapshot AS service_name,
+  b.service_duration_minutes,
   b.created_at
 FROM bookings AS b
-INNER JOIN services AS s ON s.id = b.service_id
 WHERE b.reference_code = 'SB-REPLACE_WITH_VERIFIED_REFERENCE';
 ```
 

@@ -24,7 +24,7 @@
 - New bookings store the service name at creation. Owner booking lists and customer lookup/cancellation now read the booking snapshot, independent of later catalog renames.
 - SQLite migration regression verifies historical backfill and that a later service rename leaves the saved name unchanged. Worker+D1 integration regression renames the service and changes its duration after booking, then checks both owner and customer responses still show the original name and 30-minute duration.
 - README, deployment, API, roadmap and this handoff now document migrations 0001–0010.
-- Verification status at this checkpoint: implementation and regression tests are committed to `main`; the GitHub Actions CI and Pages checks for this change are pending. Do not mark this item complete until both required checks finish successfully.
+- **Verified on `main` commit `23ef5f4a31c7c896b3d1dd6f0c04430f5ce241f8`:** [CI run 41767923880](https://github.com/pooya-labs/salon-booking/actions/runs/41767923880) and [Pages run 41767923864](https://github.com/pooya-labs/salon-booking/actions/runs/41767923864) both succeeded. CI passed lint, all 37 unit tests, SQLite migration/backfill tests, TypeScript/build, local Worker+D1 integration (including the rename + duration snapshot regression), responsive RTL/keyboard/browser QA, axe-core WCAG 2.2 A/AA scans and owner-dashboard browser QA. Pages deployed the same commit successfully.
 
 ## Latest verified service-duration snapshot checkpoint (2026-11-03)
 
