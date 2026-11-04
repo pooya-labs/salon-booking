@@ -31,7 +31,7 @@ const demoServices: Service[] = [
   { id: 'complete', name: 'پکیج کامل', detail: 'یک تجربه کامل برای رسیدگی به استایل', duration: 75, price: 'از ۵۵۰ هزار' },
 ]
 
-const DEMO_MODE = import.meta.env.MODE !== 'production'
+const DEMO_MODE = import.meta.env.MODE !== 'production' && !import.meta.env.VITE_SALON_RELAY_URL
 
 type ApiService = {
   id: string

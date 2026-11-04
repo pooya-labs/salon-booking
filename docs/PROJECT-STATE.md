@@ -444,3 +444,14 @@ Production blockers and real salon details remain unchanged.
 - This confirms the deployed service responds correctly from Cloudflare's browser environment; it does not establish that the owner's specific browser/network path is healthy. If the user still sees a spinner, request a hard refresh / InPrivate retest and a screenshot or the exact browser error.
 - Production remains intentionally non-bookable: no services or opening hours are populated, and `local_timezone='unset'`. The first owner account is not yet bootstrapped.
 
+
+
+## GitHub Pages relay implementation checkpoint (2026-11-04)
+
+- The Pages frontend now has an optional API transport bridge. When `VITE_SALON_RELAY_URL` is supplied at build time, all same-origin `/api/*` fetches are forwarded through a hidden Apps Script iframe; non-API assets remain served by GitHub Pages.
+- Added Google Apps Script server-side forwarding to the existing Cloudflare Worker. The Worker URL is fixed in the relay source; the relay does not expose a generic arbitrary-URL proxy.
+- Admin Worker session cookies are retained server-side in Apps Script CacheService, keyed by a random browser relay session ID. The browser does not receive the Worker cookie. Cache TTL is six hours.
+- GitHub Pages deployment reads the public Actions variable `SALON_RELAY_URL`. If it is unset, the build remains demo-only and does not submit customer data.
+- Added `docs/GITHUB-PAGES-RELAY.md` with exact owner setup and deployment steps.
+- **Owner action required:** create the Apps Script project from `relay/Code.gs` and `relay/Bridge.html`, run `authorizeRelay`, deploy as a web app accessible to anyone, add its `/exec` URL as the GitHub Actions variable `SALON_RELAY_URL`, then rerun Pages deployment.
+- **Not yet verified:** Google Apps Script availability on the owner's Iranian ISP, real booking flow through the relay, and owner session round-trip. Do not claim that Pages is live-bookable until those checks pass.

@@ -94,3 +94,8 @@ Salon name, service menu, prices, working hours, contact details and photography
 ## License
 
 All rights reserved unless a license is added explicitly.
+
+
+## GitHub Pages relay (Iran-friendly browser path)
+
+The customer site and manager panel can be hosted on GitHub Pages while the Cloudflare Worker + D1 remain the application backend. To avoid direct browser requests to the Cloudflare domain, the Pages build can use the Google Apps Script relay described in [docs/GITHUB-PAGES-RELAY.md](./docs/GITHUB-PAGES-RELAY.md). The relay is a separate, one-time owner deployment; until the GitHub Actions variable `SALON_RELAY_URL` is configured, Pages deliberately stays in demo mode.

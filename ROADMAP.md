@@ -223,3 +223,13 @@ Do not redo completed tasks. Read this file and `docs/PROJECT-STATE.md` before r
 
 
 > **Remaining integration prerequisite:** The Cloudflare Workers & Pages GitHub App has not yet been authorized for `pooya-labs/salon-booking`. The Cloudflare Build API rejected repository linking because this Cloudflare account is not connected to the Git account. Owner authorization is required before creating the dedicated Worker/build pipeline.
+
+
+## R08 addendum — GitHub Pages to Cloudflare relay
+
+- [x] Design and implement a same-page API bridge so GitHub Pages customer and owner screens can forward API calls through a server-side relay rather than calling the Cloudflare Worker from the browser.
+- [x] Add Google Apps Script relay source, iframe bridge and owner deployment instructions.
+- [x] Keep Pages in demo mode until the owner configures the `SALON_RELAY_URL` Actions variable; the Pages build then enables real API mode.
+- [ ] Owner deploys the Apps Script web app, authorizes its Worker health check and adds the `SALON_RELAY_URL` repository variable.
+- [ ] Verify customer booking, owner login/session, booking list and status updates through the relay from an Iran-based network without VPN.
+- [ ] Verify actual Google Apps Script reachability from the owner's ISP; no relay provider can be assumed reachable without a real-network check.
