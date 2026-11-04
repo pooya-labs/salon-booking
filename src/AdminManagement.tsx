@@ -112,6 +112,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
   const [notificationsLoading, setNotificationsLoading] = useState(false)
   const [notificationsSaving, setNotificationsSaving] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
+  const [pushListenerRevision, setPushListenerRevision] = useState(0)
 
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
@@ -189,6 +190,9 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
     void loadServices()
     void loadSchedule()
     void loadNotifications()
+  }, [])
+
+  useEffect(() => {
     let unsubscribe: () => void = () => {}
     let active = true
     void listenForOwnerPushMessages().then((stop) => {
@@ -196,7 +200,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
       else stop()
     })
     return () => { active = false; unsubscribe() }
-  }, [])
+  }, [pushListenerRevision])
 
   useEffect(() => {
     if (!manualDraft.serviceId || !manualDraft.date) {
@@ -472,6 +476,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
     setNotice('')
     try {
       await registerOwnerPushDevice()
+      setPushListenerRevision((current) => current + 1)
       await loadNotifications()
       setNotice('این دستگاه برای دریافت اعلان رزرو ثبت شد.')
     } catch (pushError) {
