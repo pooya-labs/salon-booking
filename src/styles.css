@@ -871,3 +871,73 @@ h1 em,h2 em { color:var(--shayan-gold-bright); }
 @media (max-width:680px) {
   .footer-pooya-mark { width:21px; height:23px; flex-basis:21px; }
 }
+
+
+/* Keep the entire creator credit on one optical baseline */
+.footer-credit {
+  display:inline-flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  line-height:1;
+  white-space:nowrap;
+}
+.footer-credit > span {
+  display:inline-flex;
+  align-items:center;
+  margin:0 !important;
+  line-height:1.2;
+  white-space:nowrap;
+}
+.footer-github-link {
+  display:inline-flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:center;
+  align-self:center;
+  vertical-align:middle;
+  gap:6px;
+  margin:0;
+  padding:0;
+  line-height:1;
+  white-space:nowrap;
+}
+.footer-github-link > span {
+  display:inline-flex;
+  align-items:center;
+  margin:0 !important;
+  padding:0;
+  line-height:1;
+}
+.footer-pooya-mark {
+  display:block;
+  width:20px;
+  height:20px;
+  flex:0 0 20px;
+  align-self:center;
+  margin:0;
+  padding:0;
+  object-fit:contain;
+  vertical-align:middle;
+}
+.footer-github-link svg {
+  display:block;
+  width:13px;
+  height:13px;
+  flex:0 0 13px;
+  align-self:center;
+}
+@media (max-width:680px) {
+  .footer-credit {
+    grid-column:1/-1;
+    grid-row:3;
+    flex-wrap:nowrap;
+    justify-content:center;
+    align-items:center;
+    gap:7px;
+  }
+  .footer-credit > span:last-child { margin:0 !important; }
+  .footer-pooya-mark { width:19px;height:19px;flex-basis:19px; }
+}
