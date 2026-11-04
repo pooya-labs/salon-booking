@@ -165,14 +165,15 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 - [x] Temporary static preview pipeline committed for GitHub Pages (not the production runtime).
 - [x] Enable GitHub Pages publishing source as GitHub Actions (owner completed the one-time setting; deployment verified successful).
-- [x] Document Worker rollback, release backup/export and D1 recovery separation in `docs/DEPLOYMENT.md`; production D1 is provisioned, but no Worker is deployed and live rollback/restore drills remain untested.
+- [x] Document Worker rollback, release backup/export and D1 recovery separation in `docs/DEPLOYMENT.md`; the first production Worker deployment is complete, while live rollback/restore drills remain untested.
 - [x] Cloudflare account created and connected by repository owner.
 - [x] Production D1 `salon-booking` created and its database ID configured in `wrangler.toml` (jurisdiction: none; salon country: Iran).
 - [x] Production migrations 0001–0010 applied to production D1 and verified in `d1_migrations` on 2026-11-04.
-- [ ] Owner authentication secret/credentials provisioned securely.
-- [ ] GitHub-to-Cloudflare deployment configured.
-- [ ] Production URL and custom domain decision documented (custom domain optional).
-- [ ] Smoke tests run against production.
+- [~] `SESSION_SECRET` securely provisioned in Worker secret storage; owner must privately create `ADMIN_BOOTSTRAP_TOKEN`, bootstrap the first owner and then remove the one-time token.
+- [x] GitHub-to-Cloudflare Workers Builds connection configured for `pooya-labs/salon-booking`, branch `main`.
+- [x] First production Worker deployment succeeded: [`salon-booking.pooyagame141.workers.dev`](https://salon-booking.pooyagame141.workers.dev), version `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`, build `c4727bbc-5dc5-4a65-9e67-209f629b483b`.
+- [x] Branch Previews and version Preview URLs disabled until an isolated staging D1 database exists.
+- [ ] Production HTTP smoke tests and owner workflow checks; not claimed as passed from deployment logs alone.
 - [~] Wrangler local D1 export/restore smoke test passes in CI; owner production backup/restore validation remains pending.
 - [x] Worker rollback and D1 recovery runbook documented in `docs/DEPLOYMENT.md`; live rollback/restore drill remains unverified.
 - [ ] Owner receives concise operating instructions.
