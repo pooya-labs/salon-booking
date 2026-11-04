@@ -217,6 +217,41 @@ try {
   assert.ok(await manageTrigger.evaluate(element => document.activeElement === element), 'customer-management focus must return to its trigger')
   console.log('[browser] customer-management dialog keyboard and focus behavior passed')
 
+  // Verify the customer-details form at desktop width.
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await trigger.click()
+  const desktopBookingDialog = page.getByRole('dialog')
+  await desktopBookingDialog.waitFor({ state: 'visible' })
+  await desktopBookingDialog.locator('.booking-service-option').first().click()
+  await desktopBookingDialog.getByRole('button', { name: /ادامه/ }).click()
+  await desktopBookingDialog.locator('.booking-date-option').first().click()
+  await desktopBookingDialog.locator('.booking-time-option:not([disabled])').first().click()
+  await desktopBookingDialog.getByRole('button', { name: /ادامه/ }).click()
+  const desktopFormLayout = await desktopBookingDialog.evaluate(element => {
+    const grid = element.querySelector('.booking-form-two-cols')
+    const body = element.querySelector('.booking-flow-body')
+    const footer = element.querySelector('.booking-flow-footer')
+    if (!grid || !body || !footer) return null
+    const bodyRect = body.getBoundingClientRect()
+    const fields = [...grid.querySelectorAll('input')]
+    return {
+      columns: getComputedStyle(grid).gridTemplateColumns.trim().split(' ').length,
+      gridFits: grid.scrollWidth <= grid.clientWidth + 1,
+      fieldsFit: fields.every(input => {
+        const rect = input.getBoundingClientRect()
+        return rect.left >= bodyRect.left - 1 && rect.right <= bodyRect.right + 1
+      }),
+      footerVisible: footer.getBoundingClientRect().bottom <= element.getBoundingClientRect().bottom + 1,
+    }
+  })
+  assert.ok(desktopFormLayout, 'desktop booking details form should render')
+  assert.equal(desktopFormLayout.columns, 2, 'desktop name fields should share a two-column row')
+  assert.ok(desktopFormLayout.gridFits && desktopFormLayout.fieldsFit, 'desktop booking fields must fit without clipping')
+  assert.ok(desktopFormLayout.footerVisible, 'desktop booking footer must remain within the dialog')
+  await page.keyboard.press('Escape')
+  await desktopBookingDialog.waitFor({ state: 'detached' })
+  console.log('[browser] desktop booking details form layout passed')
+
   await page.setViewportSize({ width: 390, height: 844 })
   await trigger.click()
   dialog = page.getByRole('dialog')
@@ -231,6 +266,27 @@ try {
   await dialog.locator('input[autocomplete="given-name"]').fill('کاربر')
   await dialog.locator('input[autocomplete="family-name"]').fill('آزمایشی')
   await dialog.locator('input[inputmode="tel"]').fill('۰۹۱۲ ۱۲۳-۴۵۶۷')
+  const mobileFormLayout = await dialog.evaluate(element => {
+    const grid = element.querySelector('.booking-form-two-cols')
+    const body = element.querySelector('.booking-flow-body')
+    const footer = element.querySelector('.booking-flow-footer')
+    if (!grid || !body || !footer) return null
+    const bodyRect = body.getBoundingClientRect()
+    const fields = [...element.querySelectorAll('.booking-field input')]
+    return {
+      columns: getComputedStyle(grid).gridTemplateColumns.trim().split(' ').length,
+      gridFits: grid.scrollWidth <= grid.clientWidth + 1,
+      fieldsFit: fields.every(input => {
+        const rect = input.getBoundingClientRect()
+        return rect.left >= bodyRect.left - 1 && rect.right <= bodyRect.right + 1
+      }),
+      footerVisible: footer.getBoundingClientRect().bottom <= element.getBoundingClientRect().bottom + 1,
+    }
+  })
+  assert.ok(mobileFormLayout, 'mobile booking details form should render')
+  assert.equal(mobileFormLayout.columns, 1, 'mobile name fields should stack in one column')
+  assert.ok(mobileFormLayout.gridFits && mobileFormLayout.fieldsFit, 'mobile booking fields must fit without clipping')
+  assert.ok(mobileFormLayout.footerVisible, 'mobile booking footer must remain visible')
   await dialog.getByRole('button', { name: /ادامه/ }).click()
   const phoneReview = await dialog.locator('.booking-review-row').filter({ hasText: 'شماره تماس' }).innerText()
   assert.match(phoneReview, /09121234567/, 'phone must be normalized consistently before review')
