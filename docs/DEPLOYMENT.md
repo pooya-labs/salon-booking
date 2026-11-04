@@ -49,7 +49,11 @@ Production secrets belong in Worker secret storage, not Git:
 - ADMIN_BOOTSTRAP_TOKEN — a separate high-entropy one-time key used only to create the first owner account.
 - Any future email/SMS provider credentials, only if the owner approves those features.
 
-Generate two different values, for example with openssl rand -hex 32. In Cloudflare Dashboard, open Workers & Pages → salon-booking → Settings → Variables and Secrets → Add → Secret, add both names and values, then deploy the Worker. Cloudflare makes Worker secrets available through the env object and hides their values after creation. After the first owner account is created successfully at /admin, remove ADMIN_BOOTSTRAP_TOKEN; keep SESSION_SECRET in place. Never put either value into Git, a Vite VITE_* variable, an issue, or chat.
+Production SESSION_SECRET was generated with high entropy and saved directly to the `salon-booking` Worker on 2026-11-04. Keep it in Worker secret storage; do not copy it into source code or replace it casually.
+
+The owner must privately generate the separate one-time `ADMIN_BOOTSTRAP_TOKEN` (for example, run `openssl rand -hex 32` locally). In Cloudflare Dashboard, open Workers & Pages → salon-booking → Settings → Variables and Secrets → Add → Secret, set the name to `ADMIN_BOOTSTRAP_TOKEN`, and paste the locally generated value there. Do not send either secret through chat, Git, issues or a `VITE_*` variable. Cloudflare hides secret values after creation.
+
+Once that secret exists, open `/admin`: the first-owner bootstrap form becomes available. Enter the same token, choose a username (3–32 letters/numbers/._- characters) and a password (12–128 characters). After the first owner account is created successfully, delete `ADMIN_BOOTSTRAP_TOKEN` from Worker secrets; keep `SESSION_SECRET` in place.
 
 Admin credentials are provisioned through the one-time bootstrap form; there is no default username or password in source code or migrations. The first owner chooses their own username and password (minimum 12 characters).
 
@@ -59,15 +63,14 @@ Use versioned SQL migrations under `migrations/`. Apply them to development and 
 
 ## Release checklist
 
-- [ ] Build passes.
-- [ ] Typecheck passes.
-- [ ] Migrations applied.
-- [ ] Secrets configured.
-- [ ] Admin bootstrap completed securely.
-- [ ] Smoke test public booking.
-- [ ] Smoke test owner login and schedule management.
-- [ ] Verify no test/customer data leaked.
-- [ ] Record deployed commit and URL in `docs/PROJECT-STATE.md`.
+- [x] Cloudflare production build and TypeScript build pass (Workers Builds run `c4727bbc-5dc5-4a65-9e67-209f629b483b`, 2026-11-04).
+- [x] Production migrations 0001–0010 applied and verified.
+- [~] Secrets: `SESSION_SECRET` is configured; owner-generated `ADMIN_BOOTSTRAP_TOKEN` remains pending.
+- [ ] Admin bootstrap completed securely and token removed afterward.
+- [ ] Smoke test public booking after owner services, hours and timezone are configured.
+- [ ] Smoke test owner login and schedule management after bootstrap.
+- [x] No test/customer data was seeded in production D1.
+- [x] Initial deployment commit, Worker URL and version recorded in `docs/PROJECT-STATE.md`; ongoing release checks remain.
 
 ## Rollback and recovery runbook
 
@@ -107,7 +110,7 @@ Cloudflare documents that a rollback is a new active deployment and that connect
 - Use the current Cloudflare [D1 export/import guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/) and [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) for the supported export and recovery method for the account/runtime in use.
 - After recovery, list applied migrations again and run the complete production smoke-test checklist.
 
-This runbook is documented but has **not** been exercised against a production Worker. The production D1 database is provisioned, its ID is configured in `wrangler.toml`, and migrations 0001–0010 have been applied and verified. Worker deployment and live rollback/restore drills remain pending.
+This runbook is documented but has **not** been exercised against a production Worker. The production D1 database is provisioned, its ID is configured in `wrangler.toml`, and migrations 0001–0010 have been applied and verified. The first Worker deployment completed on 2026-11-04 (version `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`); live rollback/restore drills and owner-approved production smoke tests remain pending.
 
 
 ## Temporary GitHub Pages preview
