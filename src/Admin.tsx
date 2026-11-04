@@ -279,7 +279,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     return (
       <main className="admin-page">
         <header className="admin-topbar">
-          <a href="./" className="admin-brand"><img className="admin-brand-logo" src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><span className="admin-brand-copy"><strong>شایان</strong><small>BARBER STUDIO · OWNER WORKSPACE</small></span></a>
+          <a href="./" className="admin-brand"><img className="admin-brand-logo" src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /><span className="admin-brand-copy"><strong>شایان</strong><small>BARBER STUDIO · OWNER WORKSPACE</small></span></a>
           <a className="admin-return-link" href="./">بازگشت به سایت <ArrowLeft size={15} /></a>
         </header>
         <section className="admin-auth-wrap">
@@ -301,7 +301,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     return (
       <main className="admin-page">
         <header className="admin-topbar">
-          <a href={import.meta.env.BASE_URL} className="admin-brand"><img className="admin-brand-logo" src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><span className="admin-brand-copy"><strong>شایان</strong><small>BARBER STUDIO · OWNER WORKSPACE</small></span></a>
+          <a href={import.meta.env.BASE_URL} className="admin-brand"><img className="admin-brand-logo" src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /><span className="admin-brand-copy"><strong>شایان</strong><small>BARBER STUDIO · OWNER WORKSPACE</small></span></a>
           <a className="admin-return-link" href={import.meta.env.BASE_URL}>بازگشت به سایت <ArrowLeft size={15} /></a>
         </header>
         <section className="admin-auth-wrap">
@@ -340,7 +340,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   return (
     <main className="admin-page">
       <header className="admin-topbar">
-        <a href={import.meta.env.BASE_URL} className="admin-brand"><img className="admin-brand-logo" src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><span className="admin-brand-copy"><strong>شایان</strong><small>BARBER STUDIO · OWNER WORKSPACE</small></span></a>
+        <a href={import.meta.env.BASE_URL} className="admin-brand"><img className="admin-brand-logo" src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /><span className="admin-brand-copy"><strong>شایان</strong><small>BARBER STUDIO · OWNER WORKSPACE</small></span></a>
         <div className="admin-topbar-actions"><span className="admin-user-chip"><UserRound size={14} /> {user?.username}</span><button className="admin-logout" onClick={() => void logout()}><LogOut size={15} /> خروج</button></div>
       </header>
 
