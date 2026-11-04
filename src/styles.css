@@ -941,3 +941,130 @@ h1 em,h2 em { color:var(--shayan-gold-bright); }
   .footer-credit > span:last-child { margin:0 !important; }
   .footer-pooya-mark { width:19px;height:19px;flex-basis:19px; }
 }
+
+
+/* SHAYAN 2026 — rounded obsidian + liquid-glass visual refresh */
+:root {
+  color-scheme: dark;
+  --paper:#0b0b0c; --ink:#f3eee5; --muted:#aaa39a; --line:#ffffff20;
+  --accent:#d7b879; --dark:#171719;
+  --glass:linear-gradient(145deg,#ffffff13,#ffffff05);
+}
+html { background:#09090a; }
+body {
+  color:#f3eee5;
+  background:radial-gradient(ellipse at 78% 0%,#6d51251c,transparent 38%),#09090a;
+}
+.site-shell { background:transparent; }
+.announcement {
+  background:#0b0b0d; color:#e8d7b5; border-bottom:1px solid #ffffff12;
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+}
+.site-header {
+  position:sticky; top:0; height:76px; max-width:1320px; margin:12px auto 0;
+  padding:0 30px; border:1px solid #ffffff20; border-radius:26px;
+  background:#171719b8; backdrop-filter:blur(28px) saturate(145%);
+  -webkit-backdrop-filter:blur(28px) saturate(145%);
+  box-shadow:0 12px 42px #0006,inset 0 1px #ffffff12;
+}
+.brand-mark,.icon-button,.menu-toggle {
+  border:1px solid #d7b87955; border-radius:16px;
+  background:linear-gradient(145deg,#ffffff18,#ffffff05);
+  box-shadow:inset 0 1px #ffffff16,0 8px 22px #0003;
+}
+.brand strong,.brand small,.main-nav,.owner-link { color:#f2e9d9; }
+.brand small { opacity:.7; }
+.main-nav { gap:clamp(16px,3vw,38px); }
+.button { border-radius:18px; }
+.button-dark {
+  color:#18130c; background:linear-gradient(135deg,#f0d7a0,#b98d4c);
+  box-shadow:0 8px 26px #c49a5433,inset 0 1px #fff9;
+}
+.button-dark:hover { background:linear-gradient(135deg,#ffe6b6,#c69a58); }
+.section-wrap { max-width:1260px; }
+.hero { min-height:660px; gap:clamp(28px,6vw,88px); }
+.hero h1 { color:#f6f0e7; }
+.hero-description,.hero-proof span { color:#b9b0a3; }
+.hero-art {
+  border:1px solid #ffffff25; border-radius:42px; overflow:hidden;
+  background:radial-gradient(circle at 50% 30%,#d4ae6b20,transparent 50%),linear-gradient(145deg,#ffffff12,#ffffff04);
+  box-shadow:0 28px 80px #0008,inset 0 1px #ffffff22;
+  backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+}
+.hero-logo-frame,.hero-sculpture,.manifesto-ring {
+  border-radius:32px; border:1px solid #d8b87955;
+  background:linear-gradient(145deg,#ffffff1c,#ffffff05);
+  box-shadow:inset 0 1px #ffffff24,0 18px 48px #0005;
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+}
+.trust-strip,.service-card,.manifesto,.booking-modal,.booking-flow,
+.booking-flow-header,.booking-service-option,.booking-date-option,.booking-time-option {
+  border:1px solid #ffffff1c; border-radius:26px;
+  background:linear-gradient(145deg,#ffffff12,#ffffff05);
+  box-shadow:inset 0 1px #ffffff16,0 16px 44px #0003;
+  backdrop-filter:blur(22px) saturate(140%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);
+}
+.trust-strip { overflow:hidden; }
+.trust-strip>div { border-color:#ffffff16; color:#e9dfcf; }
+.services-section { background:linear-gradient(180deg,transparent,#ffffff04,transparent); }
+.section-heading h2,.service-card h3,.manifesto h2 { color:#f5eee2; }
+.section-heading>p,.service-card p,.service-meta { color:#b5ab9c; }
+.service-card { min-height:270px; padding:30px; transition:transform .25s,border-color .25s,background .25s; }
+.service-card:hover { transform:translateY(-5px); border-color:#d7b87975; background:linear-gradient(145deg,#d7b87918,#ffffff06); }
+.service-number,.service-icon,.manifesto-mark {
+  border-radius:18px; border:1px solid #d7b87955;
+  background:linear-gradient(145deg,#d7b87924,#ffffff08);
+}
+.manifesto { overflow:hidden; }
+.site-footer {
+  border-top:1px solid #ffffff1c; background:#09090a;
+}
+.site-footer,.site-footer a,.footer-brand strong { color:#e9dfd2; }
+.site-footer small,.footer-credit { color:#a99f91; }
+.booking-flow-backdrop,.booking-modal-backdrop { background:#000b; backdrop-filter:blur(12px); }
+.booking-flow,.booking-modal { background:#111113f2; border-color:#ffffff28; border-radius:30px; color:#f4eee5; }
+.booking-flow-header { background:#ffffff08; }
+.booking-flow-body,.booking-step,.booking-flow-progress { color:#f4eee5; }
+.booking-service-option,.booking-date-option,.booking-time-option { color:#f4eee5; }
+.booking-service-option:hover,.booking-date-option:hover,.booking-time-option:hover { border-color:#d7b87988; }
+.booking-service-option.is-selected,.booking-date-option.is-selected,.booking-time-option.is-selected {
+  border-color:#d7b879; background:linear-gradient(145deg,#d7b87925,#ffffff08);
+}
+input,select,textarea {
+  color:#f4eee5 !important; background:#ffffff0b !important;
+  border:1px solid #ffffff24 !important; border-radius:16px !important;
+}
+input::placeholder,textarea::placeholder { color:#8f887e !important; }
+.admin-page { color:#f4eee5; background:radial-gradient(ellipse at 70% 0%,#795b2b20,transparent 42%),#09090a; }
+.admin-topbar,.admin-auth-card,.admin-dashboard-card,.admin-panel,.admin-section,.admin-booking-card {
+  border:1px solid #ffffff20; border-radius:26px;
+  background:linear-gradient(145deg,#ffffff12,#ffffff05);
+  box-shadow:inset 0 1px #ffffff18,0 18px 48px #0004;
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+}
+.admin-topbar { margin:12px auto; padding:12px 22px; }
+.admin-brand-copy strong,.admin-dashboard h1,.admin-auth-card h1 { color:#f6eee1; }
+.admin-brand-copy small,.admin-return-link,.admin-auth-card p { color:#b7aa98; }
+.admin-auth-icon { border-radius:20px; background:#d7b87920; border:1px solid #d7b87955; }
+.admin-status-pending,.admin-status-confirmed,.admin-status-cancelled,.admin-status-noshow { border-radius:999px; }
+.admin-page button,.admin-page input,.admin-page select { border-radius:15px; }
+.main-nav.is-open { background:#141416ed; border:1px solid #ffffff22; border-radius:0 0 22px 22px; }
+@media (max-width:900px) {
+ .site-header { margin-left:14px; margin-right:14px; }
+ .hero-art { border-radius:30px; }
+}
+@media (max-width:680px) {
+ .site-header { height:64px; padding:0 14px; border-radius:20px; margin:8px 10px 0; }
+ .main-nav { background:#151517f2; }
+ .hero { min-height:0; padding-top:26px; }
+ .hero-art { min-height:300px; height:300px; border-radius:28px; }
+ .service-card { border-radius:22px; }
+ .trust-strip { border-radius:22px; }
+ .booking-flow { border-radius:26px 26px 0 0; }
+ .admin-topbar { margin:8px 10px; border-radius:20px; }
+ .admin-auth-card { border-radius:24px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .service-card { transition:none; }
+}
