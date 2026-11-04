@@ -1,4 +1,5 @@
 // The build injects the public Firebase Web configuration into this file.
+
 const firebaseConfig = __FIREBASE_CONFIG__;
 
 if (firebaseConfig && firebaseConfig.apiKey) {

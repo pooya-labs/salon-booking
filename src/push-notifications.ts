@@ -48,6 +48,7 @@ async function getFirebaseMessaging() {
 
 /** Called only from the manager's explicit button click after login. */
 export async function registerOwnerPushDevice(): Promise<void> {
+  if (!firebaseReady) throw new Error('تنظیمات Firebase Web Push هنوز در GitHub Actions وارد نشده است.')
   if (!('Notification' in window) || !('serviceWorker' in navigator)) {
     throw new Error('این مرورگر قابلیت اعلان وب را ندارد.')
   }

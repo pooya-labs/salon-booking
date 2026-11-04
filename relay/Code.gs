@@ -424,7 +424,7 @@ function createManualBooking_(input, owner) {
   var phone = normalizePhone_(input.phone);
   var note = typeof input.note === 'string' ? input.note.trim().slice(0, 500) : '';
   if (!serviceId || serviceId.length > 80) return error_(400, 'invalid_service', 'خدمت انتخاب‌شده معتبر نیست.');
-  if (!parseDateKey_(date) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return error_(400, 'invalid_datetime', 'تاریخ یا ساعت معتبر نیست.');
+  if (!parseDateKey_(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return error_(400, 'invalid_datetime', 'تاریخ یا ساعت معتبر نیست.');
   if (!String(input.firstName || '').trim() || !String(input.lastName || '').trim() || name.length < 3 || name.length > 161) return error_(400, 'invalid_name', 'نام و نام خانوادگی را جداگانه وارد کنید.');
   if (!phone) return error_(400, 'invalid_phone', 'شماره تماس معتبر نیست.');
   if (typeof input.note === 'string' && input.note.length > 1000) return error_(400, 'invalid_note', 'متن توضیحات بیش از حد طولانی است.');
@@ -1111,7 +1111,7 @@ function normalizeDigits_(value) {
     .replace(/[٠-٩]/g, function (digit) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)); });
 }
 function bookingFullName_(input) {
-  var firstName = String(input.firstName || '').trim().replace(/\\s+/g, ' ');
+  var firstName = String(input.firstName || '').trim().replace(/\s+/g, ' ');
   var lastName = String(input.lastName || '').trim().replace(/\\s+/g, ' ');
   if (firstName || lastName) return (firstName + ' ' + lastName).trim().replace(/\\s+/g, ' ');
   return String(input.name || '').trim().replace(/\\s+/g, ' ');

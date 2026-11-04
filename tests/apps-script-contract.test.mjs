@@ -28,6 +28,7 @@ test('Apps Script owns the API and Sheets storage without Cloudflare forwarding'
   }
   assert.match(backend, /LockService\.getScriptLock\(\)/)
   assert.match(backend, /function createManualBooking_\(input, owner\)/)
+  assert.match(backend, /!\/\^\(\[01\]\\d\|2\[0-3\]\):\[0-5\]\\d\$\/\.test\(time\)/)
   assert.match(backend, /source: 'phone'/)
   assert.match(backend, /getAvailability_\(date, service, settings, true\)/)
   assert.match(backend, /category: row\.category \|\| 'عمومی'/)
