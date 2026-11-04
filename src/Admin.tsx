@@ -300,8 +300,8 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     return (
       <main className="admin-page">
         <header className="admin-topbar">
-          <a href="/" className="admin-brand"><span className="brand-mark"><Scissors size={18} /></span><span><strong>فُرم</strong><small>OWNER WORKSPACE</small></span></a>
-          <a className="admin-return-link" href="/">بازگشت به سایت <ArrowLeft size={15} /></a>
+          <a href={import.meta.env.BASE_URL} className="admin-brand"><span className="brand-mark"><Scissors size={18} /></span><span><strong>فُرم</strong><small>OWNER WORKSPACE</small></span></a>
+          <a className="admin-return-link" href={import.meta.env.BASE_URL}>بازگشت به سایت <ArrowLeft size={15} /></a>
         </header>
         <section className="admin-auth-wrap">
           <div className="admin-auth-card">
@@ -339,7 +339,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   return (
     <main className="admin-page">
       <header className="admin-topbar">
-        <a href="/" className="admin-brand"><span className="brand-mark"><Scissors size={18} /></span><span><strong>فُرم</strong><small>OWNER WORKSPACE</small></span></a>
+        <a href={import.meta.env.BASE_URL} className="admin-brand"><span className="brand-mark"><Scissors size={18} /></span><span><strong>فُرم</strong><small>OWNER WORKSPACE</small></span></a>
         <div className="admin-topbar-actions"><span className="admin-user-chip"><UserRound size={14} /> {user?.username}</span><button className="admin-logout" onClick={() => void logout()}><LogOut size={15} /> خروج</button></div>
       </header>
 

@@ -457,7 +457,7 @@ function App() {
         </nav>
         <div className="header-actions">
           <button type="button" className="owner-link booking-manage-link" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
-          <a className="owner-link" href={DEMO_MODE ? '?admin=1' : '/admin'}>پنل مدیریت</a>
+          <a className="owner-link" href={import.meta.env.MODE === 'pages' ? '?admin=1' : '/admin'}>پنل مدیریت</a>
           <button className="button button-dark button-small header-book" onClick={() => startBooking()}>رزرو نوبت <ArrowLeft size={15} /></button>
           <button className="icon-button menu-toggle" aria-label={menuOpen ? 'بستن منو' : 'باز کردن منو'} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
         </div>
