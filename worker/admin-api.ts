@@ -716,10 +716,8 @@ const issueSession = async (
 
 const getAdminSession = async (request: Request, env: AdminEnv): Promise<AdminSessionUser | null> => {
   const now = new Date().toISOString()
-  await env.DB.prepare('DELETE FROM admin_sessions WHERE expires_at <= ?')
-    .bind(now)
-    .run()
-
+  // Reject missing/expired sessions without writing to D1. Stale rows are
+  // pruned when a new session is issued, not on unauthenticated API probes.
   const token = getSessionCookie(request)
   if (!token) return null
 

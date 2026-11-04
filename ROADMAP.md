@@ -130,6 +130,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Passwords stored as salted PBKDF2-HMAC-SHA-256 hashes (600,000 iterations).
 - [x] HttpOnly, Secure, SameSite=Strict host-only cookie and same-origin checks on mutations.
 - [x] Every implemented owner mutation checks the authenticated owner server-side.
+- [~] Unauthenticated admin session probes no longer trigger D1 cleanup writes; an integration regression verifies stale rows are pruned on successful session issuance instead. Final CI verification pending.
 - [x] Public APIs do not expose owner booking lists or admin records.
 - [x] Personal-data minimization documented and verified: minimal status-history schema, no direct identity fields, audit-detail checks and booking-erasure cascade tests.
 - [x] Secrets are read only from Worker secret bindings; no defaults are committed.

@@ -31,7 +31,7 @@
 
 - Passwords use a fresh 16-byte random salt and PBKDF2-HMAC-SHA-256 with 600,000 iterations. Verification compares derived bytes without an early exit over the digest.
 - Login uses a dummy password hash for unknown usernames, a generic invalid-credentials response, and an IP-HMAC limit of 8 attempts per 15 minutes.
-- Sessions use 256-bit random values. Only SHA-256 token hashes are stored; sessions expire after 12 hours and logout deletes the session record.
+- Sessions use 256-bit random values. Only SHA-256 token hashes are stored; sessions expire after 12 hours and logout deletes the session record. Expired rows are rejected by the session query and pruned when a new session is issued; unauthenticated session checks do not trigger D1 cleanup writes.
 - The cookie is `__Host-salon_session` with `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, and no Domain attribute.
 - **Residual:** there is no MFA, owner recovery flow or account alerting. Protect the Cloudflare account and owner email with MFA and strong unique credentials; plan a recovery procedure before launch.
 

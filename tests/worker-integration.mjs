@@ -345,19 +345,36 @@ try {
     `INSERT INTO admin_sessions (id_hash, admin_user_id, expires_at) VALUES ('${expiredSessionHash}', '${bootstrapped.user.id}', '2000-01-01T00:00:00.000Z')`,
   ])
 
-  const anonymousAfterExpirySeed = await expectJson(await request(baseUrl, '/api/admin/services'), 401, 'anonymous request prunes expired owner sessions')
+  const anonymousAfterExpirySeed = await expectJson(await request(baseUrl, '/api/admin/services'), 401, 'anonymous request does not prune expired owner sessions')
   assert.equal(anonymousAfterExpirySeed.error, 'unauthorized')
 
-  const expiredSessionCheck = await runWrangler([
+  const expiredSessionAfterProbe = await runWrangler([
     'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
     '--config', configPath, '--command',
     `SELECT CASE WHEN EXISTS (SELECT 1 FROM admin_sessions WHERE id_hash = '${expiredSessionHash}') THEN 'EXPIRED_SESSION_REMAINS' ELSE 'EXPIRED_SESSION_CLEARED' END AS result`,
   ])
-  assert.match(expiredSessionCheck.stdout, /EXPIRED_SESSION_CLEARED/)
+  assert.match(expiredSessionAfterProbe.stdout, /EXPIRED_SESSION_REMAINS/,
+    'unauthenticated admin probes must not write to the sessions table')
+
+  const renewedLoginResponse = await request(baseUrl, '/api/admin/login', {
+    method: 'POST',
+    headers: { origin },
+    body: JSON.stringify({ username: 'integration-owner', password: 'Local-only-test-password!2026' }),
+  })
+  const renewedLogin = await expectJson(renewedLoginResponse, 200, 'successful login prunes expired sessions')
+  assert.equal(renewedLogin.user.username, 'integration-owner')
+  const renewedCookie = renewedLoginResponse.headers.get('set-cookie') ?? ''
+  const expiredSessionAfterLogin = await runWrangler([
+    'd1', 'execute', 'salon-booking', '--local', '--persist-to', persistPath,
+    '--config', configPath, '--command',
+    `SELECT CASE WHEN EXISTS (SELECT 1 FROM admin_sessions WHERE id_hash = '${expiredSessionHash}') THEN 'EXPIRED_SESSION_REMAINS' ELSE 'EXPIRED_SESSION_CLEARED' END AS result`,
+  ])
+  assert.match(expiredSessionAfterLogin.stdout, /EXPIRED_SESSION_CLEARED/,
+    'successful session issuance should prune expired sessions')
 
   const ownerMe = await expectJson(await request(baseUrl, '/api/admin/me', {
-    headers: ownerHeaders,
-  }), 200, 'owner session')
+    headers: { origin, cookie: renewedCookie.split(';', 1)[0] },
+  }), 200, 'renewed owner session')
   assert.equal(ownerMe.user.username, 'integration-owner')
 
   await runWrangler([

@@ -17,6 +17,14 @@
 - Phase: **R07/R08 — quality, security review and production-readiness gates**.
 - Latest booking-duration snapshot work is committed on `main`: Worker insert/read `90c97fdde40aa8721fb395017e2c041eef673d83`, owner read `8deef06599c503fe7c9bb051e41d0b657d00eb79`, migration 0009 `7486c802d8c4c41497580391456c048797ab95f4`, Worker+D1 regression `9406f7b535acda85741034995918280e83523243`, SQLite migration regression `c41a7b512ac2bb6ce7a114f5d72e666029a59883`, and UUID fixture correction `71b47cb3d3f0526331d3bf9d0c12fae82b8c26cc`. [CI run 41673140817](https://github.com/pooya-labs/salon-booking/actions/runs/41673140817) and [Pages run 41673140699](https://github.com/pooya-labs/salon-booking/actions/runs/41673140699) passed for the same `main` head.
 
+## Latest admin-session cleanup hardening (2026-11-04)
+
+- `getAdminSession` previously deleted all expired session rows before checking whether the request supplied any session cookie. Any unauthenticated request to a protected admin endpoint could therefore cause a D1 write.
+- Removed database cleanup from session validation. Missing and expired tokens now return unauthorized without mutating D1; expiration is enforced by the authenticated session lookup.
+- Expired rows are pruned when a new session is issued (successful login/bootstrap), preserving cleanup without granting anonymous traffic a write path.
+- Worker+D1 integration regression now seeds an expired session, verifies an anonymous admin request leaves it untouched, then performs a successful login and verifies session issuance prunes it.
+- Status: implementation and tests committed to `main`; final CI/Pages verification pending.
+
 ## Latest service-name snapshot implementation (2026-11-04)
 
 - The owner booking list and customer self-service lookup previously read `services.name` live, so a catalog rename could rewrite the service label shown for an already-created booking.
