@@ -171,6 +171,39 @@ try {
   console.log('[browser] responsive viewport matrix passed: 320, 360, 390, 430, 768, 1024, 1280, 1440px')
 
   await page.setViewportSize({ width: 390, height: 844 })
+  const footerLayout = await page.evaluate(async () => {
+    window.scrollTo(0, document.documentElement.scrollHeight)
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const footer = document.querySelector('.site-footer')
+    const brandLogo = footer?.querySelector('.footer-brand > img')
+    const creatorMark = footer?.querySelector('.footer-pooya-mark')
+    const credit = footer?.querySelector('.footer-credit')
+    const bookingBar = document.querySelector('.mobile-book-bar')
+    if (!footer || !brandLogo || !creatorMark || !credit || !bookingBar) return null
+    const footerRect = footer.getBoundingClientRect()
+    const barRect = bookingBar.getBoundingClientRect()
+    const brandRect = brandLogo.getBoundingClientRect()
+    const creatorRect = creatorMark.getBoundingClientRect()
+    return {
+      brandLogoWidth: brandRect.width,
+      brandLogoHeight: brandRect.height,
+      creatorLogoWidth: creatorRect.width,
+      creatorLogoHeight: creatorRect.height,
+      creditFits: credit.scrollWidth <= credit.clientWidth + 1,
+      footerAboveBookingBar: footerRect.bottom <= barRect.top - 6,
+      footerVisible: footerRect.top < window.innerHeight,
+      barVisible: barRect.top < window.innerHeight && barRect.bottom <= window.innerHeight + 1,
+    }
+  })
+  assert.ok(footerLayout, 'mobile footer and booking bar should render')
+  assert.ok(footerLayout.brandLogoWidth <= 50 && footerLayout.brandLogoHeight <= 50, 'Shayan footer emblem should remain compact')
+  assert.ok(footerLayout.creatorLogoWidth <= 20 && footerLayout.creatorLogoHeight <= 20, 'Pooya Labs mark should remain compact')
+  assert.ok(footerLayout.creditFits, 'Pooya Labs credit must fit without text overflow')
+  assert.ok(footerLayout.footerVisible && footerLayout.barVisible, 'footer and sticky booking bar should both be visible')
+  assert.ok(footerLayout.footerAboveBookingBar, 'sticky booking bar must not cover the footer at the bottom of the page')
+  console.log('[browser] mobile footer logo sizing, creator-credit wrapping and sticky booking-bar clearance passed')
+
+
   const menuToggle = page.getByRole('button', { name: 'باز کردن منو' })
   await menuToggle.click()
   assert.ok(await page.locator('.main-nav').evaluate(element => element.classList.contains('is-open')), 'mobile navigation should open')
