@@ -5,8 +5,8 @@ import { useDialogAccessibility } from './useDialogAccessibility'
 import { normalizePhoneNumber } from './phone'
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
-  Clock3, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
-  Sparkles, Star, UserRound, X,
+  Clock3, Github, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
+  Star, UserRound, X,
 } from 'lucide-react'
 
 type Service = {
@@ -265,7 +265,7 @@ function BookingWizard({
         <header className="booking-flow-header">
           <div className="booking-flow-brand">
             <span className="booking-logo-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></span>
-            <span><strong>رزرو نوبت شایان</strong><small>SHAYAN · BARBER STUDIO</small></span>
+            <span className="booking-brand-copy"><strong>رزرو نوبت</strong><small>SHAYAN · BARBER STUDIO</small></span>
           </div>
           <button className="icon-button" aria-label="بستن پنجره رزرو" onClick={onClose}><X size={19} /></button>
         </header>
@@ -453,7 +453,7 @@ function App() {
       <header className="site-header">
         <a className="brand" href="#home" aria-label="صفحه اصلی استودیو">
           <span className="brand-image-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></span>
-          <span><strong>شایان</strong><small>آرایشگاه مردانه</small></span>
+          <span className="brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span>
         </a>
         <nav className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="ناوبری اصلی">
           <a href="#services" onClick={() => setMenuOpen(false)}>خدمات</a>
@@ -510,7 +510,7 @@ function App() {
         <section className="contact-strip section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> COME SAY HELLO</div><h2>مشتاق دیدار شما هستیم.</h2></div><div className="contact-items"><span><MapPin size={16} /> آدرس استودیو به‌زودی</span><span><Clock3 size={16} /> ساعات کاری قابل مشاهده هنگام رزرو</span><a href="https://instagram.com/" target="_blank" rel="noreferrer"><Instagram size={16} /> اینستاگرام</a></div></section>
       </main>
 
-      <footer className="site-footer"><a className="footer-brand" href="#home"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><strong>شایان</strong></a><span className="footer-note">اینجا، استایل ساخته می‌شود.</span><span className="footer-credit">Crafted with care by <strong>Pooya</strong> <span>© ۲۰۲۶</span></span></footer>
+      <footer className="site-footer"><a className="footer-brand" href="#home"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><span className="footer-brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span></a><span className="footer-note">اینجا، استایل ساخته می‌شود.</span><span className="footer-credit"><span>Designed &amp; developed by</span> <a className="footer-github-link" href="https://github.com/pooya-labs" target="_blank" rel="noreferrer" aria-label="GitHub profile of Pooya Labs"><Github size={15} /> Pooya Labs</a> <span>© ۲۰۲۶</span></span></footer>
 
       {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} services={services} demoMode={DEMO_MODE} salonTimezone={salonTimezone} />}
       {bookingManagementOpen && <BookingManagement onClose={() => setBookingManagementOpen(false)} demoMode={DEMO_MODE} />}
