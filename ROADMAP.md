@@ -219,3 +219,6 @@ At the end of every meaningful work session update:
 - Any owner action required.
 
 Do not redo completed tasks. Read this file and `docs/PROJECT-STATE.md` before resuming.
+
+
+> **Remaining integration prerequisite:** The Cloudflare Workers & Pages GitHub App has not yet been authorized for `pooya-labs/salon-booking`. The Cloudflare Build API rejected repository linking because this Cloudflare account is not connected to the Git account. Owner authorization is required before creating the dedicated Worker/build pipeline.
