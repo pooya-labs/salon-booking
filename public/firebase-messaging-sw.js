@@ -7,7 +7,7 @@ self.addEventListener('notificationclick', function (event) {
 });
 
 // FCM automatically displays notification payloads while the page is in the
-// background. No custom onBackgroundMessage handler is needed (avoids duplicates).
+// background. No custom background handler is needed (avoids duplicates).
 const firebaseConfig = __FIREBASE_CONFIG__;
 
 if (firebaseConfig && firebaseConfig.apiKey) {
