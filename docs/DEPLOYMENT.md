@@ -13,11 +13,10 @@ No VPS is required. The free tier is subject to Cloudflare's current quotas and 
 
 1. Sign in to Cloudflare.
 2. Create a D1 database named `salon-booking`.
-3. Copy the database ID.
-4. Add the ID to `wrangler.toml` locally or through the deployment configuration. Do not commit account tokens.
-5. Apply all committed migrations in order (currently 0001–0010): `npx wrangler d1 migrations apply salon-booking --remote`. The migrations intentionally leave `local_timezone='unset'` until the salon owner confirms the business location.
-6. Configure production secrets with Wrangler or the Cloudflare dashboard.
-7. Connect the GitHub repository to Cloudflare Workers Builds, selecting `main` as production branch and `npm run build` as build command. Configure the Worker deployment command according to the current Wrangler setup.
+3. The production database ID is already committed in the root `wrangler.toml`; keep the `DB` binding and `migrations_dir = "migrations"` unchanged. Do not commit account tokens or secrets.
+4. Apply all committed migrations in order (currently 0001–0010) to the intended production database: `npx wrangler d1 migrations apply salon-booking --remote`. Authenticate Wrangler to the correct Cloudflare account first and verify the target database name before confirming the operation. The migrations intentionally leave `local_timezone='unset'` until the salon owner confirms the business location.
+5. Configure production secrets with Wrangler or the Cloudflare dashboard.
+6. Connect the GitHub repository to Cloudflare Workers Builds, selecting repository `pooya-labs/salon-booking`, branch `main`, root directory `/`, build command `npm run build` and deploy command `npx wrangler deploy`. The Worker name must remain `salon-booking`, matching `wrangler.toml`.
 
 ## Local development with the Worker and D1
 
@@ -108,7 +107,7 @@ Cloudflare documents that a rollback is a new active deployment and that connect
 - Use the current Cloudflare [D1 export/import guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/) and [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) for the supported export and recovery method for the account/runtime in use.
 - After recovery, list applied migrations again and run the complete production smoke-test checklist.
 
-This runbook is documented but has **not** been exercised against a production Worker or D1 database; neither has been provisioned yet.
+This runbook is documented but has **not** been exercised against a production Worker or D1 database. The production D1 database is now provisioned and its ID is configured in `wrangler.toml`; remote migrations, Worker deployment and rollback/restore drills remain pending.
 
 
 ## Temporary GitHub Pages preview
