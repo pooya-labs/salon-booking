@@ -88,7 +88,7 @@ export async function listenForOwnerPushMessages(): Promise<() => void> {
   try {
     const { messaging, instance } = await getFirebaseMessaging()
     return messaging.onMessage(instance, (payload) => {
-      const title = payload.notification?.title || 'اعلان جدید فُرم'
+      const title = payload.notification?.title || 'اعلان جدید شایان'
       const body = payload.notification?.body || 'یک رویداد جدید در سامانه ثبت شد.'
       const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin)
       const destination = new URL('?admin=1', baseUrl).toString()
