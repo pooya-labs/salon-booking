@@ -84,13 +84,22 @@ export async function registerOwnerPushDevice(): Promise<void> {
 }
 
 export async function listenForOwnerPushMessages(): Promise<() => void> {
-  if (!firebaseReady || !('Notification' in window) || Notification.permission !== 'granted') return () => undefined
+  if (!firebaseReady || !('Notification' in window) || !('serviceWorker' in navigator) || Notification.permission !== 'granted') return () => undefined
   try {
     const { messaging, instance } = await getFirebaseMessaging()
     return messaging.onMessage(instance, (payload) => {
       const title = payload.notification?.title || 'اعلان جدید فُرم'
       const body = payload.notification?.body || 'یک رویداد جدید در سامانه ثبت شد.'
-      try { new Notification(title, { body, icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg` }) } catch (ignored) {}
+      const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin)
+      const destination = new URL('?admin=1', baseUrl).toString()
+      void navigator.serviceWorker.ready.then((registration) => registration.showNotification(title, {
+        body,
+        icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg`,
+        tag: 'salon-booking-foreground',
+        data: { url: destination },
+      })).catch(() => {
+        try { new Notification(title, { body, icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg` }) } catch (ignored) {}
+      })
     })
   } catch (ignored) {
     return () => undefined

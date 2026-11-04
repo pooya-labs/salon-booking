@@ -992,7 +992,7 @@ function sendBookingEmail_(booking) {
     }
     var subject = 'رزرو جدید سالن · ' + booking.reference;
     var body = [
-      'یک درخواست رزرو جدید ثبت شد.',
+      booking.source === 'phone' ? 'یک نوبت تلفنی جدید ثبت شد.' : 'یک درخواست رزرو آنلاین جدید ثبت شد.',
       '',
       'کد پیگیری: ' + booking.reference,
       'نام مشتری: ' + booking.name,
@@ -1000,7 +1000,7 @@ function sendBookingEmail_(booking) {
       'خدمت: ' + booking.serviceName,
       'تاریخ: ' + booking.date,
       'ساعت: ' + booking.time,
-      'وضعیت: در انتظار تأیید',
+      'وضعیت: ' + (booking.status === 'confirmed' ? 'تأیید شده' : 'در انتظار تأیید'),
       '',
       'برای مشاهده و مدیریت رزرو وارد پنل مدیریت شوید.'
     ].join('\n');
@@ -1112,9 +1112,9 @@ function normalizeDigits_(value) {
 }
 function bookingFullName_(input) {
   var firstName = String(input.firstName || '').trim().replace(/\s+/g, ' ');
-  var lastName = String(input.lastName || '').trim().replace(/\\s+/g, ' ');
-  if (firstName || lastName) return (firstName + ' ' + lastName).trim().replace(/\\s+/g, ' ');
-  return String(input.name || '').trim().replace(/\\s+/g, ' ');
+  var lastName = String(input.lastName || '').trim().replace(/\s+/g, ' ');
+  if (firstName || lastName) return (firstName + ' ' + lastName).trim().replace(/\s+/g, ' ');
+  return String(input.name || '').trim().replace(/\s+/g, ' ');
 }
 function normalizePhone_(value) {
   var phone = normalizeDigits_(value).replace(/[\s()-]/g, '');

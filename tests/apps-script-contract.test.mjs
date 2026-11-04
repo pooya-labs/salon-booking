@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
 import test from 'node:test'
 
 const backend = readFileSync(new URL('../relay/Code.gs', import.meta.url), 'utf8')
 const manifest = JSON.parse(readFileSync(new URL('../relay/appsscript.json', import.meta.url), 'utf8'))
 const bridge = readFileSync(new URL('../relay/Bridge.html', import.meta.url), 'utf8')
+const pushClient = readFileSync(new URL('../src/push-notifications.ts', import.meta.url), 'utf8')
 
 test('Apps Script backend parses as V8 JavaScript', () => {
   execFileSync(process.execPath, ['--check'], { input: backend, stdio: ['pipe', 'pipe', 'pipe'] })
@@ -53,6 +55,25 @@ test('manifest deploys an anonymous web app as its deploying owner', () => {
   assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/script.send_mail'))
   assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/firebase.messaging'))
   assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/script.external_request'))
+})
+
+
+test('customer first and last names are normalized into one display name', () => {
+  const helpers = runInNewContext(backend + '\\n({ bookingFullName_ })')
+  assert.equal(helpers.bookingFullName_({
+    firstName: '  Pooya   Ali  ',
+    lastName: '  Rezaei   Nouri ',
+  }), 'Pooya Ali Rezaei Nouri')
+})
+
+test('phone booking email alerts show confirmed status and the booking source', () => {
+  assert.match(backend, /booking\\.source === 'phone' \\? 'یک نوبت تلفنی جدید ثبت شد\\.'/)
+  assert.match(backend, /booking\\.status === 'confirmed' \\? 'تأیید شده' : 'در انتظار تأیید'/)
+})
+
+test('foreground push uses ServiceWorkerRegistration notifications on mobile browsers', () => {
+  assert.match(pushClient, /registration\\.showNotification/)
+  assert.match(pushClient, /new URL\\('\\?admin=1'/)
 })
 
 test('bridge accepts API messages only from the GitHub Pages origin', () => {
