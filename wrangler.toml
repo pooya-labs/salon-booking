@@ -11,6 +11,6 @@ run_worker_first = ["/api/*", "/", "/admin", "/admin/"]
 [[d1_databases]]
 binding = "DB"
 database_name = "salon-booking"
-# Replace after creating the D1 database in your Cloudflare account.
+# Production D1 database provisioned and verified on 2026-11-04.
 database_id = "646e31ad-82c9-45bf-8afc-ed6e6b81e025"
 migrations_dir = "migrations"
