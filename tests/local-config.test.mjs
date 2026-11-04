@@ -21,10 +21,12 @@ test('local scripts explicitly use the local Wrangler config and local D1', asyn
   assert.doesNotMatch(pkg.scripts.deploy, /wrangler.dev.toml/)
 })
 
-test('production Wrangler config remains separate and unmodified by local setup', async () => {
+test('production Wrangler config points to a valid non-local D1 database', async () => {
   const config = await read('wrangler.toml')
   assert.match(config, /^name = "salon-booking"$/m)
-  assert.match(config, /^database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"$/m)
+  assert.match(config, /^database_name = "salon-booking"$/m)
+  assert.match(config, /^database_id = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"$/m)
+  assert.doesNotMatch(config, /REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID/)
   assert.doesNotMatch(config, /00000000-0000-4000-8000-000000000001/)
 })
 
