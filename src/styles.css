@@ -861,3 +861,13 @@ h1 em,h2 em { color:var(--shayan-gold-bright); }
   .footer-credit { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:5px; }
   .footer-credit>span:last-child { margin-left:0; }
 }
+
+.footer-github-link { gap:7px; }
+.footer-pooya-mark {
+  width:23px; height:25px; display:block; flex:0 0 23px;
+  object-fit:contain; filter:drop-shadow(0 0 5px #d6ad6244);
+}
+.footer-github-link svg { opacity:.76; }
+@media (max-width:680px) {
+  .footer-pooya-mark { width:21px; height:23px; flex-basis:21px; }
+}
