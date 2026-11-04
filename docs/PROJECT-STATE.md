@@ -12,6 +12,15 @@
 - Deployment target: GitHub Pages + Google Apps Script + private Google Sheets; Cloudflare Worker/D1 retained as legacy recovery only
 - Current release: 0.7.0
 
+## Latest migration verification (2026-11-04)
+
+- Latest main commit: `85b88cf81425e984eaa7eda4e5b3e11226aad8a6` (privacy/backup operations updated for private Google Sheets). The preceding migration code commit is `1a735e815cf55fc8f45c7a72078ba652c4f38b1a`; the stale Wrangler test was corrected in `4d7e6186cd85c4fb19a72817d040b6e8efab070f`.
+- **CI passed:** [run 41855195426](https://github.com/pooya-labs/salon-booking/actions/runs/41855195426). It passed lint, unit tests (including the Apps Script contract/syntax checks and archived-Worker config assertions), legacy SQLite migration tests, TypeScript/build, responsive RTL/keyboard/browser QA and owner-dashboard date-range browser QA.
+- **GitHub Pages deployment passed:** [run 41855195855](https://github.com/pooya-labs/salon-booking/actions/runs/41855195855). The site remains in safe demo mode unless the owner has configured the `SALON_RELAY_URL` repository variable.
+- Updated privacy documentation to describe Google Sheets as the active data store and to remove obsolete D1 backup instructions from the current operating guide.
+- No Apps Script Web App has been published from the owner's Google account by repository automation. The account setup, web deployment, Actions variable, manager bootstrap, salon timezone/services/hours and real Iran-network booking/notification checks remain required owner-side acceptance steps.
+- Cloudflare resources and any historical D1 rows are untouched. Do not delete or migrate them without the owner's explicit data-recovery decision.
+
 ## Current checkpoint — Google Apps Script cutover (2026-11-04)
 
 - Phase: **R09 — Apps Script backend migration committed; owner deployment and end-to-end acceptance remain open**.
