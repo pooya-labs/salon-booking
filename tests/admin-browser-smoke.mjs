@@ -192,6 +192,12 @@ try {
       }) })
       return
     }
+    if (path === '/api/admin/notifications') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        ok: true, emailEnabled: false, firebaseProjectId: '', pushDeviceCount: 0, pushReady: false,
+      }) })
+      return
+    }
     if (path === '/api/admin/schedule') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         ok: true,

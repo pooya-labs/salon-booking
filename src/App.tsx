@@ -13,6 +13,7 @@ type Service = {
   id: string
   name: string
   detail: string
+  category: string
   duration: number
   price: string
 }
@@ -21,14 +22,15 @@ type BookingDraft = {
   serviceId: string
   date: string
   time: string
-  name: string
+  firstName: string
+  lastName: string
   phone: string
 }
 
 const demoServices: Service[] = [
-  { id: 'cut', name: 'کوتاهی و فرم‌دهی', detail: 'متناسب با فرم چهره و سلیقه شما', duration: 45, price: 'از ۳۵۰ هزار' },
-  { id: 'trim', name: 'اصلاح و مرتب‌سازی', detail: 'جزئیات دقیق، نتیجه تمیز', duration: 30, price: 'از ۲۵۰ هزار' },
-  { id: 'complete', name: 'پکیج کامل', detail: 'یک تجربه کامل برای رسیدگی به استایل', duration: 75, price: 'از ۵۵۰ هزار' },
+  { id: 'cut', name: 'کوتاهی و فرم‌دهی', detail: 'متناسب با فرم چهره و سلیقه شما', category: 'مو', duration: 45, price: 'از ۳۵۰ هزار' },
+  { id: 'trim', name: 'اصلاح و مرتب‌سازی', detail: 'جزئیات دقیق، نتیجه تمیز', category: 'اصلاح', duration: 30, price: 'از ۲۵۰ هزار' },
+  { id: 'complete', name: 'پکیج کامل', detail: 'یک تجربه کامل برای رسیدگی به استایل', category: 'پکیج', duration: 75, price: 'از ۵۵۰ هزار' },
 ]
 
 const DEMO_MODE = import.meta.env.MODE !== 'production' && !import.meta.env.VITE_SALON_RELAY_URL
@@ -37,6 +39,7 @@ type ApiService = {
   id: string
   name: string
   description: string
+  category?: string
   durationMinutes: number
   priceAmount: number
   priceCurrency: string
@@ -93,7 +96,8 @@ function BookingWizard({
     serviceId: initialServiceId ?? '',
     date: '',
     time: '',
-    name: '',
+    firstName: '',
+    lastName: '',
     phone: '',
   })
   const [error, setError] = useState('')
@@ -186,8 +190,8 @@ function BookingWizard({
     }
     if (step === 2) {
       const phone = normalizePhoneNumber(draft.phone)
-      if (draft.name.trim().length < 2) {
-        setError('لطفاً نام و نام خانوادگی را وارد کنید.')
+      if (draft.firstName.trim().length < 2 || draft.lastName.trim().length < 2) {
+        setError('لطفاً نام و نام خانوادگی را جداگانه وارد کنید.')
         return
       }
       if (!/^\+?[0-9]{10,15}$/.test(phone)) {
@@ -218,7 +222,8 @@ function BookingWizard({
       serviceId: draft.serviceId,
       date: draft.date,
       time: draft.time,
-      name: draft.name.trim(),
+      firstName: draft.firstName.trim(),
+      lastName: draft.lastName.trim(),
       phone: normalizePhoneNumber(draft.phone),
     }
       const fingerprint = JSON.stringify(bookingPayload)
@@ -330,7 +335,7 @@ function BookingWizard({
               <div className="eyebrow"><span className="eyebrow-line" /> STEP 03 · YOUR DETAILS</div>
               <h2 id="booking-flow-title">چطور صداتون کنیم؟</h2>
               <p className="booking-step-intro">برای پیگیری نوبت، اطلاعات تماس را وارد کنید.</p>
-              <label className="booking-field"><span><UserRound size={15} /> نام و نام خانوادگی</span><input autoComplete="name" value={draft.name} onChange={(event) => updateDraft('name', event.target.value)} placeholder="مثلاً پویا رضایی" /></label>
+              <div className="booking-form-two-cols"><label className="booking-field"><span><UserRound size={15} /> نام</span><input autoComplete="given-name" value={draft.firstName} onChange={(event) => updateDraft('firstName', event.target.value)} placeholder="نام" /></label><label className="booking-field"><span>نام خانوادگی</span><input autoComplete="family-name" value={draft.lastName} onChange={(event) => updateDraft('lastName', event.target.value)} placeholder="نام خانوادگی" /></label></div>
               <label className="booking-field"><span><Phone size={15} /> شماره تماس</span><input inputMode="tel" autoComplete="tel" value={draft.phone} onChange={(event) => updateDraft('phone', event.target.value)} placeholder="شماره موبایل یا تلفن همراه با کد کشور" /></label>
               <div className="booking-privacy-note"><ShieldCheck size={18} /><span><strong>اطلاعات شما محرمانه می‌ماند.</strong><small>در نسخه نهایی، اطلاعات فقط برای مدیریت و پیگیری همین نوبت استفاده می‌شود.</small></span></div>
             </div>
@@ -347,7 +352,7 @@ function BookingWizard({
                 <div className="booking-review-row"><span>تاریخ</span><strong>{selectedDate?.full}</strong></div>
                 <div className="booking-review-row"><span>ساعت</span><strong>{draft.time}</strong></div>
                 <div className="booking-review-row"><span>مدت تقریبی</span><strong>{selectedService?.duration} دقیقه</strong></div>
-                <div className="booking-review-row"><span>نام</span><strong>{draft.name}</strong></div>
+                <div className="booking-review-row"><span>نام و نام خانوادگی</span><strong>{`${draft.firstName} ${draft.lastName}`.trim()}</strong></div>
                 <div className="booking-review-row"><span>شماره تماس</span><strong dir="ltr">{draft.phone}</strong></div>
               </div>
               <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>{demoMode ? 'این یک پیش‌نمایش تعاملی است.' : 'پیش از ثبت نهایی بررسی کنید.'}</strong><small>{demoMode ? 'هنوز نوبتی ثبت نشده و اطلاعات شما به سرور ارسال نمی‌شود.' : 'با انتخاب ثبت نوبت، اطلاعات ضروری برای ایجاد رزرو به سامانه استودیو ارسال می‌شود.'}</small></span></div>
@@ -418,6 +423,7 @@ function App() {
           id: service.id,
           name: service.name,
           detail: service.description || 'جزئیات این خدمت در استودیو اعلام می‌شود.',
+          category: service.category || 'عمومی',
           duration: service.durationMinutes,
           price: priceLabel(service.priceAmount, service.priceCurrency),
         }))
@@ -489,7 +495,7 @@ function App() {
 
         <section className="services-section section-wrap" id="services">
           <div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> WHAT WE DO</div><h2>خدماتی برای <em>حالِ بهتر.</em></h2></div><p>هر خدمت با توجه به نیاز شما و با دقت به جزئیات ارائه می‌شود. خدمت موردنظرتان را انتخاب کنید.</p></div>
-          {services.length > 0 ? <div className="service-grid">{services.map((service, index) => <article className="service-card" key={service.id}><div className="service-top"><span className="service-index">{toPersianDigits(String(index + 1).padStart(2, '0'))}</span><span className="service-icon"><Scissors size={19} strokeWidth={1.4} /></span></div><h3>{service.name}</h3><p>{service.detail}</p><div className="service-meta"><span><Clock3 size={14} />{toPersianDigits(service.duration)} دقیقه</span><strong>{service.price}</strong></div><button className="service-cta" onClick={() => startBooking(service.id)}>رزرو این خدمت <ArrowLeft size={15} /></button></article>)}</div> : <p className="service-empty">{catalogMessage || 'در حال دریافت فهرست خدمات…'}</p>}
+          {services.length > 0 ? <div className="service-grid">{services.map((service, index) => <article className="service-card" key={service.id}><div className="service-top"><span className="service-index">{toPersianDigits(String(index + 1).padStart(2, '0'))}</span><span className="service-category">{service.category}</span><span className="service-icon"><Scissors size={19} strokeWidth={1.4} /></span></div><h3>{service.name}</h3><p>{service.detail}</p><div className="service-meta"><span><Clock3 size={14} />{toPersianDigits(service.duration)} دقیقه</span><strong>{service.price}</strong></div><button className="service-cta" onClick={() => startBooking(service.id)}>رزرو این خدمت <ArrowLeft size={15} /></button></article>)}</div> : <p className="service-empty">{catalogMessage || 'در حال دریافت فهرست خدمات…'}</p>}
           {DEMO_MODE && <p className="price-note">* خدمات و قیمت‌های نمایش‌داده‌شده فعلاً نمونه هستند و پیش از انتشار نهایی با اطلاعات واقعی آرایشگاه جایگزین می‌شوند.</p>}
         </section>
 

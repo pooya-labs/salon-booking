@@ -1,0 +1,20 @@
+{
+  "name": "فُرم | رزرو و مدیریت نوبت",
+  "short_name": "فُرم",
+  "description": "سامانه رزرو و مدیریت نوبت استودیو",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#171714",
+  "icons": [
+    {
+      "src": "icons/salon-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

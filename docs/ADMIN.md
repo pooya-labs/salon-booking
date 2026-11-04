@@ -38,3 +38,12 @@ After a booking is committed, the backend sends an email to the configured manag
 - Google service quotas and availability can change. Monitor Apps Script **Executions** when requests fail.
 - The legacy Worker/D1 implementation is retained only for recovery; it is not part of the active Pages API path.
 - Do not accept real reservations until Apps Script is deployed, the salon's actual timezone/services/hours are configured, and a booking plus its notification have been tested.
+
+
+## Service, schedule and phone bookings
+
+Service categories, descriptions, prices, currencies, durations, display order and public visibility are editable. Each weekday supports multiple independently editable opening intervals, including midday breaks. The manager can also enter phone reservations with first name, last name and phone; a successful manual reservation is confirmed and blocks the same time from online availability.
+
+## Phone notifications
+
+The Notifications tab registers the current Android browser/PWA for Firebase Cloud Messaging. Email notifications are disabled by default and may be enabled separately. Firebase must first be configured according to the [deployment checklist](./GITHUB-PAGES-RELAY.md#6-phone-push-notifications-firebase-cloud-messaging).

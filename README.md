@@ -17,7 +17,7 @@ Live site: https://pooya-labs.github.io/salon-booking/
 1. GitHub Pages serves the customer website and manager panel.
 2. A hidden iframe loads the owner's Google Apps Script Web App. The frontend forwards its same-origin `/api/*` calls through `google.script.run`.
 3. Apps Script performs the API logic and stores application records in a private Google Spreadsheet.
-4. After a booking is saved, Apps Script emails the manager. Gmail on Android can show the message as a phone notification when notifications are enabled.
+4. Apps Script sends Firebase Cloud Messaging push notifications to registered manager devices; optional email notifications are off by default.
 
 **Cloudflare is no longer in the active request path.** The former Worker, Wrangler configuration and D1 migrations remain in the repository as temporary recovery material until the Apps Script deployment passes acceptance. Existing D1 data is not copied automatically into Sheets.
 
@@ -30,7 +30,7 @@ The Pages build requires the GitHub Actions variable `SALON_RELAY_URL`. Without 
 - Conflict-safe reservation creation, idempotent retries and reference codes.
 - Customer self-service lookup and cancellation with a one-time management token.
 - Owner bootstrap/login, booking status management, service administration and weekly/date-specific scheduling.
-- Owner audit trail and booking email notification.
+- Editable service categories, descriptions, prices and durations; multi-interval weekly hours; manual phone reservations that block online slots; owner push notifications.
 
 ## Local development
 

@@ -10,12 +10,12 @@ This is the active deployment path. GitHub Pages serves the React site; an Apps 
 4. Add an HTML file named `Bridge` and paste [`relay/Bridge.html`](../relay/Bridge.html).
 5. In Project Settings, enable **Show "appsscript.json" manifest file in editor**. Replace it with [`relay/appsscript.json`](../relay/appsscript.json), then save.
 
-The manifest selects V8, spreadsheet/mail/user-info scopes, `Asia/Tehran` as the script timezone, owner execution and anonymous Web App access. Google's [manifest reference](https://developers.google.com/apps-script/manifest/web-app-api-executable) documents these access and execution values.
+The manifest selects V8, spreadsheet, optional email, Firebase Messaging and external-request scopes, `Asia/Tehran` as the script timezone, owner execution and anonymous Web App access. Google's [manifest reference](https://developers.google.com/apps-script/manifest/web-app-api-executable) documents these access and execution values.
 
 ## 2. Create the private database and authorize email
 
 1. In the function picker, choose `setupSalonDatabase` and click **Run**.
-2. Approve Google Sheets and Mail permissions.
+2. Approve the requested Google Sheets, Firebase Messaging and external-request permissions. Mail permission is available only for optional email alerts.
 3. Open the execution log. It prints the private spreadsheet URL and a one-time owner-bootstrap token. Keep that token private; do not paste it into GitHub or chat.
 4. Setup defaults the notification recipient to the deploying Google account when available. To choose a different mailbox, run `setSalonNotificationEmail("manager@example.com")` from the Apps Script editor.
 
@@ -63,3 +63,33 @@ The published consumer-account MailApp allowance is currently 100 recipients/day
 The backend source is committed to GitHub, but Apps Script projects are separate Google-account resources. This repository integration cannot authorize or publish a Web App inside the owner's Google account. The owner must complete steps 1–4. Do not treat the migration as live until the `/exec` URL is deployed, the GitHub variable is set, and a booking plus Gmail notification are verified from an Iranian network.
 
 The previous Cloudflare Worker and D1 are intentionally left untouched as a temporary recovery source. No automatic D1-to-Sheets copy is performed. Do not delete Cloudflare resources until the Apps Script path passes owner acceptance.
+
+
+## 6. Phone push notifications (Firebase Cloud Messaging)
+
+Push is the recommended phone notification path. It can show a native Android notification while the manager's browser/PWA is in the background. The app uses Firebase Cloud Messaging (FCM); no Cloudflare Worker or Firebase private service-account key is used.
+
+1. In [Firebase Console](https://console.firebase.google.com/), create or select a project and add a Web app.
+2. In Project settings → General, copy the Web app configuration values: apiKey, authDomain, projectId, storageBucket, messagingSenderId and appId.
+3. In Project settings → Cloud Messaging → Web configuration, generate a Web Push certificate (VAPID) key pair and copy the public key.
+4. In the matching Google Cloud project, enable the Firebase Cloud Messaging API. In Apps Script Project Settings, associate the Apps Script project with this same standard Google Cloud project. The script owner must have permission to send Firebase messages in the project.
+5. In GitHub Settings → Secrets and variables → Actions → Variables, add these repository variables (the Firebase web config and VAPID public key are public client configuration, not private credentials):
+
+   - FIREBASE_API_KEY
+   - FIREBASE_AUTH_DOMAIN
+   - FIREBASE_PROJECT_ID
+   - FIREBASE_STORAGE_BUCKET
+   - FIREBASE_MESSAGING_SENDER_ID
+   - FIREBASE_APP_ID
+   - FIREBASE_VAPID_KEY
+
+6. Update the existing Apps Script project's Code.gs and appsscript.json from this repository. Run setupSalonDatabase() again to add the new category, source and PushSubscriptions columns/table without clearing existing rows. Approve the new Firebase Messaging and external-request scopes.
+7. Deploy a new version of the Web App (Deploy → Manage deployments → Edit → New version → Deploy). Keep the deployed /exec URL unchanged when editing the existing deployment.
+8. Rebuild GitHub Pages from Actions. Then sign in to /admin, open اعلان‌ها, enter the Firebase project ID and save.
+9. On the manager's Android phone, open the live site in Chrome, sign in to the admin panel and tap فعال‌کردن اعلان این گوشی. Allow notifications, then use ارسال اعلان آزمایشی.
+
+The manager can add more than one device by repeating activation on each phone/browser. FCM sends to saved manager devices. The service worker displays background notifications; the open dashboard handles foreground messages. See [FCM web setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [receiving FCM messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages) and [Apps Script external APIs](https://developers.google.com/apps-script/guides/services/external).
+
+## 7. Email alert preference
+
+Email alerts are off by default. In the admin panel's اعلان‌ها tab, leave the email checkbox off to receive phone push only. Enabling it sends a parallel MailApp email to the configured manager address. If email is disabled, no booking email is sent.

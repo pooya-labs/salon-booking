@@ -186,7 +186,12 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Implement a standalone Google Apps Script API for the existing public and owner endpoint contract.
 - [x] Add Google Sheets tables for settings, services, weekly hours, exceptions, bookings, admin users, persistent owner sessions and audit history.
 - [x] Add booking overlap protection with LockService, idempotent retries and customer lookup/cancellation.
-- [x] Add owner-only setup guards, six-hour persistent sessions and booking email notifications through MailApp.
+- [x] Add owner-only setup guards and six-hour persistent sessions.
+- [x] Add editable service type/category, daily multi-interval hours, split first/last-name customer details and owner-entered phone reservations.
+- [x] Add Firebase Cloud Messaging Web Push sender and manager-device registration; email notifications now default off and are configurable in the owner panel.
+- [ ] Owner imports latest Apps Script source/manifest, reruns database setup for the added columns/table, reauthorizes Firebase/UrlFetch scopes and deploys a new Web App version.
+- [ ] Owner configures a Firebase web app/VAPID key and links the Apps Script standard Google Cloud project to Firebase; add seven `FIREBASE_*` GitHub Actions variables and rebuild Pages.
+- [ ] Verify push delivery on manager Android in foreground/background; verify email remains off unless explicitly enabled.
 - [x] Replace the Apps Script proxy-to-Worker relay with direct in-script API handling; no Cloudflare forwarding is present in the active backend.
 - [x] Add Apps Script manifest, origin-restricted iframe bridge, deployment guide and Node V8 syntax/contract tests.
 - [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.

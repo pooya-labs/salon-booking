@@ -10,18 +10,21 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.0.0';
+var APP_VERSION_ = '1.1.0';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
+var EMAIL_NOTIFICATIONS_PROPERTY_ = 'EMAIL_NOTIFICATIONS_ENABLED';
+var FIREBASE_PROJECT_PROPERTY_ = 'FIREBASE_PROJECT_ID';
 var SESSION_TTL_ = 21600; // Apps Script CacheService max TTL: 6 hours.
 
 var TABLES_ = {
   Settings: ['key', 'value'],
-  Services: ['id', 'name', 'description', 'durationMinutes', 'priceAmount', 'priceCurrency', 'isActive', 'sortOrder', 'createdAt', 'updatedAt'],
+  Services: ['id', 'name', 'description', 'durationMinutes', 'priceAmount', 'priceCurrency', 'isActive', 'sortOrder', 'createdAt', 'updatedAt', 'category'],
   WeeklyHours: ['weekday', 'isClosed', 'intervalsJson', 'configured'],
   Exceptions: ['id', 'date', 'isClosed', 'intervalsJson', 'note', 'createdAt'],
-  Bookings: ['id', 'reference', 'serviceId', 'serviceName', 'durationMinutes', 'name', 'phone', 'date', 'time', 'startsAt', 'endsAt', 'status', 'note', 'manageTokenHash', 'idempotencyKeyHash', 'requestHash', 'createdAt', 'updatedAt'],
+  Bookings: ['id', 'reference', 'serviceId', 'serviceName', 'durationMinutes', 'name', 'phone', 'date', 'time', 'startsAt', 'endsAt', 'status', 'note', 'manageTokenHash', 'idempotencyKeyHash', 'requestHash', 'createdAt', 'updatedAt', 'source'],
+  PushSubscriptions: ['token', 'device', 'isActive', 'createdAt', 'updatedAt'],
   AdminUsers: ['id', 'username', 'salt', 'passwordHash', 'isActive', 'createdAt'],
   AdminSessions: ['sessionIdHash', 'userId', 'username', 'expiresAt', 'createdAt'],
   AuditLog: ['id', 'actorId', 'action', 'entityType', 'entityId', 'detailsJson', 'createdAt']
@@ -64,6 +67,12 @@ function setupSalonDatabase() {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       sheet.setFrozenRows(1);
       sheet.getRange(1, 1, Math.max(sheet.getMaxRows(), 1), headers.length).setNumberFormat('@');
+    } else {
+      // Additive migration: append missing columns and preserve every existing row.
+      var lastColumn = Math.max(sheet.getLastColumn(), 1);
+      var existingHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+      var missingHeaders = headers.filter(function (header) { return existingHeaders.indexOf(header) === -1; });
+      if (missingHeaders.length) sheet.getRange(1, lastColumn + 1, 1, missingHeaders.length).setValues([missingHeaders]);
     }
   });
 
@@ -95,6 +104,7 @@ function setupSalonDatabase() {
   if (effectiveEmail && !props.getProperty(NOTIFICATION_PROPERTY_)) {
     props.setProperty(NOTIFICATION_PROPERTY_, effectiveEmail);
   }
+  if (props.getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) === null) props.setProperty(EMAIL_NOTIFICATIONS_PROPERTY_, 'false');
 
   // Trigger the mail permission prompt during owner setup, not on a customer booking.
   try { MailApp.getRemainingDailyQuota(); } catch (mailError) {
@@ -273,6 +283,13 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
     return { status: 200, payload: { ok: true, user: { id: owner.id, username: owner.username } }};
   }
   if (path === '/api/admin/bookings' && method === 'GET') return getAdminBookings_(query, owner);
+  if (path === '/api/admin/availability' && method === 'GET') return getAdminAvailability_(query);
+  if (path === '/api/admin/bookings' && method === 'POST') return createManualBooking_(body, owner);
+  if (path === '/api/admin/notifications' && method === 'GET') return getNotificationSettings_();
+  if (path === '/api/admin/notifications' && method === 'PUT') return saveNotificationSettings_(body, owner);
+  if (path === '/api/admin/notifications/test' && method === 'POST') return sendTestPush_(owner);
+  if (path === '/api/admin/push-subscriptions' && method === 'POST') return savePushSubscription_(body, owner);
+  if (path === '/api/admin/push-subscriptions' && method === 'DELETE') return removePushSubscription_(body, owner);
   if (path === '/api/admin/services' && method === 'GET') {
     var services = readTable_('Services').sort(serviceSort_);
     return { status: 200, payload: { ok: true, services: services.map(servicePayload_) }};
@@ -305,7 +322,7 @@ function createBooking_(input, headers, sessionId) {
   var serviceId = String(input.serviceId || '').trim();
   var date = String(input.date || '');
   var time = String(input.time || '');
-  var name = String(input.name || '').trim().replace(/\s+/g, ' ');
+  var name = bookingFullName_(input);
   var phone = normalizePhone_(input.phone);
   var note = typeof input.note === 'string' ? input.note.trim().slice(0, 500) : '';
   if (!serviceId || serviceId.length > 80) return error_(400, 'invalid_service', 'خدمت انتخاب‌شده معتبر نیست.');
@@ -360,7 +377,7 @@ function createBooking_(input, headers, sessionId) {
       id: uuid_(), reference: makeReference_(), serviceId: serviceId, serviceName: String(service.name),
       durationMinutes: String(Number(service.durationMinutes)), name: name, phone: phone, date: date,
       time: time, startsAt: start.toISOString(), endsAt: end.toISOString(), status: 'pending',
-      note: note, manageTokenHash: sha256_(token), idempotencyKeyHash: keyHash, requestHash: requestHash,
+      note: note, manageTokenHash: sha256_(token), idempotencyKeyHash: keyHash, requestHash: requestHash, source: 'online',
       createdAt: nowIso_(), updatedAt: nowIso_()
     };
     appendRecord_('Bookings', created);
@@ -369,7 +386,7 @@ function createBooking_(input, headers, sessionId) {
     lock.releaseLock();
   }
 
-  sendBookingNotification_(created);
+  sendBookingNotifications_(created);
   return { status: 201, payload: { ok: true, booking: {
     reference: created.reference,
     status: 'pending',
@@ -378,6 +395,77 @@ function createBooking_(input, headers, sessionId) {
     time: created.time,
     durationMinutes: Number(created.durationMinutes),
     managementToken: sha256_('salon-booking-management-token:' + key)
+  }}};
+}
+
+function getAdminAvailability_(query) {
+  var date = query.get('date') || '';
+  var serviceId = query.get('serviceId') || '';
+  if (!parseDateKey_(date)) return error_(400, 'invalid_date', 'تاریخ واردشده معتبر نیست.');
+  var service = findBy_('Services', 'id', serviceId);
+  if (!service || !bool_(service.isActive)) return error_(404, 'service_not_found', 'این خدمت در دسترس نیست.');
+  var settings = getSettings_();
+  if (settings.timezone === 'unset') return error_(503, 'schedule_not_configured', 'برنامه کاری استودیو هنوز تنظیم نشده است.');
+  try {
+    var availability = getAvailability_(date, service, settings, true);
+    return { status: 200, payload: { ok: true, date: date, timezone: settings.timezone, slots: availability.slots } };
+  } catch (availabilityError) {
+    if (String(availabilityError.message) === 'date_out_of_range') return error_(400, 'date_out_of_range', 'این تاریخ خارج از بازه رزرو است.');
+    throw availabilityError;
+  }
+}
+
+/** A phone reservation is confirmed at creation and shares the online booking lock. */
+function createManualBooking_(input, owner) {
+  var serviceId = String(input.serviceId || '').trim();
+  var date = String(input.date || '');
+  var time = String(input.time || '');
+  var name = bookingFullName_(input);
+  var phone = normalizePhone_(input.phone);
+  var note = typeof input.note === 'string' ? input.note.trim().slice(0, 500) : '';
+  if (!serviceId || serviceId.length > 80) return error_(400, 'invalid_service', 'خدمت انتخاب‌شده معتبر نیست.');
+  if (!parseDateKey_(date) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return error_(400, 'invalid_datetime', 'تاریخ یا ساعت معتبر نیست.');
+  if (!String(input.firstName || '').trim() || !String(input.lastName || '').trim() || name.length < 3 || name.length > 161) return error_(400, 'invalid_name', 'نام و نام خانوادگی را جداگانه وارد کنید.');
+  if (!phone) return error_(400, 'invalid_phone', 'شماره تماس معتبر نیست.');
+  if (typeof input.note === 'string' && input.note.length > 1000) return error_(400, 'invalid_note', 'متن توضیحات بیش از حد طولانی است.');
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return error_(503, 'booking_busy', 'سامانه مشغول ثبت رزرو دیگری است؛ دوباره تلاش کنید.');
+  var created;
+  try {
+    var service = findBy_('Services', 'id', serviceId);
+    if (!service || !bool_(service.isActive)) return error_(404, 'service_not_found', 'این خدمت دیگر فعال نیست.');
+    var settings = getSettings_();
+    if (settings.timezone === 'unset') return error_(503, 'schedule_not_configured', 'برنامه کاری استودیو هنوز تنظیم نشده است.');
+    var availability;
+    try { availability = getAvailability_(date, service, settings, true); }
+    catch (availabilityError) {
+      if (String(availabilityError.message) === 'date_out_of_range') return error_(400, 'date_out_of_range', 'تاریخ رزرو باید از امروز تا پایان بازه مجاز باشد.');
+      throw availabilityError;
+    }
+    if (availability.slots.indexOf(time) === -1) return error_(409, 'slot_unavailable', 'این ساعت در برنامه کاری آزاد نیست یا با نوبت دیگری تداخل دارد.');
+    var start = localDateTimeToUtc_(date, time, settings.timezone);
+    var duration = Number(service.durationMinutes) + settings.bufferMinutes;
+    var end = new Date(start.getTime() + duration * 60000);
+    var reference = makeReference_();
+    for (var attempt = 0; attempt < 4 && findBy_('Bookings', 'reference', reference); attempt += 1) reference = makeReference_();
+    created = {
+      id: uuid_(), reference: reference, serviceId: serviceId, serviceName: String(service.name),
+      durationMinutes: String(Number(service.durationMinutes)), name: name, phone: phone,
+      date: date, time: time, startsAt: start.toISOString(), endsAt: end.toISOString(),
+      status: 'confirmed', note: note, manageTokenHash: '', idempotencyKeyHash: '',
+      requestHash: '', createdAt: nowIso_(), updatedAt: nowIso_(), source: 'phone'
+    };
+    appendRecord_('Bookings', created);
+    audit_('booking.created_by_owner_phone', owner.id, 'booking', created.id, {
+      reference: created.reference, serviceName: created.serviceName, date: date, time: time
+    });
+  } finally { lock.releaseLock(); }
+  sendBookingNotifications_(created);
+  return { status: 201, payload: { ok: true, booking: {
+    id: created.id, reference: created.reference, status: created.status,
+    serviceName: created.serviceName, date: created.date, time: created.time,
+    durationMinutes: Number(created.durationMinutes), source: 'phone'
   }}};
 }
 
@@ -449,7 +537,7 @@ function getAdminBookings_(query, owner) {
     return {
       id: row.id, reference: row.reference, name: row.name, phone: row.phone,
       startsAt: row.startsAt, endsAt: row.endsAt, status: row.status, note: row.note,
-      service: row.serviceName, durationMinutes: Number(row.durationMinutes)
+      service: row.serviceName, durationMinutes: Number(row.durationMinutes), source: row.source || 'online'
     };
   }) }};
 }
@@ -485,6 +573,7 @@ function saveService_(input, owner, id) {
   if (id && !current) return error_(404, 'service_not_found', 'خدمت پیدا نشد.');
   var name = input.name === undefined && current ? current.name : input.name;
   var description = input.description === undefined && current ? current.description : input.description;
+  var category = input.category === undefined && current ? (current.category || 'عمومی') : input.category;
   var duration = input.durationMinutes === undefined && current ? Number(current.durationMinutes) : Number(input.durationMinutes);
   var price = input.priceAmount === undefined && current ? Number(current.priceAmount) : Number(input.priceAmount);
   var currency = input.priceCurrency === undefined && current ? current.priceCurrency : input.priceCurrency;
@@ -492,6 +581,7 @@ function saveService_(input, owner, id) {
   var order = input.sortOrder === undefined && current ? Number(current.sortOrder) : Number(input.sortOrder || 0);
   if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80 ||
       typeof description !== 'string' || description.length > 300 ||
+      typeof category !== 'string' || category.trim().length < 1 || category.trim().length > 40 ||
       !Number.isInteger(duration) || duration < 5 || duration > 480 ||
       !Number.isSafeInteger(price) || price < 0 || price > 2000000000 ||
       typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency) ||
@@ -500,7 +590,7 @@ function saveService_(input, owner, id) {
   }
   var now = nowIso_();
   var record = {
-    id: id || uuid_(), name: name.trim(), description: description.trim(),
+    id: id || uuid_(), name: name.trim(), description: description.trim(), category: category.trim(),
     durationMinutes: String(duration), priceAmount: String(price), priceCurrency: currency,
     isActive: String(active), sortOrder: String(order),
     createdAt: current ? current.createdAt : now, updatedAt: now
@@ -518,7 +608,7 @@ function serviceSort_(a, b) {
 }
 function servicePayload_(row) {
   return {
-    id: row.id, name: row.name, description: row.description,
+    id: row.id, name: row.name, description: row.description, category: row.category || 'عمومی',
     durationMinutes: Number(row.durationMinutes), priceAmount: Number(row.priceAmount),
     priceCurrency: row.priceCurrency, isActive: bool_(row.isActive), sortOrder: Number(row.sortOrder)
   };
@@ -657,7 +747,7 @@ function activeBookingsOnDate_(date, timezone) {
   });
 }
 
-function getAvailability_(dateKey, service, settings) {
+function getAvailability_(dateKey, service, settings, ignoreNotice) {
   var date = parseDateKey_(dateKey);
   if (!date) throw new Error('invalid_date');
   if (settings.timezone === 'unset') throw new Error('schedule_not_configured');
@@ -674,7 +764,7 @@ function getAvailability_(dateKey, service, settings) {
       Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime();
   }).map(function (row) { return { start: Date.parse(row.startsAt), end: Date.parse(row.endsAt) }; });
   var duration = Number(service.durationMinutes) + settings.bufferMinutes;
-  var earliest = Date.now() + settings.minBookingNoticeMinutes * 60000;
+  var earliest = Date.now() + (ignoreNotice ? 0 : settings.minBookingNoticeMinutes * 60000);
   var slots = {};
   windows.forEach(function (window) {
     var open = Number(window.startsAt.slice(0, 2)) * 60 + Number(window.startsAt.slice(3, 5));
@@ -752,8 +842,10 @@ function readTable_(name) {
   });
 }
 function appendRecord_(name, record) {
-  var headers = TABLES_[name];
-  getSheet_(name).appendRow(headers.map(function (key) { return record[key] == null ? '' : String(record[key]); }));
+  var sheet = getSheet_(name);
+  var lastColumn = Math.max(sheet.getLastColumn(), 1);
+  var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+  sheet.appendRow(headers.map(function (key) { return record[key] == null ? '' : String(record[key]); }));
 }
 function findBy_(name, key, value) {
   return readTable_(name).filter(function (row) { return String(row[key]) === String(value); })[0] || null;
@@ -789,7 +881,105 @@ function deleteRecord_(name, key, value) {
   return false;
 }
 
-function sendBookingNotification_(booking) {
+function sendBookingNotifications_(booking) {
+  sendPushNotifications_(booking);
+  if (PropertiesService.getScriptProperties().getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) !== 'true') return;
+  sendBookingEmail_(booking);
+}
+
+function getNotificationSettings_() {
+  var props = PropertiesService.getScriptProperties();
+  var devices = readTable_('PushSubscriptions').filter(function (row) { return bool_(row.isActive); });
+  return { status: 200, payload: { ok: true,
+    emailEnabled: props.getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) === 'true',
+    firebaseProjectId: props.getProperty(FIREBASE_PROJECT_PROPERTY_) || '',
+    pushDeviceCount: devices.length,
+    pushReady: Boolean(props.getProperty(FIREBASE_PROJECT_PROPERTY_)) && devices.length > 0
+  }};
+}
+function saveNotificationSettings_(input, owner) {
+  if (typeof input.emailEnabled !== 'boolean') return error_(400, 'invalid_notification_settings', 'وضعیت ایمیل معتبر نیست.');
+  var projectId = String(input.firebaseProjectId || '').trim();
+  if (projectId && !/^[a-z0-9-]{6,60}$/.test(projectId)) return error_(400, 'invalid_firebase_project', 'شناسه پروژه Firebase معتبر نیست.');
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty(EMAIL_NOTIFICATIONS_PROPERTY_, String(input.emailEnabled));
+  if (projectId) props.setProperty(FIREBASE_PROJECT_PROPERTY_, projectId);
+  else props.deleteProperty(FIREBASE_PROJECT_PROPERTY_);
+  audit_('notifications.settings_updated', owner.id, 'notification_settings', 'owner', { emailEnabled: input.emailEnabled, firebaseConfigured: Boolean(projectId) });
+  return getNotificationSettings_();
+}
+function savePushSubscription_(input, owner) {
+  var token = String(input.token || '').trim();
+  var device = String(input.device || 'دستگاه مدیر').trim().slice(0, 80);
+  if (token.length < 80 || token.length > 4096) return error_(400, 'invalid_push_token', 'شناسه اعلان دستگاه معتبر نیست.');
+  var existing = findBy_('PushSubscriptions', 'token', token);
+  var record = { token: token, device: device, isActive: 'true', createdAt: existing ? existing.createdAt : nowIso_(), updatedAt: nowIso_() };
+  if (existing) updateRecord_('PushSubscriptions', 'token', token, record);
+  else appendRecord_('PushSubscriptions', record);
+  audit_('notifications.device_registered', owner.id, 'push_device', sha256_(token), { device: device });
+  return getNotificationSettings_();
+}
+function removePushSubscription_(input, owner) {
+  var token = String(input.token || '').trim();
+  if (!token) return error_(400, 'invalid_push_token', 'شناسه دستگاه معتبر نیست.');
+  var existing = findBy_('PushSubscriptions', 'token', token);
+  if (existing) {
+    existing.isActive = 'false'; existing.updatedAt = nowIso_();
+    updateRecord_('PushSubscriptions', 'token', token, existing);
+  }
+  audit_('notifications.device_removed', owner.id, 'push_device', sha256_(token), {});
+  return getNotificationSettings_();
+}
+function sendTestPush_(owner) {
+  var result = sendPushPayload_({ title: 'اعلان‌های فُرم فعال‌اند', body: 'این یک اعلان آزمایشی از پنل مدیریت است.' });
+  if (result.sent < 1) return error_(409, 'push_not_ready', 'هنوز دستگاهی برای اعلان ثبت نشده یا تنظیمات Firebase کامل نیست.');
+  audit_('notifications.test_sent', owner.id, 'notification', 'push', { sent: result.sent, failed: result.failed });
+  return { status: 200, payload: { ok: true, sent: result.sent, failed: result.failed }};
+}
+function sendPushNotifications_(booking) {
+  var body = [booking.name, booking.serviceName, booking.date + ' · ' + booking.time].filter(Boolean).join(' — ');
+  var result = sendPushPayload_({ title: 'نوبت جدید فُرم', body: body || 'یک نوبت جدید ثبت شد.' });
+  Logger.log('Push sent=' + result.sent + ', failed=' + result.failed);
+}
+function sendPushPayload_(notification) {
+  var projectId = PropertiesService.getScriptProperties().getProperty(FIREBASE_PROJECT_PROPERTY_) || '';
+  if (!projectId) return { sent: 0, failed: 0 };
+  var devices = readTable_('PushSubscriptions').filter(function (row) { return bool_(row.isActive); });
+  if (!devices.length) return { sent: 0, failed: 0 };
+  var accessToken;
+  try { accessToken = ScriptApp.getOAuthToken(); } catch (error) {
+    Logger.log('Push OAuth unavailable: ' + String(error)); return { sent: 0, failed: devices.length };
+  }
+  var sent = 0, failed = 0;
+  devices.forEach(function (device) {
+    try {
+      var response = UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + projectId + '/messages:send', {
+        method: 'post', contentType: 'application/json',
+        headers: { Authorization: 'Bearer ' + accessToken },
+        payload: JSON.stringify({ message: {
+          token: device.token,
+          notification: { title: notification.title, body: notification.body },
+          webpush: { fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/admin' } }
+        }}),
+        muteHttpExceptions: true
+      });
+      var status = response.getResponseCode();
+      if (status >= 200 && status < 300) sent += 1;
+      else {
+        failed += 1;
+        var responseBody = response.getContentText() || '';
+        Logger.log('FCM failed HTTP ' + status + ' ' + responseBody.slice(0, 300));
+        if (status === 404 || /UNREGISTERED|registration-token-not-registered/i.test(responseBody)) {
+          device.isActive = 'false'; device.updatedAt = nowIso_();
+          updateRecord_('PushSubscriptions', 'token', device.token, device);
+        }
+      }
+    } catch (error) { failed += 1; Logger.log('FCM request failed: ' + String(error)); }
+  });
+  return { sent: sent, failed: failed };
+}
+
+function sendBookingEmail_(booking) {
   var recipient = PropertiesService.getScriptProperties().getProperty(NOTIFICATION_PROPERTY_) || '';
   if (!recipient) {
     Logger.log('Booking notification skipped: recipient is not configured.');
@@ -919,6 +1109,12 @@ function normalizeDigits_(value) {
   return String(value == null ? '' : value)
     .replace(/[۰-۹]/g, function (digit) { return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)); })
     .replace(/[٠-٩]/g, function (digit) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)); });
+}
+function bookingFullName_(input) {
+  var firstName = String(input.firstName || '').trim().replace(/\\s+/g, ' ');
+  var lastName = String(input.lastName || '').trim().replace(/\\s+/g, ' ');
+  if (firstName || lastName) return (firstName + ' ' + lastName).trim().replace(/\\s+/g, ' ');
+  return String(input.name || '').trim().replace(/\\s+/g, ' ');
 }
 function normalizePhone_(value) {
   var phone = normalizeDigits_(value).replace(/[\s()-]/g, '');

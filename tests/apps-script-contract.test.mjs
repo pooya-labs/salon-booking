@@ -12,19 +12,28 @@ test('Apps Script backend parses as V8 JavaScript', () => {
 })
 
 test('backend avoids APIs missing from Apps Script V8', () => {
-  assert.doesNotMatch(backend, /\b(?:URLSearchParams|UrlFetchApp|WORKER_BASE_URL)\b|crypto\.subtle/)
+  assert.doesNotMatch(backend, /\b(?:URLSearchParams|WORKER_BASE_URL)\b|crypto\.subtle/)
+  assert.match(backend, /UrlFetchApp\.fetch\(/)
 })
 
 test('Apps Script owns the API and Sheets storage without Cloudflare forwarding', () => {
   for (const route of [
     '/api/public/config', '/api/public/services', '/api/public/availability',
     '/api/public/bookings', '/api/admin/setup-status', '/api/admin/bootstrap',
-    '/api/admin/login', '/api/admin/bookings', '/api/admin/services', '/api/admin/schedule'
+    '/api/admin/login', '/api/admin/bookings', '/api/admin/availability', '/api/admin/notifications',
+    '/api/admin/push-subscriptions', '/api/admin/services', '/api/admin/schedule'
   ]) assert.ok(backend.includes(route), `missing API route ${route}`)
-  for (const sheet of ['Settings', 'Services', 'WeeklyHours', 'Exceptions', 'Bookings', 'AdminUsers', 'AdminSessions', 'AuditLog']) {
+  for (const sheet of ['Settings', 'Services', 'WeeklyHours', 'Exceptions', 'Bookings', 'AdminUsers', 'AdminSessions', 'AuditLog', 'PushSubscriptions']) {
     assert.ok(backend.includes(sheet), `missing Sheets table ${sheet}`)
   }
   assert.match(backend, /LockService\.getScriptLock\(\)/)
+  assert.match(backend, /function createManualBooking_\(input, owner\)/)
+  assert.match(backend, /source: 'phone'/)
+  assert.match(backend, /getAvailability_\(date, service, settings, true\)/)
+  assert.match(backend, /category: row\.category \|\| 'عمومی'/)
+  assert.match(backend, /function sendPushPayload_\(notification\)/)
+  assert.match(backend, /ScriptApp\.getOAuthToken\(\)/)
+  assert.match(backend, /EMAIL_NOTIFICATIONS_PROPERTY_\) !== 'true'/)
   assert.match(backend, /MailApp\.sendEmail\(/)
   assert.doesNotMatch(backend, /https:\/\/[^\s'"]*workers\.dev|cloudflare/i)
 })
@@ -41,6 +50,8 @@ test('manifest deploys an anonymous web app as its deploying owner', () => {
   assert.equal(manifest.webapp.access, 'ANYONE_ANONYMOUS')
   assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/spreadsheets'))
   assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/script.send_mail'))
+  assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/firebase.messaging'))
+  assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/script.external_request'))
 })
 
 test('bridge accepts API messages only from the GitHub Pages origin', () => {

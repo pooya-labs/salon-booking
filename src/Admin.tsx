@@ -20,6 +20,7 @@ type Booking = {
   note: string
   service: string
   durationMinutes: number
+  source?: 'phone' | 'online'
 }
 
 type View = 'checking' | 'demo' | 'login' | 'bootstrap' | 'setup-blocked' | 'dashboard'
@@ -355,7 +356,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
           <article><span>انجام‌شده</span><strong>{toPersianDigits(finishedCount)}</strong><small>نوبت‌های تکمیل‌شده</small></article>
         </div>
 
-        <AdminManagement />
+        <AdminManagement onBookingCreated={() => { void loadBookings(filter, bookingRange) }} />
 
         <section className="admin-bookings-panel">
           <div className="admin-bookings-heading">
@@ -381,6 +382,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                   <div className="admin-booking-main">
                     <div className="admin-booking-title"><strong>{booking.name}</strong><span className={`admin-status ${statusClasses[booking.status]}`}>{statusLabels[booking.status]}</span></div>
                     <p>{booking.service} · {toPersianDigits(booking.durationMinutes)} دقیقه</p>
+                    <small className="admin-booking-origin">{booking.source === 'phone' ? 'ثبت‌شده با تماس تلفنی' : 'رزرو آنلاین'}</small>
                     <div className="admin-booking-meta"><a href={`tel:${booking.phone}`}>{booking.phone}</a><span>کد {booking.reference}</span></div>
                     {booking.note && <small className="admin-booking-note">{booking.note}</small>}
                   </div>

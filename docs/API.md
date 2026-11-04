@@ -9,10 +9,11 @@ The Apps Script V8 runtime is not a browser or Node.js environment. It does not 
 `setupSalonDatabase()` creates a private spreadsheet with these tabs:
 
 - `Settings`: salon timezone, booking horizon, minimum notice, interval and buffer.
-- `Services`: service catalog, price, duration and activation state.
+- `Services`: service catalog, category/type, description, price, duration and activation state.
 - `WeeklyHours`: up to eight non-overlapping opening intervals per weekday.
 - `Exceptions`: date-specific closures and alternate hours.
-- `Bookings`: customer details, booking state, UTC instants, service snapshots and one-way credential hashes.
+- `Bookings`: customer details, source (`online` or `phone`), booking state, UTC instants, service snapshots and one-way credential hashes.
+- `PushSubscriptions`: active manager browser/PWA push tokens and device labels.
 - `AdminUsers`: owner identity and salted password hash.
 - `AdminSessions`: hashed browser session identifiers and expiry.
 - `AuditLog`: owner-attributed changes and booking events.
@@ -74,6 +75,11 @@ All routes below require a live owner session except `GET /api/admin/setup-statu
 - `POST /api/admin/logout`
 - `GET /api/admin/me`
 - `GET /api/admin/bookings?from=YYYY-MM-DD&to=YYYY-MM-DD&status=all`
+- `GET /api/admin/availability?date=YYYY-MM-DD&serviceId=...` — owner-only availability for phone bookings; skips only public minimum notice.
+- `POST /api/admin/bookings` — owner-only confirmed phone booking. Body contains `serviceId`, `date`, `time`, `firstName`, `lastName`, `phone` and optional `note`. The server rechecks availability under the shared script lock.
+- `GET /api/admin/notifications` / `PUT /api/admin/notifications` — read/update Firebase project ID and email-notification preference.
+- `POST /api/admin/push-subscriptions` / `DELETE /api/admin/push-subscriptions` — add/deactivate the signed-in owner's browser push token.
+- `POST /api/admin/notifications/test` — send a test push to registered manager devices.
 - `PATCH /api/admin/bookings/{booking-uuid}/status` — `confirmed`, `cancelled`, `completed` or `no_show`.
 - `GET /api/admin/services`
 - `POST /api/admin/services`
@@ -84,13 +90,15 @@ All routes below require a live owner session except `GET /api/admin/setup-statu
 - `POST /api/admin/schedule/exceptions`
 - `DELETE /api/admin/schedule/exceptions/{exception-uuid}`
 
+Service category is editable (1–40 characters). On an existing spreadsheet, rerunning `setupSalonDatabase()` appends the `category`, `source` and `PushSubscriptions` columns/tabs without moving or clearing existing rows.
+
 Weekly and exception schedules accept an `intervals` array of up to eight non-overlapping `{ "startsAt": "09:00", "endsAt": "13:00" }` ranges. Changes that conflict with active reservations are rejected. Booking status transitions are validated and audited.
 
 ## Sessions and notifications
 
 Owner sessions expire after six hours. A SHA-256 hash of the browser's random relay session identifier is persisted in `AdminSessions`; CacheService is an acceleration layer, not the only session store.
 
-After a booking is committed, Apps Script sends an email through MailApp to the manager address in Script Properties. Setup defaults to the script owner's effective email when available. Change it from the Apps Script editor with `setSalonNotificationEmail("manager@example.com")`. Gmail's published consumer-account MailApp allowance is currently 100 recipients per day; quotas are per account and may change. See [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas).
+Email alerts are disabled by default and can be enabled or disabled in the owner panel. Push alerts use Firebase Cloud Messaging and can reach a registered Android browser/PWA while it is in the background. The owner must configure the Firebase project, enable the Firebase Cloud Messaging API, associate the Apps Script standard Google Cloud project with the Firebase project, and provide the public Firebase web config/VAPID key as GitHub Actions repository variables. Apps Script uses `ScriptApp.getOAuthToken()` and `UrlFetchApp` with the declared Firebase Messaging and external-request scopes; no Firebase private service-account key is stored in the repository. See [FCM web setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [receiving web messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages) and [Apps Script external APIs](https://developers.google.com/apps-script/guides/services/external).
 
 ## Legacy Cloudflare data
 

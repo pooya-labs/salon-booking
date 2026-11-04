@@ -85,6 +85,7 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
 .service-card:hover { border-color:#b9a28a;transform:translateY(-4px); }
 .service-top { display:flex;justify-content:space-between;align-items:center; }
 .service-index { color:#715333;font:12px Georgia,serif; }
+.service-category { margin-inline-start:auto; padding:4px 8px; border:1px solid #e4d9ca; color:#806345; background:#f2eee6; font-size:9px; }
 .service-icon { width:37px;height:37px;display:grid;place-items:center;border:1px solid #ded5c8;border-radius:50%;color:#977353; }
 .service-card h3 { margin:21px 0 8px;font-size:17px;font-weight:500; }
 .service-card>p { margin:0;color:#625b50;font-size:10px; }
@@ -473,6 +474,27 @@ h1 em,h2 em { color:#9b7758;font-style:normal;font-weight:400; }
 .admin-service-info strong,.admin-service-info small { display:block; }
 .admin-service-info strong { color:#514a3e; font-size:11px; font-weight:500; }
 .admin-service-info small { margin-top:4px; color:#6b665d; font-size:9px; }
+.admin-booking-origin { display:inline-block; margin-top:5px; color:#846b4d; font-size:8px; }
+.admin-manual-booking-hint { display:flex; align-items:flex-start; gap:8px; padding:10px; border:1px solid #d9e4d7; background:#f1f5ef; color:#456348; font-size:9px; line-height:1.9; }
+.admin-manual-booking-hint svg { flex:0 0 auto; margin-top:2px; }
+.admin-manual-booking-side ul { margin:0; padding:0 18px 0 0; color:#625b50; font-size:9px; line-height:2.2; }
+.admin-manual-booking-side li { margin:0 0 8px; }
+.admin-manual-booking-result { display:grid; gap:6px; margin-top:16px; padding:12px; border:1px solid #d4e1d3; background:#eff4ed; color:#365a3f; font-size:10px; }
+.admin-manual-booking-result b { letter-spacing:.5px; }
+.admin-manage-form select { width:100%; min-height:39px; padding:0 10px; border:1px solid #e1dbd0; background:#fffefa; color:#38352e; font:10px Tahoma,sans-serif; }
+.admin-manage-form select:focus { outline:0; border-color:#9d7b59; box-shadow:0 0 0 3px #9d7b5919; }
+.admin-notification-status { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 12px; padding:11px 12px; border:1px solid #e6e0d6; background:#faf8f2; color:#5c503e; font-size:10px; }
+.admin-notification-status span { color:#84745e; font-size:9px; white-space:nowrap; }
+.admin-notification-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:15px; }
+.admin-notification-actions .button { font-size:9px; min-height:38px; }
+.admin-notification-layout { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.booking-form-two-cols { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.booking-form-two-cols .booking-field { min-width:0; }
+.booking-field input { min-width:0; }
+@media (max-width: 620px) {
+  .booking-form-two-cols, .admin-notification-layout { grid-template-columns:1fr; }
+  .admin-notification-status { align-items:flex-start; flex-direction:column; }
+}
 .admin-service-actions { display:flex; align-items:center; gap:7px; }
 .admin-service-actions button { display:flex; align-items:center; justify-content:center; gap:4px; border:0; padding:5px; color:#6f5135; background:none; font:9px Tahoma,sans-serif; cursor:pointer; }
 .admin-service-actions button.is-on { color:#365a3f; }

@@ -21,6 +21,13 @@
 - Owner reports that the Apps Script Web App has now been deployed from their Google account and the `/exec` URL has been saved as the GitHub Actions repository variable `SALON_RELAY_URL` (2026-11-04). This is owner-side setup confirmation, not yet proof of a successful Pages rebuild or end-to-end API connectivity. Manager bootstrap, salon timezone/services/hours and real Iran-network booking/notification checks remain open.
 - Cloudflare resources and any historical D1 rows are untouched. Do not delete or migrate them without the owner's explicit data-recovery decision.
 
+## Current checkpoint — owner management and phone notifications (2026-11-04)
+
+- Main includes service category editing, multi-interval daily opening hours, split customer name fields and phone booking from the manager panel.
+- Phone bookings are confirmed and share the online availability lock/store. Firebase Web Push is implemented but waits for the owner-side Firebase project configuration and redeployment of Apps Script.
+- Email notifications are off by default and can be re-enabled from the notification settings panel.
+- Required follow-up: update Apps Script source/manifest, rerun setup, redeploy the Web App, configure Firebase web client variables/VAPID in GitHub Actions and verify test push delivery.
+
 ## Current checkpoint — Google Apps Script cutover (2026-11-04)
 
 - Phase: **R09 — Apps Script backend migration and owner-side deployment/configuration complete by owner confirmation; Pages rebuild and end-to-end acceptance are next**.
@@ -34,7 +41,10 @@
 - The Apps Script V8 implementation avoids unsupported browser/Node globals including `URLSearchParams`, `UrlFetchApp` and `crypto.subtle`.
 - Deployment files: `relay/appsscript.json`, `relay/Bridge.html` and `docs/GITHUB-PAGES-RELAY.md`.
 - **Completed by owner confirmation (2026-11-04):** created the Apps Script project, imported the source files, ran `setupSalonDatabase()` successfully, deployed the owner-executed anonymous Web App and added its `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL`.
-- **Not yet verified:** latest Pages live-mode rebuild, browser-to-Apps-Script bridge health, first-owner bootstrap, admin session round-trip, real booking/availability/conflict handling, customer lookup/cancellation, reachability on an Iran-based ISP and Gmail notification on the manager's Android.
+- **New owner-panel features committed:** service category/type can be edited and is shown publicly; daily hours can be split into editable intervals; online booking accepts first name, last name and phone; manager can enter confirmed phone bookings that block the selected time online under the shared script lock.
+- **Notification architecture committed:** PWA manifest and Firebase service worker scaffold, manager device registration, Apps Script push sender and an email on/off preference. Email is disabled by default. Real push remains unverified until Firebase is configured and the Apps Script code is upgraded/deployed.
+- **Required owner-side upgrade:** import latest `relay/Code.gs` and `relay/appsscript.json` into Apps Script, rerun `setupSalonDatabase()` for additive `category`, `source` and `PushSubscriptions` schema, reauthorize scopes and deploy a new Web App version. Configure Firebase public web config and VAPID via GitHub Actions variables.
+- **Not yet verified:** successful latest Pages build, Apps Script schema/version upgrade, real phone/online booking conflict tests, Firebase push delivery on manager Android in background, and network acceptance.
 - Old Worker/D1 infrastructure remains untouched until the new path passes acceptance. No D1-to-Sheets data transfer or Cloudflare deletion has been performed.
 
 ## Legacy Cloudflare deployment history
