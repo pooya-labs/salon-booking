@@ -1,6 +1,6 @@
 # Security & Privacy Threat Model
 
-**Review date:** 2026-11-03  
+**Review date:** 2026-11-04  
 **Application version:** 0.6.0  
 **Scope:** repository-level review of the Cloudflare Worker, D1 schema/migrations, browser application and current CI tests.
 

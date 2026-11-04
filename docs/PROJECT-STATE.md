@@ -23,7 +23,7 @@
 - Removed database cleanup from session validation. Missing and expired tokens now return unauthorized without mutating D1; expiration is enforced by the authenticated session lookup.
 - Expired rows are pruned when a new session is issued (successful login/bootstrap), preserving cleanup without granting anonymous traffic a write path.
 - Worker+D1 integration regression now seeds an expired session, verifies an anonymous admin request leaves it untouched, then performs a successful login and verifies session issuance prunes it.
-- Status: implementation and tests committed to `main`; final CI/Pages verification pending.
+- **Verified on `main` commit `4abb53e697de126510bb36905ba679d402d38138`:** [CI run 41768761253](https://github.com/pooya-labs/salon-booking/actions/runs/41768761253) and [Pages run 41768761332](https://github.com/pooya-labs/salon-booking/actions/runs/41768761332) both succeeded. CI passed lint, 37 unit tests, SQLite migration/privacy checks, TypeScript/build, Worker+D1 integration (anonymous probes do not delete expired sessions; successful login does), responsive RTL/keyboard/browser QA, axe-core WCAG 2.2 A/AA scans and owner-dashboard browser QA. Pages deployed the same commit successfully.
 
 ## Latest service-name snapshot implementation (2026-11-04)
 
