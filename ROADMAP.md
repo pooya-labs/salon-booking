@@ -190,13 +190,14 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Replace the Apps Script proxy-to-Worker relay with direct in-script API handling; no Cloudflare forwarding is present in the active backend.
 - [x] Add Apps Script manifest, origin-restricted iframe bridge, deployment guide and Node V8 syntax/contract tests.
 - [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.
-- [ ] Owner creates the Apps Script project, runs setupSalonDatabase(), authorizes Sheets/Mail and deploys a web app as the owner with anonymous access.
-- [ ] Owner adds the deployed /exec URL as GitHub Actions variable SALON_RELAY_URL and confirms Pages rebuilds in live mode.
+- [x] Owner created the Apps Script project, imported the backend files, ran `setupSalonDatabase()`, authorized the required Google access and deployed the owner-executed anonymous Web App (owner-confirmed 2026-11-04).
+- [x] Owner added the deployed `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL` (owner-confirmed 2026-11-04).
+- [ ] Verify the new GitHub Pages rebuild succeeds and the deployed frontend initializes the Apps Script relay.
 - [ ] Complete first-owner bootstrap; configure actual timezone, services, prices and working hours.
 - [ ] Verify real booking, conflict rejection, owner session, customer lookup/cancellation and Gmail Android notification from an Iran-based network without VPN.
 - [ ] Export any required historical D1 data only after owner approval; retain the old database until cutover is accepted.
 
-**Cutover status:** code migration is committed, but Apps Script account deployment and end-to-end acceptance remain owner actions. Cloudflare Worker/D1 are no longer the active target and have not been deleted.
+**Cutover status (2026-11-04):** code migration and owner-side Apps Script deployment/`SALON_RELAY_URL` configuration are complete by owner confirmation. The resulting Pages rebuild and real end-to-end acceptance are still open. Cloudflare Worker/D1 are no longer the active target and have not been deleted.
 
 ## R10 — Optional post-launch improvements
 
