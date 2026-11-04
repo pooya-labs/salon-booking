@@ -16,7 +16,7 @@ No VPS is required. The free tier is subject to Cloudflare's current quotas and 
 3. The production database ID is already committed in the root `wrangler.toml`; keep the `DB` binding and `migrations_dir = "migrations"` unchanged. Do not commit account tokens or secrets.
 4. Apply all committed migrations in order (currently 0001–0010) to the intended production database: `npx wrangler d1 migrations apply salon-booking --remote`. Authenticate Wrangler to the correct Cloudflare account first and verify the target database name before confirming the operation. The migrations intentionally leave `local_timezone='unset'` until the salon owner confirms the business location.
 5. Configure production secrets with Wrangler or the Cloudflare dashboard.
-6. Connect the GitHub repository to Cloudflare Workers Builds, selecting repository `pooya-labs/salon-booking`, branch `main`, root directory `/`, build command `npm run build` and deploy command `npx wrangler deploy`. The Worker name must remain `salon-booking`, matching `wrangler.toml`.
+6. First authorize the official Cloudflare Workers & Pages GitHub App for the GitHub account and grant it access to `pooya-labs/salon-booking` (prefer repository-only access). Then create a new Worker from that repository in Workers & Pages. Select branch `main`, root directory `/`, build command `npm run build`, deploy command `npx wrangler deploy`, and ensure the Worker name is exactly `salon-booking` to match `wrangler.toml`. Keep branch Previews disabled until a separate non-production D1 database is configured.
 
 ## Local development with the Worker and D1
 
