@@ -424,6 +424,7 @@ Production blockers and real salon details remain unchanged.
 - First Workers Build `c4727bbc-5dc5-4a65-9e67-209f629b483b` completed successfully. It ran `npm run build` (TypeScript + Vite), uploaded three static assets and deployed with `npx wrangler deploy`.
 - Deployed Worker URL: https://salon-booking.pooyagame141.workers.dev
 - First deployment version ID: `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`; deployed on 2026-11-04 from `main` at pre-hardening commit `ab0063e38ccec12ecc4607b50dccc2c69353ba51`.
+- Latest deployment after the `preview_urls = false` hardening landed on commit `c20dd50c6e2ccf0a22953023e7d0e5cafae67b7b`: Workers Build `7c2e7d60-9b18-4b23-85f1-5ffc6e48a958` succeeded and deployed Worker version `c8b8987e-8f0b-4731-b8a2-de4dc9c23995`.
 - Cloudflare logs confirmed the `DB` binding points to production D1 `salon-booking` and static assets are attached.
 - Production `SESSION_SECRET` is present in Worker secret storage. No secret values are recorded in Git or this handoff.
 - `ADMIN_BOOTSTRAP_TOKEN` is intentionally not stored yet. The owner must generate it privately, add it as a Worker Secret, open `/admin`, create the first username/password, then remove the token.
