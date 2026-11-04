@@ -264,8 +264,8 @@ function BookingWizard({
       <section ref={dialogRef} tabIndex={-1} className="booking-flow" role="dialog" aria-modal="true" aria-labelledby="booking-flow-title">
         <header className="booking-flow-header">
           <div className="booking-flow-brand">
-            <span className="brand-mark"><Scissors size={18} /></span>
-            <span><strong>رزرو نوبت</strong><small>FORM STUDIO · BOOKING</small></span>
+            <span className="booking-logo-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></span>
+            <span><strong>رزرو نوبت شایان</strong><small>SHAYAN · BARBER STUDIO</small></span>
           </div>
           <button className="icon-button" aria-label="بستن پنجره رزرو" onClick={onClose}><X size={19} /></button>
         </header>
@@ -449,11 +449,11 @@ function App() {
 
   return (
     <div className="site-shell">
-      <div className="announcement"><span className="status-dot" /> {DEMO_MODE ? 'پیش‌نمایش طراحی · سامانه رزرو در حال توسعه است' : 'سامانه نوبت‌دهی آنلاین'} <span className="announcement-separator">✳</span> فرم استودیو</div>
+      <div className="announcement"><span className="status-dot" /> {DEMO_MODE ? 'پیش‌نمایش طراحی · آرایشگاه شایان' : 'رزرو آنلاین آرایشگاه شایان'} <span className="announcement-separator">✳</span> HERE WE CREATE THE STYLE</div>
       <header className="site-header">
         <a className="brand" href="#home" aria-label="صفحه اصلی استودیو">
-          <span className="brand-mark"><Scissors size={20} strokeWidth={1.5} /></span>
-          <span><strong>فُرم</strong><small>استودیو مراقبت و استایل</small></span>
+          <span className="brand-image-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></span>
+          <span><strong>شایان</strong><small>آرایشگاه مردانه</small></span>
         </a>
         <nav className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="ناوبری اصلی">
           <a href="#services" onClick={() => setMenuOpen(false)}>خدمات</a>
@@ -472,23 +472,25 @@ function App() {
       <main>
         <section className="hero section-wrap" id="home">
           <div className="hero-copy">
-            <div className="eyebrow"><span className="eyebrow-line" /> THE ART OF PERSONAL STYLE</div>
-            <h1>استایل شما،<br /><em>امضای شماست.</em></h1>
-            <p className="hero-description">برای لحظه‌ای مکث کنید. ما اینجاییم تا با دقت، سلیقه و توجه به جزئیات، تجربه‌ای خوشایند از رسیدگی به استایل شخصی‌تان بسازیم.</p>
+            <div className="eyebrow"><span className="eyebrow-line" /> SHAYAN · BARBER STUDIO</div>
+            <h1>اینجا، جایی‌ست که<br /><em>استایل ساخته می‌شود.</em></h1>
+            <p className="hero-description">در آرایشگاه شایان، اصلاح فقط کوتاه‌کردن مو نیست؛ امضای شخصی شماست. با دقت به جزئیات، مهارت و سلیقه، استایلی می‌سازیم که به خودتان تعلق دارد.</p>
             <div className="hero-actions">
-              <button className="button button-dark" onClick={() => startBooking()}>انتخاب زمان و رزرو <ArrowLeft size={17} /></button>
+              <button className="button button-dark" onClick={() => startBooking()}>رزرو نوبت <ArrowLeft size={17} /></button>
               <a className="text-link" href="#services">مشاهده خدمات <ArrowUpLeft size={16} /></a>
             </div>
-            <div className="hero-proof"><div className="proof-icon"><Star size={16} /></div><div><strong>توجه به جزئیات</strong><span>از انتخاب خدمت تا پایان تجربه</span></div><span className="proof-divider" /><div><strong>رزرو آسان</strong><span>بدون تماس و انتظار</span></div></div>
+            <div className="hero-proof"><div className="proof-icon"><Star size={16} /></div><div><strong>دقت در جزئیات</strong><span>از مشاوره تا پرداخت نهایی</span></div><span className="proof-divider" /><div><strong>رزرو آسان</strong><span>انتخاب زمان در چند قدم</span></div></div>
           </div>
-          <div className="hero-art" aria-label="تصویر انتزاعی و هنری استودیو">
-            <div className="art-grain" />
-            <div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" />
-            <div className="art-sculpture"><div className="sculpture-light" /><div className="sculpture-shadow" /></div>
-            <div className="art-caption"><span>01 / THE STUDIO</span><span>CRAFTED WITH INTENTION</span></div>
-            <div className="art-stamp"><Sparkles size={16} /><span>EST.<br />WITH CARE</span></div>
+          <div className="hero-art hero-logo-art" aria-label="نشان آرایشگاه شایان">
+            <div className="hero-brand-ornament hero-brand-ornament-one" />
+            <div className="hero-brand-ornament hero-brand-ornament-two" />
+            <div className="hero-logo-frame">
+              <div className="hero-logo-kicker">EST. WITH STYLE</div>
+              <img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="نشان طلایی آرایشگاه شایان با تصویر آرایشگر و ابزار اصلاح" />
+              <div className="hero-logo-caption"><span>SHAYAN</span><i /> <span>BARBER STUDIO</span></div>
+            </div>
           </div>
-          <div className="hero-side-note">A LITTLE TIME FOR YOURSELF <span>—</span> FORM STUDIO</div>
+          <div className="hero-side-note">HERE WE CREATE THE STYLE <span>—</span> SHAYAN</div>
         </section>
 
         <section className="trust-strip"><div><span className="trust-number">۰۱</span><span>انتخاب آسان خدمت</span></div><div><span className="trust-number">۰۲</span><span>زمان‌بندی شفاف</span></div><div><span className="trust-number">۰۳</span><span>رزرو در چند قدم</span></div><div><span className="trust-number">۰۴</span><span>توجه به وقت شما</span></div></section>
@@ -499,7 +501,7 @@ function App() {
           {DEMO_MODE && <p className="price-note">* خدمات و قیمت‌های نمایش‌داده‌شده فعلاً نمونه هستند و پیش از انتشار نهایی با اطلاعات واقعی آرایشگاه جایگزین می‌شوند.</p>}
         </section>
 
-        <section className="manifesto" id="about"><div className="manifesto-mark">“</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> OUR PHILOSOPHY</div><h2>کیفیت، در جزئیات<br /><em>خودش را نشان می‌دهد.</em></h2><p>قرار نیست تجربه‌ای پیچیده داشته باشید. از لحظه انتخاب زمان تا وقتی که با رضایت از استودیو بیرون می‌روید، همه‌چیز باید ساده، دقیق و خوشایند باشد.</p><span className="manifesto-signature">FORM STUDIO — A PERSONAL EXPERIENCE</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><Sparkles size={28} /></div></div></section>
+        <section className="manifesto" id="about"><div className="manifesto-mark">✳</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> THE SHAYAN SIGNATURE</div><h2>استایل شما،<br /><em>قابل تشخیص است.</em></h2><p>ما به‌جای یک اصلاح تکراری، به فرم چهره، سلیقه و جزئیاتی توجه می‌کنیم که استایل شما را منحصربه‌فرد می‌سازند. نتیجه باید به شما بیاید؛ نه به همه.</p><span className="manifesto-signature">HERE WE CREATE THE STYLE — SHAYAN</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></div></div></section>
 
         <section className="booking-banner section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> YOUR TIME, YOUR STYLE</div><h2>وقتِ خودتان را<br /><em>برای خودتان رزرو کنید.</em></h2><p>زمان مناسب را انتخاب کنید؛ بقیه مسیر ساده است.</p></div><button className="button button-dark" onClick={() => startBooking()}>شروع رزرو <ArrowLeft size={17} /></button><div className="banner-decoration" aria-hidden="true">F.</div></section>
 
@@ -508,7 +510,7 @@ function App() {
         <section className="contact-strip section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> COME SAY HELLO</div><h2>مشتاق دیدار شما هستیم.</h2></div><div className="contact-items"><span><MapPin size={16} /> آدرس استودیو به‌زودی</span><span><Clock3 size={16} /> ساعات کاری قابل مشاهده هنگام رزرو</span><a href="https://instagram.com/" target="_blank" rel="noreferrer"><Instagram size={16} /> اینستاگرام</a></div></section>
       </main>
 
-      <footer className="site-footer"><a className="footer-brand" href="#home"><span className="brand-mark"><Scissors size={18} /></span><strong>فُرم</strong></a><span className="footer-note">یک تجربه شخصی، با دقت و سلیقه.</span><span className="footer-credit">Crafted with care by <strong>Pooya</strong> <span>© ۲۰۲۶</span></span></footer>
+      <footer className="site-footer"><a className="footer-brand" href="#home"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><strong>شایان</strong></a><span className="footer-note">اینجا، استایل ساخته می‌شود.</span><span className="footer-credit">Crafted with care by <strong>Pooya</strong> <span>© ۲۰۲۶</span></span></footer>
 
       {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} services={services} demoMode={DEMO_MODE} salonTimezone={salonTimezone} />}
       {bookingManagementOpen && <BookingManagement onClose={() => setBookingManagementOpen(false)} demoMode={DEMO_MODE} />}
