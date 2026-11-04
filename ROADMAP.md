@@ -43,7 +43,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Supersede the provisional «فُرم» identity with the owner-supplied «شایان» brand and an obsidian-black / antique-gold visual direction.
 - [x] Add a temporary preview banner and mark the not-yet-built admin entry as unavailable.
 - [x] Confirm salon name, barber category and brand direction from the owner-supplied logo.
-- [~] Existing Shayan mark is wired through the public site, booking flow, owner workspace and PWA; the latest two user-supplied WebP files still need to be committed byte-for-byte and assigned to the hero and emblem positions.
+- [x] Add the two exact owner-uploaded WebP assets: `shayan-hero.webp` for the homepage hero and `shayan-emblem.webp` for public branding, booking, admin, favicon and PWA identity. No image editing or re-encoding was applied.
 - [ ] Define typography with Persian and Latin coverage.
 - [x] Define a responsive obsidian, antique-gold and ivory Liquid Glass system with translucent blurred surfaces, softer radii, layered lighting and reduced-motion support.
 - [x] Rework responsive navigation and footer around the Shayan identity.
