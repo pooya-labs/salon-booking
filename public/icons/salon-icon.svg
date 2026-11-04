@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#171714"/>
-  <circle cx="256" cy="256" r="154" fill="none" stroke="#c4a27b" stroke-width="14"/>
-  <path d="M178 177c-35 0-63 28-63 63s28 63 63 63 63-28 63-63-28-63-63-63Zm156 0c-35 0-63 28-63 63s28 63 63 63 63-28 63-63-28-63-63-63Z" fill="none" stroke="#f4eee3" stroke-width="18"/>
-  <path d="m207 286 104 104M305 286 201 390" stroke="#c4a27b" stroke-width="18" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="72" fill="#0d0c0b"/>
+  <image href="../images/shayan-barber-logo.webp" xlink:href="../images/shayan-barber-logo.webp" width="512" height="512" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="9" y="9" width="494" height="494" rx="64" fill="none" stroke="#c9a264" stroke-width="12"/>
 </svg>
