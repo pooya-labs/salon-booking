@@ -451,7 +451,7 @@ function App() {
     <div className="site-shell">
       <div className="announcement"><span className="status-dot" /> {DEMO_MODE ? 'پیش‌نمایش طراحی · آرایشگاه شایان' : 'رزرو آنلاین آرایشگاه شایان'} <span className="announcement-separator">✳</span> HERE WE CREATE THE STYLE</div>
       <header className="site-header">
-        <a className="brand" href="#home" aria-label="صفحه اصلی استودیو">
+        <a className="brand" href="#home" aria-label="شایان BARBER STUDIO">
           <span className="brand-image-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></span>
           <span className="brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span>
         </a>
