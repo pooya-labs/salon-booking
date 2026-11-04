@@ -1,5 +1,15 @@
 # Project State & Handoff
 
+## Current checkpoint — Shayan barber visual identity (2026-11-04)
+
+- Latest visual implementation commit: 47d5120e9cb8baca5cd9069b5bdfd0a902532c40 (design: bring Shayan barber identity into the website).
+- Owner supplied the barber's logo; the public site now adopts the «شایان» identity and replaces the provisional «فُرم» treatment.
+- Visual direction: deep black/leather texture, warm antique gold, ivory typography, framed emblem artwork and premium barber-shop styling.
+- Logo asset: public/images/shayan-barber-logo.webp (optimized 240×240 WebP); integrated into homepage navigation/hero/footer, booking dialog, owner workspace, browser icon and PWA manifest.
+- Public homepage, booking dialog and owner workspace receive coordinated dark/gold styling. Booking, customer lookup, admin APIs, scheduling and Apps Script logic were not changed in this design pass.
+- Pending: verify CI and Pages deployment, review browser screenshots/contrast and confirm final visual direction with the owner before proceeding to the Apps Script upgrade.
+
+
 > Update this file at every meaningful checkpoint. It is the first file to read when resuming after a chat/session interruption.
 
 ## Identity
