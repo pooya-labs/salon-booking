@@ -173,7 +173,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] GitHub-to-Cloudflare Workers Builds connection configured for `pooya-labs/salon-booking`, branch `main`.
 - [x] First production Worker deployment succeeded: [`salon-booking.pooyagame141.workers.dev`](https://salon-booking.pooyagame141.workers.dev), version `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`, build `c4727bbc-5dc5-4a65-9e67-209f629b483b`.
 - [x] Branch Previews and version Preview URLs disabled until an isolated staging D1 database exists.
-- [ ] Production HTTP smoke tests and owner workflow checks; not claimed as passed from deployment logs alone.
+- [~] Production HTTP smoke: `/`, `/api/health`, `/api/public/config`, `/api/public/services` and `/admin` were rendered/checked through Cloudflare Browser Rendering on 2026-11-04. All API routes returned HTTP 200 (owner `/api/admin/me` returned the expected 401 without a session); the React homepage fully rendered. Booking creation/availability and authenticated owner workflow checks remain blocked until timezone, services/hours and owner bootstrap are configured.
 - [~] Wrangler local D1 export/restore smoke test passes in CI; owner production backup/restore validation remains pending.
 - [x] Worker rollback and D1 recovery runbook documented in `docs/DEPLOYMENT.md`; live rollback/restore drill remains unverified.
 - [ ] Owner receives concise operating instructions.
