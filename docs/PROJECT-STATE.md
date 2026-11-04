@@ -391,7 +391,17 @@ Production blockers and real salon details remain unchanged.
 - Repository owner confirmed that the Cloudflare account and production D1 database `salon-booking` have been created.
 - The production D1 database ID is now configured in the root `wrangler.toml`; binding remains `DB` and migration directory remains `migrations`.
 - Data jurisdiction was selected as `none`; the owner-provided salon country is Iran. No city/address or business hours have been supplied, so `local_timezone` intentionally remains `unset`.
-- The production D1 database is provisioned but still unmigrated from this repository's perspective: migrations 0001–0010 have not yet been applied remotely.
+- All ten production migrations (0001–0010) were applied in order on 2026-11-04 and verified by reading `d1_migrations`, SQLite schema objects, overlap triggers, booking snapshot columns and initial salon settings. The database contains no real services, opening hours, bookings or owner records.
 - The local Worker integration harness continues to replace the production database ID with a reserved local-only UUID and runs every D1 operation with `--local`. The production-config regression now checks for a valid non-local UUID instead of expecting the setup placeholder.
-- The current tool connection exposes GitHub actions but no Cloudflare resource-management actions. Therefore remote migrations, Worker secrets, Workers Builds integration and production deployment have not been executed or marked complete.
+- Cloudflare account identity and D1 resources are confirmed through the connected Cloudflare integration. Remote migrations are complete. Workers Builds Git integration, the dedicated `salon-booking` Worker, production secrets and deployment have not yet been configured. An unrelated pre-existing Quick Editor Worker named `withered-shape-ebc0` was observed and deliberately left untouched.
 - GitHub Pages remains a static, demo-only preview. Do not enter real customer bookings until the production Worker is deployed, configured and smoke-tested.
+
+
+## Latest production D1 migration checkpoint (2026-11-04)
+
+- Production database `salon-booking` (ID `646e31ad-82c9-45bf-8afc-ed6e6b81e025`) was authenticated and verified through the Cloudflare API under the connected account.
+- Applied every repository migration, `0001_initial_schema.sql` through `0010_booking_service_name_snapshot.sql`, in the exact Wrangler order. Each migration was followed by the standard Wrangler `d1_migrations` tracking insert.
+- Verification: ten ordered rows in `d1_migrations`; 15 application tables plus Cloudflare's internal metadata tables; all expected indexes and seven scheduling/status triggers; booking snapshot and customer-management columns; five default settings including `local_timezone='unset'`.
+- The initial D1 metadata reported no jurisdiction restriction and primary region `EEUR`; D1 query metadata also showed serving colo `FRA`. This is an observed placement, not a jurisdictional residency guarantee.
+- No service catalog, opening hours, owner credentials, bookings or customer data were inserted. Keep real bookings disabled until the dedicated Worker, secrets, salon schedule/timezone and production smoke checks are complete.
+- GitHub `main` CI and Pages both passed on commit `0b3e90472233a3005a096218583c29a28f1c4f8c`: CI run 41771031361; Pages run 41771031187.
