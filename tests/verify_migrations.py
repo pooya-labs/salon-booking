@@ -192,7 +192,7 @@ print("PASS: D1 migrations, overlap triggers, rate-limit buckets, privacy-minima
 snapshot_db = sqlite3.connect(":memory:")
 snapshot_db.execute("PRAGMA foreign_keys = ON")
 for migration in sorted(MIGRATIONS.glob("*.sql")):
-    if migration.name == "0009_booking_service_duration_snapshot.sql":
+    if migration.name in {"0009_booking_service_duration_snapshot.sql", "0010_booking_service_name_snapshot.sql"}:
         continue
     snapshot_db.executescript(migration.read_text(encoding="utf-8"))
 snapshot_db.execute(
@@ -210,10 +210,14 @@ snapshot_db.executescript((MIGRATIONS / "0009_booking_service_duration_snapshot.
 assert snapshot_db.execute(
     "SELECT service_duration_minutes FROM bookings WHERE id = 'snapshot-booking'"
 ).fetchone()[0] == 45
-snapshot_db.execute("UPDATE services SET duration_minutes = 90 WHERE id = 'snapshot-service'")
+snapshot_db.executescript((MIGRATIONS / "0010_booking_service_name_snapshot.sql").read_text(encoding="utf-8"))
 assert snapshot_db.execute(
-    "SELECT service_duration_minutes FROM bookings WHERE id = 'snapshot-booking'"
-).fetchone()[0] == 45
+    "SELECT service_name_snapshot FROM bookings WHERE id = 'snapshot-booking'"
+).fetchone()[0] == "Snapshot service"
+snapshot_db.execute("UPDATE services SET name = 'Renamed snapshot service', duration_minutes = 90 WHERE id = 'snapshot-service'")
+assert snapshot_db.execute(
+    "SELECT service_duration_minutes, service_name_snapshot FROM bookings WHERE id = 'snapshot-booking'"
+).fetchone() == (45, "Snapshot service")
 snapshot_db.close()
 
 

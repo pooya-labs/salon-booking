@@ -566,11 +566,11 @@ const handleCreateBooking = async (request: Request, db: D1Database) => {
     await db.batch([
       db.prepare(
         `INSERT INTO bookings
-          (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status, client_note, client_manage_token_hash, service_duration_minutes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+          (id, reference_code, service_id, client_name, client_phone, starts_at, ends_at, status, client_note, client_manage_token_hash, service_duration_minutes, service_name_snapshot)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
       ).bind(
         id, reference, serviceId, name, phone,
-        startsAt.toISOString(), endsAt.toISOString(), note, managementTokenHash, service.duration_minutes,
+        startsAt.toISOString(), endsAt.toISOString(), note, managementTokenHash, service.duration_minutes, service.name,
       ),
       db.prepare(
         `INSERT INTO booking_idempotency
@@ -616,9 +616,8 @@ const getManagedBooking = async (
     ? await db.prepare(
       `SELECT bookings.id, bookings.reference_code, bookings.client_manage_token_hash,
               bookings.starts_at, bookings.ends_at, bookings.status,
-              services.name AS service_name, bookings.service_duration_minutes AS duration_minutes
+              bookings.service_name_snapshot AS service_name, bookings.service_duration_minutes AS duration_minutes
        FROM bookings
-       INNER JOIN services ON services.id = bookings.service_id
        WHERE bookings.reference_code = ?
        LIMIT 1`,
     ).bind(reference).first<ManagedBookingRow>()
@@ -706,9 +705,8 @@ const handleCustomerBookingManagement = async (
     const refreshed = await db.prepare(
       `SELECT bookings.id, bookings.reference_code, bookings.client_manage_token_hash,
               bookings.starts_at, bookings.ends_at, bookings.status,
-              services.name AS service_name, bookings.service_duration_minutes AS duration_minutes
+              bookings.service_name_snapshot AS service_name, bookings.service_duration_minutes AS duration_minutes
        FROM bookings
-       INNER JOIN services ON services.id = bookings.service_id
        WHERE bookings.id = ? LIMIT 1`,
     ).bind(booking.id).first<ManagedBookingRow>()
     if (refreshed?.status === 'cancelled') {

@@ -790,14 +790,14 @@ const getAdminBookings = async (request: Request, env: AdminEnv) => {
   const query = requestedStatus === 'all'
     ? `SELECT b.id, b.reference_code, b.client_name, b.client_phone,
               b.starts_at, b.ends_at, b.status, b.client_note,
-              s.name AS service_name, b.service_duration_minutes AS duration_minutes
-       FROM bookings AS b INNER JOIN services AS s ON s.id = b.service_id
+              b.service_name_snapshot AS service_name, b.service_duration_minutes AS duration_minutes
+       FROM bookings AS b
        WHERE b.starts_at >= ? AND b.starts_at < ?
        ORDER BY b.starts_at ASC`
     : `SELECT b.id, b.reference_code, b.client_name, b.client_phone,
               b.starts_at, b.ends_at, b.status, b.client_note,
-              s.name AS service_name, b.service_duration_minutes AS duration_minutes
-       FROM bookings AS b INNER JOIN services AS s ON s.id = b.service_id
+              b.service_name_snapshot AS service_name, b.service_duration_minutes AS duration_minutes
+       FROM bookings AS b
        WHERE b.starts_at >= ? AND b.starts_at < ? AND b.status = ?
        ORDER BY b.starts_at ASC`
 

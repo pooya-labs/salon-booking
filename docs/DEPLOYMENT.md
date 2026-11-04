@@ -15,7 +15,7 @@ No VPS is required. The free tier is subject to Cloudflare's current quotas and 
 2. Create a D1 database named `salon-booking`.
 3. Copy the database ID.
 4. Add the ID to `wrangler.toml` locally or through the deployment configuration. Do not commit account tokens.
-5. Apply all committed migrations in order (currently 0001–0009): `npx wrangler d1 migrations apply salon-booking --remote`. The migrations intentionally leave `local_timezone='unset'` until the salon owner confirms the business location.
+5. Apply all committed migrations in order (currently 0001–0010): `npx wrangler d1 migrations apply salon-booking --remote`. The migrations intentionally leave `local_timezone='unset'` until the salon owner confirms the business location.
 6. Configure production secrets with Wrangler or the Cloudflare dashboard.
 7. Connect the GitHub repository to Cloudflare Workers Builds, selecting `main` as production branch and `npm run build` as build command. Configure the Worker deployment command according to the current Wrangler setup.
 

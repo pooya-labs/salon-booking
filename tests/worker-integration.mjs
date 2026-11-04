@@ -875,12 +875,12 @@ try {
     'cancelling a booking should release its slot',
   )
 
-  console.log('Checking that later service edits do not rewrite existing booking duration...')
+  console.log('Checking that later service name and duration edits do not rewrite existing booking details...')
   await expectJson(await request(baseUrl, '/api/admin/services/11111111-1111-4111-8111-111111111111', {
     method: 'PATCH',
     headers: { origin, cookie: loginCookie },
-    body: JSON.stringify({ durationMinutes: 90 }),
-  }), 200, 'owner edits service duration after booking')
+    body: JSON.stringify({ name: 'Renamed integration service', durationMinutes: 90 }),
+  }), 200, 'owner edits service name and duration after booking')
 
   const customerAfterServiceEdit = await expectJson(await request(baseUrl, '/api/public/bookings/lookup', {
     method: 'POST',
@@ -889,6 +889,8 @@ try {
   }), 200, 'customer lookup after service duration edit')
   assert.equal(customerAfterServiceEdit.booking.durationMinutes, 30,
     'customer lookup must show the duration reserved at booking time')
+  assert.equal(customerAfterServiceEdit.booking.serviceName, 'Integration service',
+    'customer lookup must show the service name saved at booking time')
 
   const ownerBookingsAfterServiceEdit = await expectJson(await request(
     baseUrl,
@@ -900,6 +902,8 @@ try {
   )
   assert.equal(ownerBookingAfterServiceEdit?.durationMinutes, 30,
     'owner booking list must show the duration reserved at booking time')
+  assert.equal(ownerBookingAfterServiceEdit?.service, 'Integration service',
+    'owner booking list must show the service name saved at booking time')
 
   console.log('Checking exact elapsed booking duration across spring-forward and fall-back clock changes...')
   const dstSeedSql = `
