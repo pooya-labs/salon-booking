@@ -14,7 +14,7 @@ Live site: https://pooya-labs.github.io/salon-booking/
 
 ## Brand and visual identity
 
-The site uses the owner-supplied barber emblem as its primary mark, with a black leather-inspired canvas, warm antique-gold accents and ivory typography. The optimized logo is served locally from `public/images/shayan-barber-logo.webp`.
+The site uses the owner-supplied barber emblem as its primary mark, with an obsidian-black canvas, warm antique-gold accents, ivory typography, rounded surfaces and layered Liquid Glass treatments. The public customer journey and owner workspace share the same visual system; the supplied logo assets remain separate brand elements.
 
 ## Active architecture
 
