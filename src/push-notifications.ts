@@ -98,10 +98,10 @@ export async function listenForOwnerPushMessages(): Promise<() => void> {
         tag: 'salon-booking-foreground',
         data: { url: destination },
       })).catch(() => {
-        try { new Notification(title, { body, icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg` }) } catch (ignored) {}
+        try { new Notification(title, { body, icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg` }) } catch {}
       })
     })
-  } catch (ignored) {
+  } catch {
     return () => undefined
   }
 }
