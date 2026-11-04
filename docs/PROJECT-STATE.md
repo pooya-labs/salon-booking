@@ -1,14 +1,15 @@
 # Project State & Handoff
 
-## Current checkpoint — Shayan barber visual identity (2026-11-04)
+## Current checkpoint — Shayan Liquid Glass redesign (2026-11-04)
 
-- Latest visual implementation commit: 47d5120e9cb8baca5cd9069b5bdfd0a902532c40 (design: bring Shayan barber identity into the website).
-- Owner supplied the barber's logo; the public site now adopts the «شایان» identity and replaces the provisional «فُرم» treatment.
-- Visual direction: deep black/leather texture, warm antique gold, ivory typography, framed emblem artwork and premium barber-shop styling.
-- Logo asset: public/images/shayan-barber-logo.webp (optimized 240×240 WebP); integrated into homepage navigation/hero/footer, booking dialog, owner workspace, browser icon and PWA manifest.
-- Public homepage, booking dialog and owner workspace receive coordinated dark/gold styling. Booking, customer lookup, admin APIs, scheduling and Apps Script logic were not changed in this design pass.
-- Pending: verify CI and Pages deployment, review browser screenshots/contrast and confirm final visual direction with the owner before proceeding to the Apps Script upgrade.
-
+- Latest design checkpoint on `main`: `7b3f7052a2e4db6c5538bd7571ff0e1c0e7678ea` (ROADMAP refreshed for the Liquid Glass redesign and the pending owner-supplied image assets).
+- The visual system is now moving from the earlier leather-like black/gold treatment to obsidian black, antique gold and ivory with rounded translucent surfaces, layered blur, warm highlights and softer elevation.
+- The refresh covers the public homepage, booking dialog, customer-management dialog, manager login, manager dashboard, service editor, weekly schedule, manual phone booking and notification settings.
+- Reduced-motion overrides were tightened after CI showed that the earlier scoped `.01ms` rule still left a non-zero computed button transition. The latest selector-precedence fix is commit `f7dcd8192cee4ef1fc03444321601ea504cf3c5f`; validate it in the next non-cancelled CI run.
+- Two new owner-supplied WebP files are available in the conversation: `shayan-hero.webp` (standalone barber illustration) and `shayan-emblem.webp` (full Shayan emblem). They must be used byte-for-byte, with no crop, retouch, recolor or re-encoding. **They are not yet in `public/images/` or wired into the app**; the current app still references the previous `shayan-barber-logo.webp`. Intended placements: hero image for the standalone illustration; header/footer/booking/favicon/brand placements for the full emblem.
+- A drop-in archive containing the two original files at the correct `public/images/` paths was prepared for handoff, but it has not been committed into GitHub.
+- The design work did not change booking logic, customer data, Apps Script, Google Sheets or Firebase configuration.
+- Pending: finish committing and wiring the two exact image files, then run the final Pages build, CI browser QA and desktop/mobile visual acceptance. Keep the Apps Script project unchanged during this design pass.
 
 > Update this file at every meaningful checkpoint. It is the first file to read when resuming after a chat/session interruption.
 
