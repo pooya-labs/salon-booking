@@ -837,3 +837,27 @@ h1 em,h2 em { color:var(--shayan-gold-bright); }
   animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.01ms !important;
  }
 }
+
+
+/* Fine typography for the Shayan wordmark and creator credit */
+.brand-copy,.footer-brand-copy,.admin-brand-copy,.booking-brand-copy { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:3px; }
+.brand-copy strong,.footer-brand-copy strong,.admin-brand-copy strong { display:block; line-height:1.15; }
+.brand-copy small,.footer-brand-copy small,.admin-brand-copy small,.booking-brand-copy small {
+  display:block; margin-top:0; color:#d2b77f; font-family:Georgia,Tahoma,serif;
+  font-size:8px; font-weight:500; letter-spacing:.17em; line-height:1.2; direction:ltr;
+}
+.booking-brand-copy small { font-size:7px; letter-spacing:.15em; }
+.footer-brand-copy strong { font-size:17px; }
+.footer-brand-copy small { font-size:7px; }
+.admin-brand-copy small { font-size:7px; letter-spacing:.12em; }
+.footer-github-link {
+  display:inline-flex; align-items:center; gap:6px; color:#e7c98f;
+  text-decoration:none; font-weight:600; transition:color .18s ease, transform .18s ease;
+}
+.footer-github-link:hover { color:#fff0c8; transform:translateY(-1px); }
+.footer-github-link svg { flex:0 0 auto; }
+@media (max-width:680px) {
+  .brand-copy small { font-size:7px; }
+  .footer-credit { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:5px; }
+  .footer-credit>span:last-child { margin-left:0; }
+}
