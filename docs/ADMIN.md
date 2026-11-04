@@ -8,10 +8,11 @@ The owner workspace is served by the GitHub Pages frontend at `/salon-booking/ad
 - Six-hour owner sessions, with hashed session identifiers persisted in the private `AdminSessions` sheet.
 - Booking list, date-range navigation, status filtering and client contact details.
 - Allowed transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
-- Service create/edit/activate/deactivate; deactivation preserves historical reservations.
+- Service create/edit/activate/deactivate, including category/type, description, price, currency, duration and public visibility; deactivation preserves historical reservations.
 - Salon timezone, slot interval, booking notice, booking horizon and buffer settings.
-- Weekly working hours with up to eight separate intervals per day.
+- Weekly working hours with up to eight separate intervals per day; start, midday and closing periods can be edited independently.
 - Date-specific closures and alternate opening intervals, with notes.
+- Manual phone reservations with first name, last name and phone; confirmed phone bookings share the same availability lock and block online reservations.
 - Audit records for owner changes and booking status history.
 
 Schedule intervals are validated in Apps Script; the global script lock protects the critical availability-recheck-and-booking-write section from concurrent requests.
@@ -20,7 +21,7 @@ Schedule intervals are validated in Apps Script; the global script lock protects
 
 Follow [GITHUB-PAGES-RELAY.md](./GITHUB-PAGES-RELAY.md):
 1. Create the Apps Script project from `relay/Code.gs`, `relay/Bridge.html` and `relay/appsscript.json`.
-2. Run `setupSalonDatabase()` in the Apps Script editor and authorize Sheets/Mail access.
+2. Run `setupSalonDatabase()` in the Apps Script editor and authorize Sheets plus the Firebase Messaging/external-request scopes. Mail permission is optional because email alerts default to off.
 3. Keep the one-time bootstrap token from the execution log private.
 4. Deploy a Web App executing as the owner with anonymous access.
 5. Set the deployed `/exec` URL as GitHub Actions variable `SALON_RELAY_URL`.
@@ -30,7 +31,9 @@ Setup and notification-recipient functions are guarded against calls from the pu
 
 ## Notifications
 
-After a booking is committed, the backend sends an email to the configured manager mailbox. Setup defaults to the deploying Google account when available. To select another address, run `setSalonNotificationEmail("manager@example.com")` from the Apps Script editor. Gmail on Android can show these messages when its notifications are enabled. The booking remains saved if notification delivery fails.
+Firebase Cloud Messaging (FCM) Web Push sends reservation notifications to registered manager browsers/PWAs on Android. The owner must configure the Firebase web app, VAPID key, matching Google Cloud project and GitHub Actions variables using the [deployment checklist](./GITHUB-PAGES-RELAY.md#6-phone-push-notifications-firebase-cloud-messaging), then activate the device from the پنل مدیریت → اعلان‌ها tab and send a test notification.
+
+Email notifications are **disabled by default**. The manager can keep the email toggle off to receive push only, or enable email separately from the Notifications tab. A failed notification never rolls back a saved booking.
 
 ## Operational notes
 

@@ -14,18 +14,21 @@
 
 ## Latest migration verification (2026-11-04)
 
-- Latest main commit: `85b88cf81425e984eaa7eda4e5b3e11226aad8a6` (privacy/backup operations updated for private Google Sheets). The preceding migration code commit is `1a735e815cf55fc8f45c7a72078ba652c4f38b1a`; the stale Wrangler test was corrected in `4d7e6186cd85c4fb19a72817d040b6e8efab070f`.
-- **CI passed:** [run 41855195426](https://github.com/pooya-labs/salon-booking/actions/runs/41855195426). It passed lint, unit tests (including the Apps Script contract/syntax checks and archived-Worker config assertions), legacy SQLite migration tests, TypeScript/build, responsive RTL/keyboard/browser QA and owner-dashboard date-range browser QA.
-- **GitHub Pages deployment passed:** [run 41855195855](https://github.com/pooya-labs/salon-booking/actions/runs/41855195855). The site remains in safe demo mode unless the owner has configured the `SALON_RELAY_URL` repository variable.
+- Historical cutover commit: `85b88cf81425e984eaa7eda4e5b3e11226aad8a6` (privacy/backup operations updated for private Google Sheets). Subsequent main commits add service/schedule/phone-booking management and Firebase push notifications; the latest feature checkpoint is recorded below.
+- Historical cutover CI passed: [run 41855195426](https://github.com/pooya-labs/salon-booking/actions/runs/41855195426). It covered lint, tests, build, browser QA and legacy migration checks. Do not treat that historical run as validation of the latest owner-management and push commits.
+- The current CI and Pages workflows are triggered automatically from each new main commit; the latest run IDs and conclusions must be read from GitHub Actions before claiming deployment success.
 - Updated privacy documentation to describe Google Sheets as the active data store and to remove obsolete D1 backup instructions from the current operating guide.
 - Owner reports that the Apps Script Web App has now been deployed from their Google account and the `/exec` URL has been saved as the GitHub Actions repository variable `SALON_RELAY_URL` (2026-11-04). This is owner-side setup confirmation, not yet proof of a successful Pages rebuild or end-to-end API connectivity. Manager bootstrap, salon timezone/services/hours and real Iran-network booking/notification checks remain open.
 - Cloudflare resources and any historical D1 rows are untouched. Do not delete or migrate them without the owner's explicit data-recovery decision.
 
 ## Current checkpoint — owner management and phone notifications (2026-11-04)
 
+- Latest implementation checkpoint: `f4383637d8018e3077d487c814bdddb3c8eb92a7` (`fix: route push notification clicks to the Pages admin`).
+
 - Main includes service category editing, multi-interval daily opening hours, split customer name fields and phone booking from the manager panel.
 - Phone bookings are confirmed and share the online availability lock/store. Firebase Web Push is implemented but waits for the owner-side Firebase project configuration and redeployment of Apps Script.
 - Email notifications are off by default and can be re-enabled from the notification settings panel.
+- Latest code path includes the Pages-compatible `?admin=1` push-click destination, foreground notifications via ServiceWorkerRegistration, background FCM notifications without a duplicate custom background handler, and distinct email content for confirmed phone bookings.
 - Required follow-up: update Apps Script source/manifest, rerun setup, redeploy the Web App, configure Firebase web client variables/VAPID in GitHub Actions and verify test push delivery.
 
 ## Current checkpoint — Google Apps Script cutover (2026-11-04)
@@ -34,9 +37,9 @@
 - Active architecture: GitHub Pages frontend → hidden Apps Script iframe bridge → Google Apps Script API → private Google Sheets.
 - `relay/Code.gs` is the backend itself; it does not call the Cloudflare Worker or use D1.
 - API routes preserve the frontend contract for availability, booking, customer lookup/cancellation, owner bootstrap/login, booking status, services and schedule management.
-- Sheets tabs: Settings, Services, WeeklyHours, Exceptions, Bookings, AdminUsers, AdminSessions and AuditLog.
+- Sheets tabs: Settings, Services, WeeklyHours, Exceptions, Bookings, PushSubscriptions, AdminUsers, AdminSessions and AuditLog.
 - `LockService` protects the availability recheck and booking write. Idempotency hashes, customer management-token hashes and audit events are stored in Sheets.
-- New booking emails are sent through MailApp to the configured manager address. The owner can change it from the Apps Script editor using `setSalonNotificationEmail("manager@example.com")`.
+- Firebase Web Push is sent to registered manager devices after owner-side Firebase configuration. Optional email alerts use MailApp but are disabled by default and can be enabled from the owner panel.
 - `AdminSessions` persists hashed browser session IDs for six-hour sessions; CacheService is only an accelerator.
 - The Apps Script V8 implementation avoids unsupported browser/Node globals including `URLSearchParams`, `UrlFetchApp` and `crypto.subtle`.
 - Deployment files: `relay/appsscript.json`, `relay/Bridge.html` and `docs/GITHUB-PAGES-RELAY.md`.
