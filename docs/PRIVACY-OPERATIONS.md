@@ -1,36 +1,35 @@
-# Privacy operations: data inventory, export, retention and deletion
+# Privacy operations: Google Sheets data, export, retention and deletion
 
-This is an operational engineering guide, not legal advice or a substitute for the salon owner's privacy notice. The salon's country, legal entity, service model and applicable retention duties have not been confirmed. **Do not invent a retention period or run bulk deletion until the owner has approved the jurisdiction and schedule.**
+This is an operational engineering guide, not legal advice. The salon's exact legal jurisdiction, business entity and applicable retention duties still require owner confirmation. **Do not invent a retention period or run bulk deletion until the owner has approved the policy.**
 
-## Data inventory
+## Active data inventory
 
-| Data | Stored location | Why it exists | Access / exposure |
+| Data | Stored location | Purpose | Access |
 |---|---|---|---|
-| Client name and phone | `bookings.client_name`, `bookings.client_phone` | Identify and contact the person for the appointment | Only authenticated owner booking endpoints return these fields |
-| Optional client note | `bookings.client_note` | Client-provided appointment context | Owner booking list only; max 500 characters after normalization |
-| Booking reference and appointment data | `bookings` | Scheduling, conflict prevention and lookup | Includes the booked service-name and duration snapshots; reference is public only when paired with the one-time management token; minimal summary returned to customer |
-| Customer management credential | `bookings.client_manage_token_hash` | Prove possession for customer lookup/cancellation | Only SHA-256 digest stored; plaintext returned once at booking creation |
-| Booking status history | `booking_status_events` | Operational status trail | Booking ID, old/new status and timestamp only; no client name, phone or note; cascades when booking is deleted |
-| Owner account | `admin_users` | Authenticate the salon owner | Username and salted PBKDF2 hash; never returned by public endpoints |
-| Owner sessions | `admin_sessions` | Maintain authenticated owner access | SHA-256 token digest and expiry only; expired rows are pruned during session checks |
-| Owner audit trail | `admin_audit_log` | Record management actions and state changes | Actor, action, entity ID and minimal structured details; do not add client name, phone, note or credential values |
-| Rate-limit metadata | `admin_rate_limits`, `public_rate_limits` | Reduce credential abuse and automated requests | Scope-separated HMAC bucket IDs, counters and expiry; raw IP addresses are not stored; expired buckets are pruned on limiter checks |
-| Cloudflare operational logs and backups | Cloudflare account/platform | Runtime operations and recovery | Platform-managed; owner must review account access, log settings and backup/time-travel retention separately |
+| Client name and phone | Private Google Sheet: Bookings | Identify and contact the person for the appointment | Owner workspace only |
+| Optional client note | Bookings | Appointment context | Owner workspace only; bounded length |
+| Booking reference and appointment data | Bookings | Scheduling, conflict prevention and customer lookup | Reference is useful only with the one-time management token |
+| Customer management credential | Bookings.manageTokenHash | Prove possession for lookup/cancellation | Hash only; plaintext is returned once at creation |
+| Idempotency metadata | Bookings.idempotencyKeyHash, requestHash | Make retries safe and prevent duplicate booking | Hashes only |
+| Owner account | AdminUsers | Authenticate the manager | Username, salt and salted password hash |
+| Owner sessions | AdminSessions | Maintain manager access | Hashed browser session identifier and expiry |
+| Owner audit trail | AuditLog | Record management actions and booking events | Actor, action, entity and limited details |
+| Booking notification | Gmail / MailApp | Notify manager after a successful booking | Sent to the configured manager mailbox |
+| Short-lived rate-limit metadata | Apps Script CacheService | Reduce repeated requests | Per-browser/session counters; cache entries are temporary |
 
-GitHub Pages and local Vite preview are demo-only and do not submit or persist client details. Never paste production data into GitHub issues, commits, screenshots or test fixtures.
+Google Sheets is owned by the deploying Google account and must remain private. GitHub Pages serves static frontend assets and does not store customer data. The Apps Script /exec endpoint is public so anonymous clients can book, but the backend executes as the deploying owner and controls access to private spreadsheet records. No booking payload is sent to GitHub Actions or Cloudflare in the active request flow.
 
-## Data-minimization controls currently implemented
+## Data-minimization behavior
 
-- A booking requires a name and phone number; the note is optional and capped at 500 characters.
-- The public booking endpoint never returns the client's phone, name or note.
+- A booking requires a name and phone number; the note is optional and size-limited.
+- Public booking responses do not return the client's phone, name or note.
 - Customer self-service returns only reference, service, local date/time, duration and status.
-- Customer management credentials are random 256-bit values; only a SHA-256 digest is stored.
-- Status history stores only booking ID, transition and timestamp. Its foreign key uses `ON DELETE CASCADE`.
-- Admin audit entries should record operational changes, not client content. Current booking status audit details contain only `from` and `to`.
-- Admin and public rate-limit buckets use HMAC-derived identifiers, not raw IP strings.
-- Pages remains disconnected from real customer APIs.
+- Customer management credentials, idempotency keys and request fingerprints are stored as hashes.
+- Audit events should contain operational context only, not client note content or plaintext credentials.
+- Public rate limiting uses the browser's relay session identifier; it does not store raw IP addresses.
+- A failed email notification does not undo the already-saved booking.
 
-Do not add marketing, analytics identifiers, payment details, identity documents, sensitive health details or free-text fields without a separately reviewed purpose and retention decision.
+Do not add marketing analytics, payment details, identity documents, health details or additional free-text fields without a separately reviewed business purpose and retention decision.
 
 ## Owner decisions required before production
 
@@ -38,124 +37,47 @@ Record these decisions outside source control in the salon's approved business r
 
 | Decision | Owner-approved value |
 |---|---|
-| Salon legal jurisdiction / country | **Not yet supplied** |
+| Salon legal jurisdiction / country | **Not yet confirmed** |
 | Business/controller contact for privacy requests | **Not yet supplied** |
 | Applicable privacy notice and lawful processing basis | **Requires owner/legal review** |
 | Retention for completed/no-show bookings | **Not yet decided** |
 | Retention for cancelled bookings | **Not yet decided** |
 | Retention for abandoned/pending bookings | **Not yet decided** |
 | Retention for audit/security records | **Not yet decided** |
-| Backup/export storage location and access list | **Not yet decided** |
+| Google account owner and spreadsheet access list | **Must be confirmed before launch** |
+| Backup/export location and access list | **Not yet decided** |
 | Backup deletion/expiry schedule | **Not yet decided** |
 
-The application deliberately has no automatic booking purge. That is safer than silently choosing a legally incorrect period.
+The application deliberately has no automatic booking purge. This avoids silently choosing a legally incorrect retention period.
 
-## Export and backup procedure
+## Google Sheets backup and export
 
-### Before a backup or subject export
+1. Sign into the Google account that owns the Apps Script project and database spreadsheet.
+2. Open the spreadsheet from the Apps Script setupSalonDatabase execution log or the owner's private Drive.
+3. Use **File → Download** to export a private XLSX or CSV copy. For a full operational backup, export each application tab, not only Bookings.
+4. Store the export outside this repository, restrict access to the owner, encrypt it at rest and apply the owner-approved expiry policy.
+5. Keep an export log containing operator, timestamp, spreadsheet name, purpose and file checksum only. Do not put client details or the bootstrap token in the log.
+6. Verify that the backup opens and contains the expected tabs before any destructive change.
 
-1. Confirm that the target is the correct production database and not the local or preview database.
-2. Create a private directory **outside the repository** and restrict access to the operator:
-   `mkdir -p ../private-salon-booking-backups`
-3. Export the database before schema changes, retention deletion or a sensitive support operation:
+Never commit or attach spreadsheet exports to GitHub issues, commits, screenshots or chat.
 
-   ```sh
-   npx wrangler d1 export salon-booking --remote --output="../private-salon-booking-backups/salon-booking-YYYYMMDD-HHMMSS.sql"
-   ```
+## Single-customer data request
 
-4. Confirm the command succeeded and the file is non-empty. Store it encrypted, restrict access, and apply the approved backup expiry schedule. Never commit or attach the export to chat/issues.
-5. Keep an export log containing operator, timestamp, database name, purpose and file checksum only. Do not put client details or secret values in the log.
+Use the authenticated owner workspace to identify the booking from a reference or a verified phone number supplied by the requester. Export only the necessary row or fields into an owner-controlled location. Do not paste client content into logs or support messages. Record the request and response according to the owner-approved policy.
 
-Wrangler supports exporting a full D1 database or selected tables to SQL. A full export contains personal data and security-related tables, so treat it as a sensitive credential-bearing backup. See the [Cloudflare D1 export guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/) and [Wrangler D1 command reference](https://developers.cloudflare.com/workers/wrangler/commands/d1/).
+## Retention and deletion
 
-### Single-customer booking export
+Before deletion:
+1. Confirm the requester and the exact booking(s) or customer record.
+2. Check the owner's approved retention and any legal/business hold.
+3. Make a fresh private spreadsheet backup.
+4. Delete only the approved rows from the relevant tabs; preserve required audit/financial records according to the approved policy.
+5. Verify that customer lookup no longer finds the deleted booking and record the operator, timestamp and scope without retaining the deleted personal data in the audit details.
 
-Use an authenticated owner session or a restricted operator with explicit authorization. Identify the booking through a verified reference and/or phone number supplied by the requester. Do not copy the result into logs.
+No automated deletion job is enabled. Do not schedule one until the owner approves retention rules.
 
-Example query (replace the reference with the verified booking reference):
+## Legacy Cloudflare D1
 
-```sql
-SELECT
-  b.reference_code,
-  b.client_name,
-  b.client_phone,
-  b.client_note,
-  b.starts_at,
-  b.ends_at,
-  b.status,
-  b.service_name_snapshot AS service_name,
-  b.service_duration_minutes,
-  b.created_at
-FROM bookings AS b
-WHERE b.reference_code = 'SB-REPLACE_WITH_VERIFIED_REFERENCE';
-```
+The previous Cloudflare Worker/D1 code and SQL migrations are retained as a rollback/history path only; they are not part of the active booking architecture. The former D1 database may contain historical copies or platform metadata. Do not delete it during this cutover. If the owner needs historical rows, export the required data from D1 to a private location and review/map it before importing into Sheets. No automatic D1-to-Sheets migration is implemented.
 
-Status history for that same booking:
-
-```sql
-SELECT e.previous_status, e.new_status, e.created_at
-FROM booking_status_events AS e
-INNER JOIN bookings AS b ON b.id = e.booking_id
-WHERE b.reference_code = 'SB-REPLACE_WITH_VERIFIED_REFERENCE'
-ORDER BY e.created_at ASC;
-```
-
-Run a read-only query through Wrangler only after confirming the database target; keep its JSON/terminal output private. The owner should verify the requester's identity before disclosing the export.
-
-## Retention review and deletion procedure
-
-### Preview only — no deletion
-
-Choose a UTC cutoff only after the owner has approved the retention schedule. First inspect exactly which records would be affected:
-
-```sql
-SELECT id, reference_code, status, ends_at
-FROM bookings
-WHERE status IN ('cancelled', 'completed', 'no_show')
-  AND ends_at < 'REPLACE_WITH_OWNER_APPROVED_UTC_CUTOFF'
-ORDER BY ends_at ASC;
-```
-
-Count the result and confirm it contains no pending or confirmed appointments. Review a sample against the owner's approved policy. Do not use the preview cutoff unchanged.
-
-### Controlled deletion
-
-1. Confirm the applicable retention rule and any legal/accounting hold with the owner.
-2. Take and verify a fresh encrypted D1 export using the procedure above.
-3. Run the preview query and have a second authorized person review the row count and cutoff.
-4. Only after approval, execute the corresponding deletion against the verified database:
-
-   ```sql
-   DELETE FROM bookings
-   WHERE status IN ('cancelled', 'completed', 'no_show')
-     AND ends_at < 'OWNER_APPROVED_UTC_CUTOFF';
-   ```
-
-5. Immediately verify the affected row count and confirm there are no remaining records in the approved deletion set.
-6. The `booking_status_events` rows cascade-delete with the booking. The `admin_audit_log` has no foreign key to bookings; minimal status-change audit rows may remain with the opaque booking UUID and transition only. Review whether that operational record may be retained under the approved policy.
-7. Apply the same approved expiry to private exports and backups. Deleting a live D1 row does not automatically remove copies from operator exports, Cloudflare recovery/time-travel facilities or platform logs; review those separately.
-
-For a one-off erasure, first verify the exact booking ID and all linked records, then delete only that ID after approval. Never run a broad `DELETE` by phone number alone: one person may have multiple bookings and the request may not cover all of them.
-
-The procedure intentionally excludes pending and confirmed bookings from bulk retention deletion. A separate decision is required for abandoned pending bookings; do not infer they are abandoned solely from their status.
-
-## Incident and access hygiene
-
-- Keep Cloudflare, GitHub and backup access limited to named operators who need it.
-- Remove `ADMIN_BOOTSTRAP_TOKEN` after the first owner account is created.
-- Rotate `SESSION_SECRET` only with a planned session/rate-limit impact review.
-- If a client-management token is exposed, treat it as a bearer credential. Cancel the booking if appropriate and arrange a new booking rather than trying to recover the plaintext token.
-- Do not record phone numbers, names, notes, passwords, tokens, cookies, SQL exports or full request bodies in application logs.
-- Review admin accounts and backup access periodically.
-- Document security incidents and actions without copying unnecessary client content.
-
-## Verification checklist
-
-- [ ] Owner approved jurisdiction, privacy notice and retention schedule.
-- [ ] Owner contact for privacy requests is published.
-- [x] Wrangler local D1 export/restore smoke test passed in CI with synthetic data; this does not verify the production database.
-- [ ] Production D1 backup/export was restored successfully in an isolated test database.
-- [ ] Retention preview was reviewed before any delete operation.
-- [ ] Individual erasure and status-event cascade were verified on a synthetic local database.
-- [ ] Backups and Cloudflare recovery/log retention were included in the policy.
-- [ ] No real client information appears in GitHub, CI fixtures, screenshots or application logs.
+The former D1-specific export and SQL examples in Git history should not be used as instructions for the active Google Sheets database.
