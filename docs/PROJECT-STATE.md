@@ -245,15 +245,16 @@ Use clearly marked placeholders until the owner supplies these details.
 - [x] GitHub Pages source is configured as GitHub Actions; no further Pages setup action is required.
 - [ ] Before production: salon content and schedule must be supplied.
 - [ ] Booking preview uses placeholder service prices and sample slots only; not for real appointments.
-- [ ] Before production: repository owner must connect Cloudflare and provision D1.
+- [x] Production D1 `salon-booking` is provisioned and its ID is configured in `wrangler.toml`; jurisdiction is `none`. Salon country is Iran; `local_timezone` remains `unset` until the owner confirms the salon city/location.
+- [ ] Apply remote migrations 0001–0010, configure Worker secrets, connect GitHub to Cloudflare Workers Builds, deploy and run production smoke tests.
 
 ## Next actions
 
 1. Confirm the salon owner's cancellation notice period and publish the customer-facing policy.
 2. Complete data-retention, export/deletion, backup, security-header, accessibility and threat-model reviews.
-3. When owner-approved salon details are available, provision Cloudflare D1, configure its ID and apply migrations 0001–0010.
-4. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; deploy and bootstrap the first owner.
-5. Confirm timezone, services, prices, hours and booking horizon; then perform owner/admin API tests and a production smoke test.
+3. Apply migrations 0001–0010 to the provisioned production D1 database.
+4. Add SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN as Worker secrets; connect Workers Builds, deploy and bootstrap the first owner.
+5. Confirm salon timezone, services, prices, hours and booking horizon; then perform owner/admin API tests and a production smoke test.
 6. Never enable real booking on Pages; production booking belongs on Cloudflare.
 
 ## Latest Worker + D1 integration checkpoint (2026-11-03)
@@ -383,3 +384,14 @@ Production blockers and real salon details remain unchanged.
 - Latest CI: run 41624696511 — success (25 unit tests; migrations/status-history/rate-limit tests; TypeScript and Vite build).
 - Latest Pages deployment: run 41624696397 — success.
 - The customer endpoints are implemented but not yet tested against a provisioned remote Cloudflare D1 database. This remains a release-quality task.
+
+
+## Latest production D1 provisioning checkpoint (2026-11-04)
+
+- Repository owner confirmed that the Cloudflare account and production D1 database `salon-booking` have been created.
+- The production D1 database ID is now configured in the root `wrangler.toml`; binding remains `DB` and migration directory remains `migrations`.
+- Data jurisdiction was selected as `none`; the owner-provided salon country is Iran. No city/address or business hours have been supplied, so `local_timezone` intentionally remains `unset`.
+- The production D1 database is provisioned but still unmigrated from this repository's perspective: migrations 0001–0010 have not yet been applied remotely.
+- The local Worker integration harness continues to replace the production database ID with a reserved local-only UUID and runs every D1 operation with `--local`. The production-config regression now checks for a valid non-local UUID instead of expecting the setup placeholder.
+- The current tool connection exposes GitHub actions but no Cloudflare resource-management actions. Therefore remote migrations, Worker secrets, Workers Builds integration and production deployment have not been executed or marked complete.
+- GitHub Pages remains a static, demo-only preview. Do not enter real customer bookings until the production Worker is deployed, configured and smoke-tested.
