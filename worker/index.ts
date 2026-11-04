@@ -110,7 +110,12 @@ const enforcePublicRateLimit = async (
     return errorResponse('rate_limit_not_configured', 'تنظیمات امنیتی محدودسازی درخواست آماده نیست.', 503)
   }
 
-  const ip = request.headers.get('cf-connecting-ip')?.trim()
+  // Requests routed through the Pages relay share Google's egress IP. Use the
+  // relay's per-browser identifier so one busy client cannot throttle everyone.
+  const relayClient = request.headers.get('x-salon-relay-client')?.trim()
+  const ip = relayClient && /^[a-z0-9-]{24,64}$/i.test(relayClient)
+    ? `relay:${relayClient}`
+    : request.headers.get('cf-connecting-ip')?.trim()
   if (!ip || ip.length > 64) {
     return errorResponse('rate_limit_unavailable', 'اطلاعات لازم برای کنترل درخواست در دسترس نیست.', 503)
   }

@@ -451,6 +451,7 @@ Production blockers and real salon details remain unchanged.
 - The Pages frontend now has an optional API transport bridge. When `VITE_SALON_RELAY_URL` is supplied at build time, all same-origin `/api/*` fetches are forwarded through a hidden Apps Script iframe; non-API assets remain served by GitHub Pages.
 - Added Google Apps Script server-side forwarding to the existing Cloudflare Worker. The Worker URL is fixed in the relay source; the relay does not expose a generic arbitrary-URL proxy.
 - Admin Worker session cookies are retained server-side in Apps Script CacheService, keyed by a random browser relay session ID. The browser does not receive the Worker cookie. Cache TTL is six hours.
+- Public rate limiting now uses the relay's per-browser identifier when supplied, avoiding a shared Google egress IP causing unrelated customers to throttle one another.
 - GitHub Pages deployment reads the public Actions variable `SALON_RELAY_URL`. If it is unset, the build remains demo-only and does not submit customer data.
 - Added `docs/GITHUB-PAGES-RELAY.md` with exact owner setup and deployment steps.
 - **Owner action required:** create the Apps Script project from `relay/Code.gs` and `relay/Bridge.html`, run `authorizeRelay`, deploy as a web app accessible to anyone, add its `/exec` URL as the GitHub Actions variable `SALON_RELAY_URL`, then rerun Pages deployment.

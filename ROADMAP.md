@@ -227,8 +227,8 @@ Do not redo completed tasks. Read this file and `docs/PROJECT-STATE.md` before r
 
 ## R08 addendum — GitHub Pages to Cloudflare relay
 
-- [x] Design and implement a same-page API bridge so GitHub Pages customer and owner screens can forward API calls through a server-side relay rather than calling the Cloudflare Worker from the browser.
-- [x] Add Google Apps Script relay source, iframe bridge and owner deployment instructions.
+- [~] Implement the same-page API bridge and Google Apps Script relay source; automated and real-network verification is still pending.
+- [x] Add the relay iframe bridge and owner deployment instructions.
 - [x] Keep Pages in demo mode until the owner configures the `SALON_RELAY_URL` Actions variable; the Pages build then enables real API mode.
 - [ ] Owner deploys the Apps Script web app, authorizes its Worker health check and adds the `SALON_RELAY_URL` repository variable.
 - [ ] Verify customer booking, owner login/session, booking list and status updates through the relay from an Iran-based network without VPN.
