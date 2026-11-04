@@ -14,7 +14,7 @@ Live site: https://pooya-labs.github.io/salon-booking/
 
 ## Brand and visual identity
 
-The site uses the owner-supplied barber emblem as its primary mark, with an obsidian-black canvas, warm antique-gold accents, ivory typography, rounded surfaces and layered Liquid Glass treatments. The public customer journey and owner workspace share the same visual system; the supplied logo assets remain separate brand elements.
+The site uses the owner-supplied barber emblem as its primary mark, with an obsidian-black canvas, warm antique-gold accents, ivory typography, rounded surfaces and layered Liquid Glass treatments. The public customer journey and owner workspace share the same visual system; the supplied logo assets remain separate brand elements. Reduced-motion preferences are respected across all interactive surfaces.
 
 ## Active architecture
 
