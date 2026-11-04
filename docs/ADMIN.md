@@ -1,84 +1,40 @@
-# Owner workspace and first-admin setup
+# Owner workspace — Google Apps Script
 
-## Implemented owner features
+The owner workspace is served by the GitHub Pages frontend at `/salon-booking/admin`. Owner API calls are routed through the hidden Apps Script iframe bridge. Apps Script executes as the deploying owner and stores records in a private Google Spreadsheet.
 
-The protected owner workspace is served at `/admin` by the Cloudflare Worker. It includes:
+## Included features
 
-- First-owner bootstrap, only while no admin account exists.
-- Username/password login and logout.
-- 12-hour host-only secure session cookie.
-- Upcoming booking list, status filter, customer contact, reference and service details.
-- Allowed booking transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
-- Service management: create, edit, activate and deactivate; deactivation preserves historical reservations.
-- Booking settings: salon timezone, slot interval, notice period, booking horizon and buffer.
-- Weekly schedule editing, with up to eight separate opening intervals per day (for example morning and afternoon shifts).
-- Date-specific closures or one-off opening intervals, with notes.
-- Audit records for service, schedule and settings changes, plus a database status-history entry for every booking status change (including customer cancellations).
+- One-time first-owner bootstrap and username/password login/logout.
+- Six-hour owner sessions, with hashed session identifiers persisted in the private `AdminSessions` sheet.
+- Booking list, date-range navigation, status filtering and client contact details.
+- Allowed transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
+- Service create/edit/activate/deactivate; deactivation preserves historical reservations.
+- Salon timezone, slot interval, booking notice, booking horizon and buffer settings.
+- Weekly working hours with up to eight separate intervals per day.
+- Date-specific closures and alternate opening intervals, with notes.
+- Audit records for owner changes and booking status history.
 
-The schedule editor validates intervals on the server and rejects overlap. The database also has overlap triggers for weekly and exception intervals. The system rejects schedule changes that conflict with known pending/confirmed bookings. Existing single-interval schedules are backfilled by migration 0005.
+Schedule intervals are validated in Apps Script; the global script lock protects the critical availability-recheck-and-booking-write section from concurrent requests.
 
-GitHub Pages and local Vite development show a demo-only information page. They never load real customer records and do not call owner APIs.
+## First owner setup
 
-## Required Worker secrets
+Follow [GITHUB-PAGES-RELAY.md](./GITHUB-PAGES-RELAY.md):
+1. Create the Apps Script project from `relay/Code.gs`, `relay/Bridge.html` and `relay/appsscript.json`.
+2. Run `setupSalonDatabase()` in the Apps Script editor and authorize Sheets/Mail access.
+3. Keep the one-time bootstrap token from the execution log private.
+4. Deploy a Web App executing as the owner with anonymous access.
+5. Set the deployed `/exec` URL as GitHub Actions variable `SALON_RELAY_URL`.
+6. Complete first-owner bootstrap on the Pages admin screen.
 
-Generate two distinct random values:
+Setup and notification-recipient functions are guarded against calls from the public web app; run them only from the owner's Apps Script editor.
 
-```sh
-openssl rand -hex 32
-openssl rand -hex 32
-```
+## Notifications
 
-Use the first for `SESSION_SECRET` and the second for `ADMIN_BOOTSTRAP_TOKEN`. Do not reuse a password or the same secret value.
+After a booking is committed, the backend sends an email to the configured manager mailbox. Setup defaults to the deploying Google account when available. To select another address, run `setSalonNotificationEmail("manager@example.com")` from the Apps Script editor. Gmail on Android can show these messages when its notifications are enabled. The booking remains saved if notification delivery fails.
 
-Cloudflare Dashboard steps:
-1. Open Workers & Pages.
-2. Select the deployed salon-booking Worker.
-3. Open Settings → Variables and Secrets.
-4. Choose Add → Secret.
-5. Add `SESSION_SECRET` and `ADMIN_BOOTSTRAP_TOKEN` as separate secrets.
-6. Deploy the Worker so the new secret bindings become available.
+## Operational notes
 
-Secrets are read through Worker environment bindings and are never committed to source.
-
-## Database setup
-
-Prerequisites: create and bind a Cloudflare D1 database, configure its ID in Wrangler, and apply migrations `0001_initial_schema.sql` through `0007_customer_booking_access.sql` in order.
-
-Do not apply migrations to a real database until its ID and target environment have been checked. The project contains no real salon data yet.
-
-## One-time first-owner bootstrap
-
-1. Deploy the Worker and apply all database migrations.
-2. Add the two Worker secrets above.
-3. Open the production `/admin` URL over HTTPS.
-4. The first-owner form is shown only when there is no owner and both secrets are configured.
-5. Enter the bootstrap token, choose a username and a strong password of at least 12 characters, then submit.
-6. Remove `ADMIN_BOOTSTRAP_TOKEN` from Worker settings and deploy again. Keep `SESSION_SECRET`.
-
-Bootstrap is one-time at the database level. An existing owner prevents another account being created.
-
-## Session and abuse controls
-
-- Password hashes use PBKDF2-HMAC-SHA-256 with 600,000 iterations and independent 16-byte random salt.
-- Session tokens contain 256 random bits; only their SHA-256 digest is stored.
-- Cookie: `__Host-salon_session`, Secure, HttpOnly, SameSite=Strict, Path=/, 12-hour lifetime.
-- Login rate: 8 attempts per IP-derived HMAC bucket per 15-minute window.
-- Bootstrap rate: 3 attempts per IP-derived HMAC bucket per one-hour window.
-- Public availability: 180 requests per IP per fixed 15-minute window.
-- Public booking creation: 10 attempts per IP per fixed 15-minute window.
-- Customer lookup and cancellation combined: 20 requests per IP per fixed 15-minute window.
-- Public limits use scope-separated HMAC-SHA-256 buckets derived from `SESSION_SECRET`; raw IP addresses are never stored. Expired buckets are pruned during rate-limit checks.
-- Mutating requests require a matching same-origin Origin header.
-- The rate-limit table stores a keyed HMAC of the IP, not the raw address.
-
-Personal-data export, backup, retention and deletion safeguards are documented in [PRIVACY-OPERATIONS.md](./PRIVACY-OPERATIONS.md). Do not apply its destructive SQL procedures until the salon owner has approved a retention schedule and a fresh backup has been verified.
-
-## Remaining release blockers
-
-- Confirm the salon's customer cancellation policy and any desired notice period. The current endpoint allows cancellation before the appointment starts.
-- Owner-approved retention periods, a published privacy contact, production D1 backup/restore verification and production security review. The local Wrangler D1 export/restore smoke test passes in CI. The operational procedure is documented in [PRIVACY-OPERATIONS.md](./PRIVACY-OPERATIONS.md).
-- Security headers review, threat model and full security review.
-- Production Cloudflare deployment, real D1, secrets, actual salon services, timezone, hours and owner acceptance.
-- Password recovery and multiple owner accounts are not in the initial scope.
-
-Never use the GitHub Pages preview for real reservations or personal information.
+- Sessions expire after six hours. CacheService is only an accelerator; session hashes and expiry are persisted in Sheets.
+- Google service quotas and availability can change. Monitor Apps Script **Executions** when requests fail.
+- The legacy Worker/D1 implementation is retained only for recovery; it is not part of the active Pages API path.
+- Do not accept real reservations until Apps Script is deployed, the salon's actual timezone/services/hours are configured, and a booking plus its notification have been tested.

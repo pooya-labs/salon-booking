@@ -118,7 +118,7 @@ export function BookingManagement({ onClose, demoMode }: { onClose: () => void; 
             {demoMode ? (
               <div className="booking-preview-warning">
                 <ShieldCheck size={18} />
-                <span><strong>این نسخه فقط پیش‌نمایش است.</strong><small>پیگیری و لغو واقعی پس از راه‌اندازی سرویس Cloudflare و دیتابیس فعال می‌شود. اطلاعاتی در این صفحه ارسال یا ذخیره نمی‌شود.</small></span>
+                <span><strong>این نسخه فقط پیش‌نمایش است.</strong><small>پیگیری و لغو واقعی پس از راه‌اندازی Google Apps Script و صفحه‌گستردهٔ دیتابیس فعال می‌شود. اطلاعاتی در این صفحه ارسال یا ذخیره نمی‌شود.</small></span>
               </div>
             ) : !booking ? (
               <>

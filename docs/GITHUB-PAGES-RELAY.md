@@ -1,36 +1,65 @@
-# GitHub Pages relay setup
+# GitHub Pages + Google Apps Script setup
 
-The GitHub Pages frontend uses a Google Apps Script web app as a small server-side relay. The browser talks to the relay iframe; Apps Script forwards the request to the Cloudflare Worker, which remains the only application API and writes to Cloudflare D1.
+This is the active deployment path. GitHub Pages serves the React site; an Apps Script Web App provides the API and creates a private Google Spreadsheet for the salon database. The customer browser does not call a Cloudflare Worker.
 
-This keeps the customer and manager browsers from calling the Cloudflare Worker domain directly. GitHub Pages itself is static and cannot execute server-side code, so a relay is required.
+## 1. Create the Apps Script project
 
-## One-time setup
+1. Open [script.google.com](https://script.google.com/) using the Google account that should own the database and booking notifications.
+2. Create a standalone project, for example `Salon Booking Backend`.
+3. Replace `Code.gs` with the repository's [`relay/Code.gs`](../relay/Code.gs).
+4. Add an HTML file named `Bridge` and paste [`relay/Bridge.html`](../relay/Bridge.html).
+5. In Project Settings, enable **Show "appsscript.json" manifest file in editor**. Replace it with [`relay/appsscript.json`](../relay/appsscript.json), then save.
 
-1. Open [Google Apps Script](https://script.google.com/) and create a blank project named **Salon Booking Relay**.
-2. Replace the default script with the contents of [`relay/Code.gs`](../relay/Code.gs).
-3. Add an HTML file named **Bridge** and paste [`relay/Bridge.html`](../relay/Bridge.html).
-4. In the Apps Script editor, select and run **`authorizeRelay`** once. Approve the Google authorization prompt. The function only checks the Worker health endpoint.
-5. Choose **Deploy → New deployment → Web app**.
-6. Set **Execute as: Me** and **Who has access: Anyone**, then deploy and copy the web-app URL ending in `/exec`.
-7. In the GitHub repository, open **Settings → Secrets and variables → Actions → Variables** and create:
-   - Name: `SALON_RELAY_URL`
-   - Value: the Apps Script web-app `/exec` URL.
-8. Re-run the **Deploy preview to GitHub Pages** workflow.
+The manifest selects V8, spreadsheet/mail/user-info scopes, `Asia/Tehran` as the script timezone, owner execution and anonymous Web App access. Google's [manifest reference](https://developers.google.com/apps-script/manifest/web-app-api-executable) documents these access and execution values.
 
-The URL is a public endpoint, not a credential. Do not put passwords, Worker secrets or API tokens in GitHub variables.
+## 2. Create the private database and authorize email
 
-## How it works
+1. In the function picker, choose `setupSalonDatabase` and click **Run**.
+2. Approve Google Sheets and Mail permissions.
+3. Open the execution log. It prints the private spreadsheet URL and a one-time owner-bootstrap token. Keep that token private; do not paste it into GitHub or chat.
+4. Setup defaults the notification recipient to the deploying Google account when available. To choose a different mailbox, run `setSalonNotificationEmail("manager@example.com")` from the Apps Script editor.
 
-- GitHub Pages hosts the complete public site and manager interface.
-- A hidden Apps Script iframe receives API messages from the page.
-- Apps Script calls the fixed Cloudflare Worker URL server-to-server.
-- The Worker validates requests, performs scheduling logic and reads/writes D1.
-- Admin session cookies are retained in the Apps Script cache and keyed by a random browser relay-session identifier. The browser never receives or stores the Worker cookie.
-- The Apps Script cache expires after six hours; the manager may need to sign in again after that period.
+The setup and notification configuration functions are guarded so they only run from the signed-in owner's Apps Script editor, not from the public web app. The created spreadsheet is owned by that Google account and should remain private.
 
-## Important boundaries
+## 3. Deploy as a public Web App
 
-- Apps Script is an additional Google dependency. This design avoids direct browser-to-Cloudflare traffic, but does not guarantee that every ISP/network in Iran will always reach Google Apps Script.
-- The first deployment must be authorized and published by the project owner; this repository cannot deploy into a Google account that has not been connected.
-- The GitHub Pages site remains demo-only until the `SALON_RELAY_URL` repository variable is set and a new Pages build is deployed.
-- This relay is intended for the low-volume salon workload, not high-throughput production traffic.
+1. Click **Deploy → New deployment**.
+2. Select **Web app**.
+3. Set **Execute as** to **Me** (the account that owns the spreadsheet).
+4. Set access to **Anyone**, including people who are not signed in. The manifest uses `ANYONE_ANONYMOUS`.
+5. Deploy and copy the URL ending in `/exec`.
+
+Google documents the deployment choices in [Apps Script Web Apps](https://developers.google.com/apps-script/guides/web).
+
+## 4. Connect the Pages build
+
+In the repository, open **Settings → Secrets and variables → Actions → Variables** and add:
+
+- Name: `SALON_RELAY_URL`
+- Value: the Apps Script `/exec` URL
+
+This is a public endpoint, not a secret. The Pages workflow injects it at build time. The next push to `main` rebuilds Pages; the deployment workflow can also be rerun manually. If the variable is missing, Pages stays in demo mode and does not submit customer data.
+
+Live site: [https://pooya-labs.github.io/salon-booking/](https://pooya-labs.github.io/salon-booking/)
+
+## 5. First owner setup
+
+1. Open the live site and choose **مدیریت**, or visit `/salon-booking/admin`.
+2. Enter the one-time bootstrap token from the Apps Script execution log.
+3. Choose the manager username and a password of at least 12 characters.
+4. In **تنظیمات استودیو**, select the salon's actual timezone. For a salon in Iran, use `Asia/Tehran`.
+5. Add real services, prices, weekly opening intervals and date-specific closures.
+
+The one-time bootstrap token is deleted after the first owner is created. Owner sessions expire after six hours.
+
+## 6. Booking notifications
+
+After a booking is saved to Sheets, Apps Script emails the manager. With Gmail notifications enabled on Android, the email can appear as a phone notification. If delivery fails or the daily quota is exhausted, the booking remains saved; check Apps Script **Executions** and the notification recipient setting.
+
+The published consumer-account MailApp allowance is currently 100 recipients/day and is subject to change. At about 20 bookings/day, one email recipient per booking is within that published quota. See [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas).
+
+## Deployment boundary
+
+The backend source is committed to GitHub, but Apps Script projects are separate Google-account resources. This repository integration cannot authorize or publish a Web App inside the owner's Google account. The owner must complete steps 1–4. Do not treat the migration as live until the `/exec` URL is deployed, the GitHub variable is set, and a booking plus Gmail notification are verified from an Iranian network.
+
+The previous Cloudflare Worker and D1 are intentionally left untouched as a temporary recovery source. No automatic D1-to-Sheets copy is performed. Do not delete Cloudflare resources until the Apps Script path passes owner acceptance.

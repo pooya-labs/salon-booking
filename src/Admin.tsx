@@ -310,7 +310,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
             {view === 'checking' ? (
               <><h1>در حال بررسی دسترسی…</h1><p>وضعیت نشست امن شما بررسی می‌شود.</p></>
             ) : view === 'setup-blocked' ? (
-              <><h1>پنل هنوز آماده نیست.</h1><p>برای فعال‌کردن مدیریت، ابتدا دیتابیس و Secretهای امنیتی Worker باید در Cloudflare تنظیم شوند.</p><div className="admin-notice"><ShieldCheck size={17} /><span>هیچ گذرواژه پیش‌فرضی وجود ندارد. راه‌اندازی مدیر باید با کلید یک‌بارمصرف امن انجام شود.</span></div>{formError && <p className="admin-error" role="alert">{formError}</p>}</>
+              <><h1>پنل هنوز آماده نیست.</h1><p>برای فعال‌کردن مدیریت، ابتدا Web App اپس‌اسکریپت و دیتابیس Google Sheets باید توسط صاحب حساب راه‌اندازی شوند.</p><div className="admin-notice"><ShieldCheck size={17} /><span>هیچ گذرواژه پیش‌فرضی وجود ندارد. راه‌اندازی مدیر باید با کلید یک‌بارمصرف امن انجام شود.</span></div>{formError && <p className="admin-error" role="alert">{formError}</p>}</>
             ) : (
               <>
                 <h1>{view === 'bootstrap' ? 'ساخت حساب مدیر' : 'خوش برگشتید.'}</h1>
@@ -324,7 +324,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                 </form>
               </>
             )}
-            <div className="admin-security-footnote"><ShieldCheck size={14} /> اتصال امن · نشست محدود به ۱۲ ساعت</div>
+            <div className="admin-security-footnote"><ShieldCheck size={14} /> اتصال امن · نشست محدود به ۶ ساعت</div>
           </div>
         </section>
         <footer className="admin-footer">Crafted with care by <strong>Pooya</strong></footer>

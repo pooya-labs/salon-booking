@@ -1,123 +1,51 @@
 # Deployment Guide
 
-## Target
+## Active architecture
 
-One Cloudflare Worker serves:
-- Static frontend assets built by Vite.
-- JSON API routes under `/api/*`.
-- D1 database access for scheduling and booking data.
+- **Frontend:** GitHub Pages — React, TypeScript, Vite.
+- **API/runtime:** Google Apps Script Web App.
+- **Database:** private Google Sheets spreadsheet owned by the deploying account.
+- **Notifications:** Apps Script MailApp to the manager's email; Gmail Android notifications can surface the message.
+- **Source of truth:** GitHub repository `pooya-labs/salon-booking`, branch `main`.
 
-No VPS is required. The free tier is subject to Cloudflare's current quotas and terms.
+The Pages frontend forwards same-origin `/api/*` calls through a hidden Apps Script iframe bridge. Apps Script executes API logic and reads/writes Google Sheets. The browser does not call a Cloudflare Worker.
 
 ## One-time setup
 
-1. Sign in to Cloudflare.
-2. Create a D1 database named `salon-booking`.
-3. The production database ID is already committed in the root `wrangler.toml`; keep the `DB` binding and `migrations_dir = "migrations"` unchanged. Do not commit account tokens or secrets.
-4. Apply all committed migrations in order (currently 0001–0010) to the intended production database: `npx wrangler d1 migrations apply salon-booking --remote`. Authenticate Wrangler to the correct Cloudflare account first and verify the target database name before confirming the operation. The migrations intentionally leave `local_timezone='unset'` until the salon owner confirms the business location.
-5. Configure production secrets with Wrangler or the Cloudflare dashboard.
-6. First authorize the official Cloudflare Workers & Pages GitHub App for the GitHub account and grant it access to `pooya-labs/salon-booking` (prefer repository-only access). Then create a new Worker from that repository in Workers & Pages. Select branch `main`, root directory `/`, build command `npm run build`, deploy command `npx wrangler deploy`, and ensure the Worker name is exactly `salon-booking` to match `wrangler.toml`. Keep branch Previews disabled until a separate non-production D1 database is configured.
+Follow the complete [GitHub Pages + Apps Script setup guide](./GITHUB-PAGES-RELAY.md). The owner must:
+1. Create a standalone Apps Script project and paste `relay/Code.gs`, `relay/Bridge.html` and `relay/appsscript.json`.
+2. Run `setupSalonDatabase()` in the editor and approve spreadsheet/mail permissions.
+3. Deploy as a Web App executing as the owner, with anonymous access.
+4. Set the deployed `/exec` URL as GitHub Actions variable `SALON_RELAY_URL`.
+5. Complete first-owner bootstrap on Pages at `/admin`.
 
-## Local development with the Worker and D1
+The setup creates the private spreadsheet, application tabs, initial scheduling settings and a one-time bootstrap token in the execution log. Never commit that token or share it in chat.
 
-The plain `npm run dev` command starts Vite only and intentionally displays the static sample-data experience. To exercise the Worker API locally, use a separate Wrangler configuration so the committed production config and its placeholder D1 ID are never overwritten.
+## GitHub Pages deployment
 
-1. Copy the local-only examples:
-   `cp wrangler.dev.toml.example wrangler.dev.toml`
-   `cp .dev.vars.example .dev.vars`
-2. Generate two different secrets and replace the placeholders in `.dev.vars`:
-   `openssl rand -hex 32`
-   Run it twice. Keep `SESSION_SECRET` and `ADMIN_BOOTSTRAP_TOKEN` distinct. Both local files are ignored by Git.
-3. Install dependencies and apply migrations to the local D1 database only:
-   `npm install`
-   `npm run db:local`
-4. Build assets and launch the Worker:
-   `npm run build`
-   `npm run dev:worker`
-5. Open the local URL printed by Wrangler. The first owner can be bootstrapped locally using the local-only `ADMIN_BOOTSTRAP_TOKEN`. Never use real client data in local development.
+The existing `.github/workflows/deploy-pages.yml` runs `npm run build:pages` with `VITE_SALON_RELAY_URL` sourced from the repository variable `SALON_RELAY_URL`. If the variable is absent, Pages intentionally stays in demo mode. A push to `main` publishes the configured version.
 
-The local Wrangler config uses a reserved local-only D1 UUID and the same logical database name as the migrations. The `db:local` script explicitly passes `--local`; it never applies migrations remotely. Production commands continue to use the committed `wrangler.toml` and must only be run after the Cloudflare database ID and account have been provisioned.
+## Owner operation
 
-To run static-preview browser QA locally, install Playwright and Chromium using the versions pinned in `.github/workflows/ci.yml`, run `npm run build:pages`, then `npm run test:browser`.
+Open [the live Pages site](https://pooya-labs.github.io/salon-booking/) and use the management link. Configure the salon's actual timezone, services and weekly schedule before accepting bookings. For a salon in Iran, select `Asia/Tehran`.
 
-## Secrets
+New booking emails are sent to the configured manager mailbox. Set it in the Apps Script editor with `setSalonNotificationEmail("manager@example.com")`. The default is the deploying Google account when its email is available. MailApp quotas are account-based and can change; see [Google's quota table](https://developers.google.com/apps-script/guides/services/quotas).
 
-Never put secrets in Vite environment variables: anything prefixed with `VITE_` is public in the browser bundle.
+## Local development and checks
 
-Production secrets belong in Worker secret storage, not Git:
-- SESSION_SECRET — a unique high-entropy random value of at least 32 characters; used for owner session security and scope-separated HMAC identifiers for admin and public rate-limit buckets.
-- ADMIN_BOOTSTRAP_TOKEN — a separate high-entropy one-time key used only to create the first owner account.
-- Any future email/SMS provider credentials, only if the owner approves those features.
+```bash
+npm install
+npm run lint
+npm run test:unit
+npm run test:migrations
+npm run build
+npm run build:pages
+```
 
-Production SESSION_SECRET was generated with high entropy and saved directly to the `salon-booking` Worker on 2026-11-04. Keep it in Worker secret storage; do not copy it into source code or replace it casually.
+`npm run dev` without `VITE_SALON_RELAY_URL` uses sample data only. Never enter real customer information in local/demo mode.
 
-The owner must privately generate the separate one-time `ADMIN_BOOTSTRAP_TOKEN` (for example, run `openssl rand -hex 32` locally). In Cloudflare Dashboard, open Workers & Pages → salon-booking → Settings → Variables and Secrets → Add → Secret, set the name to `ADMIN_BOOTSTRAP_TOKEN`, and paste the locally generated value there. Do not send either secret through chat, Git, issues or a `VITE_*` variable. Cloudflare hides secret values after creation.
+## Legacy Cloudflare recovery assets
 
-Once that secret exists, open `/admin`: the first-owner bootstrap form becomes available. Enter the same token, choose a username (3–32 letters/numbers/._- characters) and a password (12–128 characters). After the first owner account is created successfully, delete `ADMIN_BOOTSTRAP_TOKEN` from Worker secrets; keep `SESSION_SECRET` in place.
+The old Worker source, Wrangler configurations and SQL migrations remain in the repository as temporary recovery material. They are not used by the active Pages build or Apps Script backend. Their D1 database is not automatically copied into Sheets; the existing Cloudflare resources are intentionally not deleted during this cutover.
 
-Admin credentials are provisioned through the one-time bootstrap form; there is no default username or password in source code or migrations. The first owner chooses their own username and password (minimum 12 characters).
-
-## Database
-
-Use versioned SQL migrations under `migrations/`. Apply them to development and production deliberately. Back up/export production D1 before risky schema changes.
-
-## Release checklist
-
-- [x] Cloudflare production build and TypeScript build pass (Workers Builds run `c4727bbc-5dc5-4a65-9e67-209f629b483b`, 2026-11-04).
-- [x] Production migrations 0001–0010 applied and verified.
-- [~] Secrets: `SESSION_SECRET` is configured; owner-generated `ADMIN_BOOTSTRAP_TOKEN` remains pending.
-- [ ] Admin bootstrap completed securely and token removed afterward.
-- [ ] Smoke test public booking after owner services, hours and timezone are configured.
-- [ ] Smoke test owner login and schedule management after bootstrap.
-- [x] No test/customer data was seeded in production D1.
-- [x] Initial deployment commit, Worker URL and version recorded in `docs/PROJECT-STATE.md`; ongoing release checks remain.
-
-## Rollback and recovery runbook
-
-### Before a production release
-
-1. Confirm the exact `main` commit and the currently deployed Worker version. Record both in the release log.
-2. Confirm the D1 database name/ID and inspect pending migrations:
-   `npx wrangler d1 migrations list salon-booking --remote`.
-3. Export a pre-release copy of D1 to a private location:
-   `npx wrangler d1 export salon-booking --remote --output=./backups/salon-booking-before-release.sql`.
-   The export contains customer personal data. Keep it outside Git, restrict access, encrypt it at rest and remove local copies according to the owner-approved retention policy.
-4. Review every unapplied migration. Prefer additive, backward-compatible changes and deploy code that works with both the previous and new schema.
-5. Apply only the reviewed migrations:
-   `npx wrangler d1 migrations apply salon-booking --remote`.
-   Wrangler captures a backup after a successful migration apply; keep the separate pre-release export as an independently controlled recovery point.
-6. Deploy the Worker and record the new Worker version ID, deployment timestamp and Git commit.
-
-### Application-only rollback
-
-A Worker rollback immediately creates a new deployment from the selected prior version and makes it active. It does **not** roll back D1, secrets, or other bound resources. Follow this order:
-
-1. Identify the last known-good Worker version ID from the Cloudflare deployment history.
-2. Check whether the current D1 schema and data are compatible with that older application version. Do not roll back application code across a breaking schema migration.
-3. Roll back to the known-good Worker version:
-   `npx wrangler rollback <KNOWN_GOOD_VERSION_ID> --message "Rollback: <short reason>"`.
-   The command can also be run from the Cloudflare dashboard: Workers & Pages → `salon-booking` → Deployments → version menu → Rollback.
-4. Verify `GET /api/health`, the public configuration/services response, and the owner login/booking list using the approved production smoke-test account. Check Worker logs and error rates before declaring recovery.
-5. Record the rollback deployment ID, prior/current version IDs, triggering commit, reason and smoke-test result.
-
-Cloudflare documents that a rollback is a new active deployment and that connected resources are unchanged. It can fail or leave the old code incompatible when resource bindings or data structures have changed. See [Workers rollbacks](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/).
-
-### D1 recovery is a separate operation
-
-- A Worker rollback does not undo SQL migrations or restore deleted/changed booking rows.
-- Prefer a forward-fix migration whenever the data can be retained safely.
-- Before restoring any backup or point-in-time state, take a fresh export of the current database, identify the exact restore point, estimate the lost booking/update window, and obtain owner approval. A restore can overwrite current data; never run it as an automatic consequence of an application rollback.
-- Use the current Cloudflare [D1 export/import guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/) and [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) for the supported export and recovery method for the account/runtime in use.
-- After recovery, list applied migrations again and run the complete production smoke-test checklist.
-
-This runbook is documented but has **not** been exercised against a production Worker. The production D1 database is provisioned, its ID is configured in `wrangler.toml`, and migrations 0001–0010 have been applied and verified. The first Worker deployment completed on 2026-11-04 (version `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`); live rollback/restore drills and owner-approved production smoke tests remain pending.
-
-
-## Temporary GitHub Pages preview
-
-GitHub Pages is only for reviewing the static UI. Enable it once in repository Settings → Pages → Build and deployment → Source → GitHub Actions. The Pages workflow uses `npm run build:pages` and publishes `dist/` at `https://pooya-labs.github.io/salon-booking/`. The regular `npm run build` keeps the root base path required by the eventual Cloudflare Worker deployment. Never collect real bookings or personal data on the Pages preview.
-
- 
-## Public API and D1 scheduling setup
-
-See [API.md](./API.md) for public and owner API contracts, and [ADMIN.md](./ADMIN.md) for the secure first-owner setup and dashboard behavior. Migration `0002_booking_engine.sql` creates the booking settings and overlap-protection triggers. The timezone value intentionally starts as `unset`; set it only after the salon owner confirms the actual location. Public availability and booking use fixed-window IP-HMAC limits (180 availability requests and 10 booking attempts per 15 minutes per IP); customer lookup/cancellation has a separate 20-request limit. New bookings require a 256-bit `Idempotency-Key`; retries with the same key and payload replay the original reservation. Migration 0008 stores only key/request hashes and non-sensitive response metadata, with automatic cleanup when a booking is erased. Migrations 0009 and 0010 snapshot the booked service duration and service name so later catalog edits do not rewrite historical appointment details. Existing rows are backfilled from the catalog state at migration time. The management token is deterministically derived from the high-entropy key and only its SHA-256 digest is stored. Do not enter production customer information until owner authentication, lookup/cancellation privacy, backups and launch QA are complete.
+Do not remove the old Worker/D1 until Apps Script passes owner acceptance and the owner confirms that any historical information required from D1 has been exported.

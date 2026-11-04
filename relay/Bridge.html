@@ -1,36 +1,35 @@
 <!doctype html>
-<html>
-  <head>
-    <base target="_top">
-    <meta charset="utf-8">
-    <script>
+<html lang="fa">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function () {
+      'use strict';
+      var PARENT_ORIGIN = 'https://pooya-labs.github.io';
       window.addEventListener('message', function (event) {
-        if (event.source !== window.parent) return
-        var message = event.data
-        if (!message || message.type !== 'SALON_RELAY_REQUEST' || !message.id) return
-
+        if (event.source !== window.parent || event.origin !== PARENT_ORIGIN) return;
+        var message = event.data;
+        if (!message || message.type !== 'SALON_RELAY_REQUEST' || !message.id) return;
         google.script.run
           .withSuccessHandler(function (result) {
-            window.parent.postMessage({
-              type: 'SALON_RELAY_RESPONSE',
-              id: message.id,
-              result: result
-            }, '*')
+            window.parent.postMessage({ type: 'SALON_RELAY_RESPONSE', id: message.id, result: result }, PARENT_ORIGIN);
           })
           .withFailureHandler(function () {
             window.parent.postMessage({
-              type: 'SALON_RELAY_RESPONSE',
-              id: message.id,
-              result: {
-                status: 502,
-                body: JSON.stringify({ message: 'درگاه واسط نتوانست درخواست را پردازش کند.' })
-              }
-            }, '*')
+              type: 'SALON_RELAY_RESPONSE', id: message.id,
+              result: { status: 502, body: JSON.stringify({
+                ok: false, error: 'apps_script_error',
+                message: 'درگاه رزرو نتوانست درخواست را پردازش کند.'
+              })}
+            }, PARENT_ORIGIN);
           })
-          .proxyRequest(message.request)
-      })
-      window.parent.postMessage({ type: 'SALON_RELAY_READY' }, '*')
-    </script>
-  </head>
-  <body></body>
+          .proxyRequest(message.request);
+      });
+      window.parent.postMessage({ type: 'SALON_RELAY_READY' }, PARENT_ORIGIN);
+    }());
+  </script>
+</head>
+<body></body>
 </html>

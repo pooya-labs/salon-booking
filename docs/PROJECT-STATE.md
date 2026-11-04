@@ -9,15 +9,26 @@
 - Product owner: salon owner (friend of Pooya)
 - Engineering / creator credit: **Pooya**
 - Default branch: `main`
-- Deployment target: Cloudflare Workers + Static Assets + D1
-- Current release: 0.6.0
+- Deployment target: GitHub Pages + Google Apps Script + private Google Sheets; Cloudflare Worker/D1 retained as legacy recovery only
+- Current release: 0.7.0
 
-## Current checkpoint
+## Current checkpoint — Google Apps Script cutover (2026-11-04)
 
-- Phase: **R08 — first production Worker deployment complete; owner bootstrap and real-world launch acceptance remain open**.
-- Latest pre-deployment code checkpoint `ab0063e38ccec12ecc4607b50dccc2c69353ba51` passed the full repository CI and Pages pipelines. The follow-up deployment-hardening commit records `preview_urls = false` and this checkpoint.
-- Production deployment: [`https://salon-booking.pooyagame141.workers.dev`](https://salon-booking.pooyagame141.workers.dev), Worker version `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`, Workers Builds run `c4727bbc-5dc5-4a65-9e67-209f629b483b` succeeded on 2026-11-04.
+- Phase: **R09 — Apps Script backend migration committed; owner deployment and end-to-end acceptance remain open**.
+- Active architecture: GitHub Pages frontend → hidden Apps Script iframe bridge → Google Apps Script API → private Google Sheets.
+- `relay/Code.gs` is the backend itself; it does not call the Cloudflare Worker or use D1.
+- API routes preserve the frontend contract for availability, booking, customer lookup/cancellation, owner bootstrap/login, booking status, services and schedule management.
+- Sheets tabs: Settings, Services, WeeklyHours, Exceptions, Bookings, AdminUsers, AdminSessions and AuditLog.
+- `LockService` protects the availability recheck and booking write. Idempotency hashes, customer management-token hashes and audit events are stored in Sheets.
+- New booking emails are sent through MailApp to the configured manager address. The owner can change it from the Apps Script editor using `setSalonNotificationEmail("manager@example.com")`.
+- `AdminSessions` persists hashed browser session IDs for six-hour sessions; CacheService is only an accelerator.
+- The Apps Script V8 implementation avoids unsupported browser/Node globals including `URLSearchParams`, `UrlFetchApp` and `crypto.subtle`.
+- Deployment files: `relay/appsscript.json`, `relay/Bridge.html` and `docs/GITHUB-PAGES-RELAY.md`.
+- **Owner action:** create the Apps Script project, paste the three files, run `setupSalonDatabase()`, deploy as an owner-executed anonymous Web App, add the `/exec` URL as Actions variable `SALON_RELAY_URL`, bootstrap the manager and configure actual salon settings.
+- **Not yet verified:** Google account deployment, live Apps Script URL, Pages live-mode rebuild, actual booking through an Iran-based ISP, and Gmail notification on the manager's Android.
+- Old Worker/D1 infrastructure remains untouched until the new path passes acceptance. No D1-to-Sheets data transfer or Cloudflare deletion has been performed.
 
+## Legacy Cloudflare deployment history
 ## Latest admin-session cleanup hardening (2026-11-04)
 
 - `getAdminSession` previously deleted all expired session rows before checking whether the request supplied any session cookie. Any unauthenticated request to a protected admin endpoint could therefore cause a D1 write.

@@ -16,7 +16,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - **R2 — Scheduling engine:** working hours, services, availability, conflict-safe reservations.
 - **R3 — Owner workspace:** authentication and day-to-day appointment management.
 - **R4 — Production hardening:** privacy, security, accessibility, responsive QA, backups.
-- **R5 — Launch:** Cloudflare deployment, operational handoff and real-world acceptance.
+- **R5 — Launch:** GitHub Pages + Google Apps Script deployment, operational handoff and real-world acceptance.
 
 ---
 
@@ -181,7 +181,24 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 **Exit criteria:** real booking can be made and managed in production; owner understands routine operations.
 
-## R09 — Optional post-launch improvements
+## R09 — Apps Script migration and cutover
+
+- [x] Implement a standalone Google Apps Script API for the existing public and owner endpoint contract.
+- [x] Add Google Sheets tables for settings, services, weekly hours, exceptions, bookings, admin users, persistent owner sessions and audit history.
+- [x] Add booking overlap protection with LockService, idempotent retries and customer lookup/cancellation.
+- [x] Add owner-only setup guards, six-hour persistent sessions and booking email notifications through MailApp.
+- [x] Replace the Apps Script proxy-to-Worker relay with direct in-script API handling; no Cloudflare forwarding is present in the active backend.
+- [x] Add Apps Script manifest, origin-restricted iframe bridge, deployment guide and Node V8 syntax/contract tests.
+- [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.
+- [ ] Owner creates the Apps Script project, runs setupSalonDatabase(), authorizes Sheets/Mail and deploys a web app as the owner with anonymous access.
+- [ ] Owner adds the deployed /exec URL as GitHub Actions variable SALON_RELAY_URL and confirms Pages rebuilds in live mode.
+- [ ] Complete first-owner bootstrap; configure actual timezone, services, prices and working hours.
+- [ ] Verify real booking, conflict rejection, owner session, customer lookup/cancellation and Gmail Android notification from an Iran-based network without VPN.
+- [ ] Export any required historical D1 data only after owner approval; retain the old database until cutover is accepted.
+
+**Cutover status:** code migration is committed, but Apps Script account deployment and end-to-end acceptance remain owner actions. Cloudflare Worker/D1 are no longer the active target and have not been deleted.
+
+## R10 — Optional post-launch improvements
 
 - [ ] SMS reminders (only after provider and costs are approved).
 - [ ] WhatsApp deep-link contact/reminders (no unofficial automation).
@@ -193,9 +210,9 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 These are explicitly out of the first release unless the owner asks for them.
 
-## Preview environment — GitHub Pages
+## GitHub Pages frontend
 
-The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. Latest verified deployment: workflow 41633720066 succeeded on 2026-11-03 and includes the customer booking-management preview UI. The preview remains demo-only. Public API rate limiting is only active in the Cloudflare Worker, not on static Pages. Public preview: https://pooya-labs.github.io/salon-booking/. It is a static interactive UI preview only: no real booking, customer data, owner sign-in or database is enabled there. The production build remains root-based (`npm run build`) and targets Cloudflare Workers + D1. Do not collect real customer data through the preview.
+The Pages build uses `npm run build:pages` and Vite base path `/salon-booking/`. When the public Actions variable `SALON_RELAY_URL` is configured, the Pages frontend routes API calls through the Apps Script iframe bridge and becomes live-bookable. Without the variable, it stays in sample-data demo mode and must not collect customer data. API logic and the private database run in the deploying owner's Apps Script project and Google Spreadsheet; Cloudflare is not in the active request path.
 
 ---
 
@@ -222,14 +239,9 @@ At the end of every meaningful work session update:
 Do not redo completed tasks. Read this file and `docs/PROJECT-STATE.md` before resuming.
 
 
-> **Remaining integration prerequisite:** The Cloudflare Workers & Pages GitHub App has not yet been authorized for `pooya-labs/salon-booking`. The Cloudflare Build API rejected repository linking because this Cloudflare account is not connected to the Git account. Owner authorization is required before creating the dedicated Worker/build pipeline.
+> **Remaining integration prerequisite:** The The prior Cloudflare Workers Build connection is legacy only and is no longer required for the active GitHub Pages + Apps Script architecture.
 
 
-## R08 addendum — GitHub Pages to Cloudflare relay
+## R08 addendum — Apps Script backend cutover
 
-- [~] Implement the same-page API bridge and Google Apps Script relay source; automated and real-network verification is still pending.
-- [x] Add the relay iframe bridge and owner deployment instructions.
-- [x] Keep Pages in demo mode until the owner configures the `SALON_RELAY_URL` Actions variable; the Pages build then enables real API mode.
-- [ ] Owner deploys the Apps Script web app, authorizes its Worker health check and adds the `SALON_RELAY_URL` repository variable.
-- [ ] Verify customer booking, owner login/session, booking list and status updates through the relay from an Iran-based network without VPN.
-- [ ] Verify actual Google Apps Script reachability from the owner's ISP; no relay provider can be assumed reachable without a real-network check.
+This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active Pages frontend targets the Apps Script implementation in `relay/Code.gs`; the bridge no longer forwards to a Worker. Owner deployment, GitHub variable setup and Iran-network acceptance remain open as recorded in R09.
