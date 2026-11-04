@@ -1,7 +1,13 @@
-// The build injects the public Firebase Web configuration into this file.
-// FCM notification payloads are displayed automatically while the app is in the
-// background. The server supplies webpush.fcmOptions.link for click navigation.
+// Handle clicks for foreground notifications before importing the Firebase SDK.
+self.addEventListener('notificationclick', function (event) {
+  const destination = event.notification && event.notification.data && event.notification.data.url;
+  if (!destination) return;
+  event.notification.close();
+  event.waitUntil(clients.openWindow(destination));
+});
 
+// FCM automatically displays notification payloads while the page is in the
+// background. No custom onBackgroundMessage handler is needed (avoids duplicates).
 const firebaseConfig = __FIREBASE_CONFIG__;
 
 if (firebaseConfig && firebaseConfig.apiKey) {

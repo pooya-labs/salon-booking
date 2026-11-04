@@ -937,8 +937,9 @@ function sendTestPush_(owner) {
   return { status: 200, payload: { ok: true, sent: result.sent, failed: result.failed }};
 }
 function sendPushNotifications_(booking) {
+  var title = booking.source === 'phone' ? 'نوبت تلفنی جدید فُرم' : 'درخواست رزرو آنلاین فُرم';
   var body = [booking.name, booking.serviceName, booking.date + ' · ' + booking.time].filter(Boolean).join(' — ');
-  var result = sendPushPayload_({ title: 'نوبت جدید فُرم', body: body || 'یک نوبت جدید ثبت شد.' });
+  var result = sendPushPayload_({ title: title, body: body || 'یک نوبت جدید ثبت شد.' });
   Logger.log('Push sent=' + result.sent + ', failed=' + result.failed);
 }
 function sendPushPayload_(notification) {
@@ -959,7 +960,10 @@ function sendPushPayload_(notification) {
         payload: JSON.stringify({ message: {
           token: device.token,
           notification: { title: notification.title, body: notification.body },
-          webpush: { fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/admin' } }
+          webpush: {
+            notification: { icon: 'https://pooya-labs.github.io/salon-booking/icons/salon-icon.svg' },
+            fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/?admin=1' }
+          }
         }}),
         muteHttpExceptions: true
       });

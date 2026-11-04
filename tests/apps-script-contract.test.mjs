@@ -8,6 +8,7 @@ const backend = readFileSync(new URL('../relay/Code.gs', import.meta.url), 'utf8
 const manifest = JSON.parse(readFileSync(new URL('../relay/appsscript.json', import.meta.url), 'utf8'))
 const bridge = readFileSync(new URL('../relay/Bridge.html', import.meta.url), 'utf8')
 const pushClient = readFileSync(new URL('../src/push-notifications.ts', import.meta.url), 'utf8')
+const worker = readFileSync(new URL('../public/firebase-messaging-sw.js', import.meta.url), 'utf8')
 
 test('Apps Script backend parses as V8 JavaScript', () => {
   execFileSync(process.execPath, ['--check'], { input: backend, stdio: ['pipe', 'pipe', 'pipe'] })
@@ -71,9 +72,12 @@ test('phone booking email alerts show confirmed status and the booking source', 
   assert.ok(backend.includes("booking.status === 'confirmed' ? 'تأیید شده' : 'در انتظار تأیید'"))
 })
 
-test('foreground push uses ServiceWorkerRegistration notifications on mobile browsers', () => {
+test('foreground and background push use the Pages admin route and service-worker notifications', () => {
   assert.ok(pushClient.includes('registration.showNotification'))
   assert.ok(pushClient.includes("new URL('?admin=1'"))
+  assert.ok(backend.includes("fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/?admin=1' }"))
+  assert.ok(worker.indexOf("self.addEventListener('notificationclick'") < worker.indexOf('importScripts('))
+  assert.doesNotMatch(worker, /onBackgroundMessage/)
 })
 
 test('bridge accepts API messages only from the GitHub Pages origin', () => {
