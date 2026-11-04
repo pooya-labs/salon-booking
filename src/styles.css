@@ -1345,3 +1345,95 @@ hr { border-color:var(--line); }
     animation-iteration-count:1!important;
   }
 }
+
+
+/* Admin shell and booking dashboard — complete Obsidian Glass pass */
+.admin-page {
+  min-height:100vh;color:#f3ecdf;
+  background:radial-gradient(ellipse at 82% -5%,rgba(194,143,73,.16),transparent 36rem),radial-gradient(ellipse at 8% 48%,rgba(92,111,104,.08),transparent 30rem),#090909;
+}
+.admin-topbar {
+  position:sticky;top:10px;z-index:20;width:calc(100% - 28px);max-width:1320px;min-height:72px;
+  margin:10px auto 0;padding:10px 22px;border:1px solid rgba(230,196,137,.18);border-radius:24px;
+  background:rgba(22,20,17,.72);box-shadow:0 14px 44px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.08);
+  backdrop-filter:blur(26px) saturate(145%);-webkit-backdrop-filter:blur(26px) saturate(145%);
+}
+.admin-brand strong,.admin-brand-copy strong { color:#f3e8d6; }
+.admin-brand-logo { border-radius:50%;object-fit:contain;padding:4px;background:radial-gradient(circle at 35% 25%,rgba(225,190,130,.19),rgba(12,10,8,.96) 70%);border-color:rgba(225,190,130,.42); }
+.admin-return-link,.admin-logout { color:#d9c392; }
+.admin-logout { border-radius:13px;color:#e8d3ac;background:rgba(211,169,104,.09);border:1px solid rgba(230,196,137,.24); }
+.admin-logout:hover { background:rgba(211,169,104,.16); }
+.admin-auth-wrap { min-height:calc(100vh - 150px);padding:48px 18px; }
+.admin-auth-card {
+  color:#f3ecdf;padding:38px;border:1px solid rgba(230,196,137,.2);border-radius:30px;
+  background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.025));
+  box-shadow:0 30px 90px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.1);
+  backdrop-filter:blur(26px) saturate(140%);-webkit-backdrop-filter:blur(26px) saturate(140%);
+}
+.admin-auth-card h1 { color:#f4ecdf; }
+.admin-auth-card p,.admin-security-footnote { color:#b9ad9d; }
+.admin-auth-icon { border-radius:17px;color:#e2bd80;background:rgba(211,169,104,.1);border:1px solid rgba(225,190,130,.25); }
+.admin-auth-form label>span { color:#d6c7b0; }
+.admin-auth-form input { color:#f2ebdf;background:rgba(0,0,0,.24);border:1px solid rgba(230,196,137,.2);border-radius:14px; }
+.admin-auth-form input:focus { border-color:#d7b47b;box-shadow:0 0 0 3px rgba(215,180,123,.13); }
+.admin-notice { color:#e6d6bb;background:rgba(211,169,104,.09);border:1px solid rgba(230,196,137,.17);border-radius:15px; }
+.admin-footer { color:#b7a582;border-color:rgba(230,196,137,.15); }
+.admin-dashboard { width:min(100% - 40px,1180px);padding:44px 0 90px; }
+.admin-dashboard-heading h1 { color:#f4ecdf; }
+.admin-dashboard-heading p { color:#b9ad9d; }
+.admin-refresh,.admin-date-navigation button,.admin-date-reset,.admin-filter select {
+  color:#e0cfb3;background:rgba(255,255,255,.055);border:1px solid rgba(230,196,137,.18);border-radius:12px;
+}
+.admin-refresh:hover,.admin-date-navigation button:hover,.admin-date-reset:hover { background:rgba(211,169,104,.12);border-color:rgba(230,196,137,.34); }
+.admin-stat-grid article {
+  color:#f1e6d3;min-height:124px;padding:21px;border:1px solid rgba(230,196,137,.17);border-radius:23px;
+  background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.022));
+  box-shadow:0 16px 42px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.07);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.admin-stat-grid article span { color:#c4b493; }
+.admin-stat-grid article strong { color:#f0d5a2; }
+.admin-bookings-panel {
+  overflow:hidden;color:#f2e9d9;border:1px solid rgba(230,196,137,.18);border-radius:27px;
+  background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.018));
+  box-shadow:0 20px 58px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.07);
+  backdrop-filter:blur(22px) saturate(135%);-webkit-backdrop-filter:blur(22px) saturate(135%);
+}
+.admin-bookings-heading { border-color:rgba(255,255,255,.09); }
+.admin-bookings-heading h2 { color:#f3eadb; }
+.admin-bookings-heading p { color:#b7aa98; }
+.admin-filter { color:#c5b697; }
+.admin-filter select { max-width:180px; }
+.admin-booking-list { background:transparent; }
+.admin-booking-card { border-color:rgba(255,255,255,.09); }
+.admin-booking-card:last-child { border-bottom:0; }
+.admin-booking-card:hover { background:rgba(255,255,255,.025); }
+.admin-booking-time { border-color:rgba(230,196,137,.18); }
+.admin-booking-time strong { color:#e6c48c; }
+.admin-booking-time small,.admin-booking-main>p,.admin-booking-meta,.admin-booking-note { color:#bcae95; }
+.admin-booking-title>strong { color:#f4ecdf; }
+.admin-booking-origin { color:#e0bd82; }
+.admin-status { border-radius:999px;border:1px solid rgba(255,255,255,.1); }
+.admin-status-pending { color:#e9d4a9;background:rgba(190,140,73,.14);border-color:rgba(213,171,107,.24); }
+.admin-status-confirmed { color:#c7e5c9;background:rgba(69,120,77,.17);border-color:rgba(126,190,132,.22); }
+.admin-status-cancelled { color:#efbeb0;background:rgba(166,76,58,.15);border-color:rgba(220,130,108,.22); }
+.admin-booking-actions button,.admin-status-confirmation-actions button {
+  color:#e1c18e;background:rgba(255,255,255,.055);border:1px solid rgba(230,196,137,.2);border-radius:11px;
+}
+.admin-booking-actions button:hover,.admin-status-confirmation-actions button:hover { background:rgba(211,169,104,.14);border-color:rgba(230,196,137,.35); }
+.admin-booking-actions button.is-danger,.admin-status-confirmation-actions button.is-danger { color:#efc1b3;background:rgba(166,76,58,.13);border-color:rgba(220,130,108,.24); }
+.admin-status-confirmation { border:1px solid rgba(220,130,108,.25);border-radius:16px;background:rgba(120,45,32,.14); }
+.admin-status-confirmation p { color:#efc1b3; }
+.admin-next-step { color:#e0cfb3;background:rgba(211,169,104,.08);border:1px solid rgba(230,196,137,.16);border-radius:18px; }
+.admin-next-step strong { color:#f1dfc1; }
+.admin-next-step small { color:#b9ad9d; }
+.admin-empty-state { color:#b9ad9d; }
+.admin-empty-state strong { color:#f0e2c9; }
+@media(max-width:760px) {
+  .admin-topbar { top:7px;width:calc(100% - 16px);min-height:62px;padding:8px 13px;border-radius:20px; }
+  .admin-dashboard { width:calc(100% - 28px);padding:32px 0 80px; }
+  .admin-auth-card { padding:27px 21px;border-radius:25px; }
+  .admin-stat-grid { grid-template-columns:1fr 1fr;gap:9px; }
+  .admin-stat-grid article { min-height:102px;padding:15px; }
+  .admin-bookings-panel { border-radius:22px; }
+}
