@@ -1,15 +1,16 @@
 # Project State & Handoff
 
-## Current checkpoint — Shayan Liquid Glass redesign (2026-11-04)
+## Current checkpoint — Shayan Liquid Glass + supplied image assets (2026-11-04)
 
-- Latest design checkpoint on `main`: `7b3f7052a2e4db6c5538bd7571ff0e1c0e7678ea` (ROADMAP refreshed for the Liquid Glass redesign and the pending owner-supplied image assets).
-- The visual system is now moving from the earlier leather-like black/gold treatment to obsidian black, antique gold and ivory with rounded translucent surfaces, layered blur, warm highlights and softer elevation.
-- The refresh covers the public homepage, booking dialog, customer-management dialog, manager login, manager dashboard, service editor, weekly schedule, manual phone booking and notification settings.
-- Reduced-motion overrides were tightened after CI showed that the earlier scoped `.01ms` rule still left a non-zero computed button transition. The latest selector-precedence fix is commit `f7dcd8192cee4ef1fc03444321601ea504cf3c5f`; validate it in the next non-cancelled CI run.
-- Two new owner-supplied WebP files are available in the conversation: `shayan-hero.webp` (standalone barber illustration) and `shayan-emblem.webp` (full Shayan emblem). They must be used byte-for-byte, with no crop, retouch, recolor or re-encoding. **They are not yet in `public/images/` or wired into the app**; the current app still references the previous `shayan-barber-logo.webp`. Intended placements: hero image for the standalone illustration; header/footer/booking/favicon/brand placements for the full emblem.
-- A drop-in archive containing the two original files at the correct `public/images/` paths was prepared for handoff, but it has not been committed into GitHub.
-- The design work did not change booking logic, customer data, Apps Script, Google Sheets or Firebase configuration.
-- Pending: finish committing and wiring the two exact image files, then run the final Pages build, CI browser QA and desktop/mobile visual acceptance. Keep the Apps Script project unchanged during this design pass.
+- Customer homepage and owner workspace now use the obsidian / antique-gold Liquid Glass treatment: blurred translucent cards, rounded forms, warmer lighting, and mobile-specific radii.
+- Owner-supplied image assets are now present in `public/images/`: `shayan-hero.webp` and `shayan-emblem.webp`. The hero image is used in the homepage hero; the full emblem is used in the site header, booking dialog, manifesto, footer, admin header, favicon and PWA icon.
+- Old `shayan-barber-logo.webp` references were removed from the app and shell files. The old file may remain in the repository as an unused legacy asset; do not wire it back in.
+- Updated `public/icons/salon-icon.svg` to reference the Shayan emblem and preserve its full composition with `xMidYMid meet`. Push-notification fallback title now says «شایان».
+- Refined compact logo presentation to rounded rectangular frames with `object-fit: contain`, so the full ornate crest is not clipped into circular crops.
+- Reduced-motion CSS is being corrected after repeated browser QA showed that a later, more-specific legacy scoped rule overrode the global zero-duration declaration. The latest selector-specific override is in commit `f7dcd8192cee4ef1fc03444321601ea504cf3c5f`; CI must confirm it before considering this check complete.
+- Relevant implementation commits include: hero/emblem wiring `116e7f2387a1e89c7e1490cd7f6b3906a062cfdd`; admin branding `3c418659b78ee2b10844bd698d3259fdca9a929c`; favicon `4b86646a7bcda300186159ba6cf15b2c74398140`; PWA manifest `959c4ebb138a19f1b3f72801651af5ffbbae6992`; app icon `946c8dfda6582cb9a82301bf6b1defd166630ff5`; push fallback `f6a20765d8f924a4d102df3b705de17e14094744`; full emblem framing `e419327c3cc288a19f4576a77840f01868ef6135`.
+- The latest design pass has not changed booking logic, customer records, Apps Script, Google Sheets or Firebase service configuration.
+- Pending: finish CI browser QA and the latest Pages deployment; then visually verify the hero and emblem in the live site at desktop and mobile sizes. Keep Apps Script unchanged during this visual pass.
 
 > Update this file at every meaningful checkpoint. It is the first file to read when resuming after a chat/session interruption.
 
