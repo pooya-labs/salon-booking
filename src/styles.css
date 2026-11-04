@@ -1332,3 +1332,16 @@ hr { border-color:var(--line); }
   .admin-manage-tab { flex:0 0 auto; }
   .admin-manage-panel { border-radius:19px; }
 }
+
+
+/* Respect system reduced-motion settings after all component-specific styles. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior:auto!important;
+    transition:none!important;
+    transition-duration:0s!important;
+    animation:none!important;
+    animation-duration:0s!important;
+    animation-iteration-count:1!important;
+  }
+}
