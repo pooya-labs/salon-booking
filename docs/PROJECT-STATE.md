@@ -14,8 +14,9 @@
 
 ## Current checkpoint
 
-- Phase: **R07/R08 — quality, security review and production-readiness gates**.
-- Latest booking-duration snapshot work is committed on `main`: Worker insert/read `90c97fdde40aa8721fb395017e2c041eef673d83`, owner read `8deef06599c503fe7c9bb051e41d0b657d00eb79`, migration 0009 `7486c802d8c4c41497580391456c048797ab95f4`, Worker+D1 regression `9406f7b535acda85741034995918280e83523243`, SQLite migration regression `c41a7b512ac2bb6ce7a114f5d72e666029a59883`, and UUID fixture correction `71b47cb3d3f0526331d3bf9d0c12fae82b8c26cc`. [CI run 41673140817](https://github.com/pooya-labs/salon-booking/actions/runs/41673140817) and [Pages run 41673140699](https://github.com/pooya-labs/salon-booking/actions/runs/41673140699) passed for the same `main` head.
+- Phase: **R08 — first production Worker deployment complete; owner bootstrap and real-world launch acceptance remain open**.
+- Latest pre-deployment code checkpoint `ab0063e38ccec12ecc4607b50dccc2c69353ba51` passed the full repository CI and Pages pipelines. The follow-up deployment-hardening commit records `preview_urls = false` and this checkpoint.
+- Production deployment: [`https://salon-booking.pooyagame141.workers.dev`](https://salon-booking.pooyagame141.workers.dev), Worker version `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`, Workers Builds run `c4727bbc-5dc5-4a65-9e67-209f629b483b` succeeded on 2026-11-04.
 
 ## Latest admin-session cleanup hardening (2026-11-04)
 
@@ -414,3 +415,20 @@ Production blockers and real salon details remain unchanged.
 - Cloudflare's documented prerequisite is to install/authorize the official **Cloudflare Workers & Pages** GitHub App for the GitHub account/organization and grant access to this repository.
 - The owner must complete that one-time GitHub authorization. Do not grant access to unrelated repositories unnecessarily; prefer selecting only `salon-booking`.
 - A pre-existing Worker `withered-shape-ebc0` was found in the account. It is unrelated to this project and must not be reused, edited, or deleted.
+
+
+## Latest production Worker deployment checkpoint (2026-11-04)
+
+- GitHub App authorization and the Cloudflare Workers Builds repository connection are complete for `pooya-labs/salon-booking`, branch `main`.
+- Dedicated Worker `salon-booking` was created; unrelated Worker `withered-shape-ebc0` was not touched.
+- First Workers Build `c4727bbc-5dc5-4a65-9e67-209f629b483b` completed successfully. It ran `npm run build` (TypeScript + Vite), uploaded three static assets and deployed with `npx wrangler deploy`.
+- Deployed Worker URL: https://salon-booking.pooyagame141.workers.dev
+- First deployment version ID: `5c1fdd11-9c57-4e49-ad57-f357fe8c6b68`; deployed on 2026-11-04 from `main` at pre-hardening commit `ab0063e38ccec12ecc4607b50dccc2c69353ba51`.
+- Cloudflare logs confirmed the `DB` binding points to production D1 `salon-booking` and static assets are attached.
+- Production `SESSION_SECRET` is present in Worker secret storage. No secret values are recorded in Git or this handoff.
+- `ADMIN_BOOTSTRAP_TOKEN` is intentionally not stored yet. The owner must generate it privately, add it as a Worker Secret, open `/admin`, create the first username/password, then remove the token.
+- Worker subdomain remains enabled; version Preview URLs are disabled. Workers Builds branch Previews are disabled until a separate staging D1 exists. `wrangler.toml` now explicitly sets `preview_urls = false`.
+- Production D1 remains empty of services, working hours, admin accounts, bookings and customer records. `local_timezone='unset'`; real booking acceptance must remain closed until the owner provides the actual salon timezone, services/prices, opening hours and policies.
+- A live HTTP smoke test could not be independently issued from the connected execution environment; the successful Cloudflare build/deploy logs are verified, but public endpoint responses and rollback/restore drills remain unverified.
+- GitHub Pages remains a static demo-only UI; it is not the production booking endpoint.
+
