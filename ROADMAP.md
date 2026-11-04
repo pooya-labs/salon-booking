@@ -40,13 +40,13 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R01 — Brand and visual system
 
-- [x] Establish initial premium visual direction and responsive design tokens (provisional brand: «فُرم»).
+- [x] Supersede the provisional «فُرم» identity with the owner-supplied «شایان» barber logo and a black-leather / warm-gold visual direction.
 - [x] Add a temporary preview banner and mark the not-yet-built admin entry as unavailable.
-- [ ] Confirm salon name, barber/salon category and brand direction with owner.
-- [ ] Create distinctive wordmark and compact mark.
+- [x] Confirm salon name, barber category and brand direction from the owner-supplied logo.
+- [x] Incorporate the supplied barber emblem as the primary brand asset across the public site, booking flow, owner workspace, favicon and PWA identity.
 - [ ] Define typography with Persian and Latin coverage.
-- [ ] Define color, spacing, radius, shadow and motion tokens.
-- [ ] Build responsive navigation and footer.
+- [x] Define a responsive black, antique-gold and ivory visual system with leather-like texture, framed identity artwork and reduced-motion support.
+- [x] Rework responsive navigation and footer around the Shayan identity.
 - [ ] Build reusable buttons, fields, cards, badges, dialogs and empty states.
 - [ ] Add loading, success, error and offline states.
 - [x] Validate contrast, keyboard focus and reduced-motion behavior: dual-ring focus styling and reduced-motion checks passed; automated axe-core WCAG 2.2 AA scans passed across the public homepage, booking and customer-management dialogs, owner dashboard, service editor, schedule tab, login and cancellation confirmation in [CI run 41668286672](https://github.com/pooya-labs/salon-booking/actions/runs/41668286672).
@@ -60,7 +60,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Initial about/studio section.
 - [~] Initial contact/location section; real address and working hours still need owner details.
 - [ ] Gallery support (only owner-approved photos).
-- [~] Mobile-first layout and lightweight assets (responsive CSS implemented; screenshot/device QA remains).
+- [~] Mobile-first black-and-gold design implemented with an optimized local WebP logo; CI browser QA and physical-device visual acceptance remain.
 - [~] Add basic page title, description and social metadata; custom favicon/social artwork remains.
 - [ ] Replace all placeholder copy/content before public launch.
 
