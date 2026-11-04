@@ -264,7 +264,7 @@ function BookingWizard({
       <section ref={dialogRef} tabIndex={-1} className="booking-flow" role="dialog" aria-modal="true" aria-labelledby="booking-flow-title">
         <header className="booking-flow-header">
           <div className="booking-flow-brand">
-            <span className="booking-logo-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></span>
+            <span className="booking-logo-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></span>
             <span className="booking-brand-copy"><strong>رزرو نوبت</strong><small>SHAYAN · BARBER STUDIO</small></span>
           </div>
           <button className="icon-button" aria-label="بستن پنجره رزرو" onClick={onClose}><X size={19} /></button>
@@ -452,7 +452,7 @@ function App() {
       <div className="announcement"><span className="status-dot" /> {DEMO_MODE ? 'پیش‌نمایش طراحی · آرایشگاه شایان' : 'رزرو آنلاین آرایشگاه شایان'} <span className="announcement-separator">✳</span> HERE WE CREATE THE STYLE</div>
       <header className="site-header">
         <a className="brand" href="#home" aria-label="صفحه اصلی استودیو">
-          <span className="brand-image-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></span>
+          <span className="brand-image-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></span>
           <span className="brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span>
         </a>
         <nav className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="ناوبری اصلی">
@@ -486,7 +486,7 @@ function App() {
             <div className="hero-brand-ornament hero-brand-ornament-two" />
             <div className="hero-logo-frame">
               <div className="hero-logo-kicker">EST. WITH STYLE</div>
-              <img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="نشان طلایی آرایشگاه شایان با تصویر آرایشگر و ابزار اصلاح" />
+              <img src={`${import.meta.env.BASE_URL}images/shayan-hero.webp`} alt="تصویر آرایشگر شایان" fetchPriority="high" decoding="async" />
               <div className="hero-logo-caption"><span>SHAYAN</span><i /> <span>BARBER STUDIO</span></div>
             </div>
           </div>
@@ -501,7 +501,7 @@ function App() {
           {DEMO_MODE && <p className="price-note">* خدمات و قیمت‌های نمایش‌داده‌شده فعلاً نمونه هستند و پیش از انتشار نهایی با اطلاعات واقعی آرایشگاه جایگزین می‌شوند.</p>}
         </section>
 
-        <section className="manifesto" id="about"><div className="manifesto-mark">✳</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> THE SHAYAN SIGNATURE</div><h2>استایل شما،<br /><em>قابل تشخیص است.</em></h2><p>ما به‌جای یک اصلاح تکراری، به فرم چهره، سلیقه و جزئیاتی توجه می‌کنیم که استایل شما را منحصربه‌فرد می‌سازند. نتیجه باید به شما بیاید؛ نه به همه.</p><span className="manifesto-signature">HERE WE CREATE THE STYLE — SHAYAN</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /></div></div></section>
+        <section className="manifesto" id="about"><div className="manifesto-mark">✳</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> THE SHAYAN SIGNATURE</div><h2>استایل شما،<br /><em>قابل تشخیص است.</em></h2><p>ما به‌جای یک اصلاح تکراری، به فرم چهره، سلیقه و جزئیاتی توجه می‌کنیم که استایل شما را منحصربه‌فرد می‌سازند. نتیجه باید به شما بیاید؛ نه به همه.</p><span className="manifesto-signature">HERE WE CREATE THE STYLE — SHAYAN</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></div></div></section>
 
         <section className="booking-banner section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> YOUR TIME, YOUR STYLE</div><h2>وقتِ خودتان را<br /><em>برای خودتان رزرو کنید.</em></h2><p>زمان مناسب را انتخاب کنید؛ بقیه مسیر ساده است.</p></div><button className="button button-dark" onClick={() => startBooking()}>شروع رزرو <ArrowLeft size={17} /></button><div className="banner-decoration" aria-hidden="true">F.</div></section>
 
@@ -510,7 +510,7 @@ function App() {
         <section className="contact-strip section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> COME SAY HELLO</div><h2>مشتاق دیدار شما هستیم.</h2></div><div className="contact-items"><span><MapPin size={16} /> آدرس استودیو به‌زودی</span><span><Clock3 size={16} /> ساعات کاری قابل مشاهده هنگام رزرو</span><a href="https://instagram.com/" target="_blank" rel="noreferrer"><Instagram size={16} /> اینستاگرام</a></div></section>
       </main>
 
-      <footer className="site-footer"><a className="footer-brand" href="#home"><img src={`${import.meta.env.BASE_URL}images/shayan-barber-logo.webp`} alt="" /><span className="footer-brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span></a><span className="footer-note">اینجا، استایل ساخته می‌شود.</span><span className="footer-credit"><span>Designed &amp; developed by</span> <a className="footer-github-link" href="https://github.com/pooya-labs" target="_blank" rel="noreferrer" aria-label="Pooya Labs on GitHub"><img className="footer-pooya-mark" src={`${import.meta.env.BASE_URL}images/pooya-labs-gold.webp`} alt="" loading="lazy" decoding="async" /><span>Pooya Labs</span><Github size={13} /></a> <span>© ۲۰۲۶</span></span></footer>
+      <footer className="site-footer"><a className="footer-brand" href="#home"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /><span className="footer-brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span></a><span className="footer-note">اینجا، استایل ساخته می‌شود.</span><span className="footer-credit"><span>Designed &amp; developed by</span> <a className="footer-github-link" href="https://github.com/pooya-labs" target="_blank" rel="noreferrer" aria-label="Pooya Labs on GitHub"><img className="footer-pooya-mark" src={`${import.meta.env.BASE_URL}images/pooya-labs-gold.webp`} alt="" loading="lazy" decoding="async" /><span>Pooya Labs</span><Github size={13} /></a> <span>© ۲۰۲۶</span></span></footer>
 
       {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} services={services} demoMode={DEMO_MODE} salonTimezone={salonTimezone} />}
       {bookingManagementOpen && <BookingManagement onClose={() => setBookingManagementOpen(false)} demoMode={DEMO_MODE} />}
