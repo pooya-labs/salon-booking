@@ -1,8 +1,8 @@
-# Salon Booking
+# Shayan Barber Booking
 
-A mobile-first salon appointment platform with a Persian RTL customer journey and an owner workspace.
+A premium barber appointment platform for Shayan, with a Persian RTL customer journey and a coordinated owner workspace.
 
-**Product owner:** salon owner  
+**Brand:** Shayan Barber Studio (شایان)  
 **Engineering / creator:** Pooya  
 **Default branch:** `main`  
 **Current release line:** 0.7.0 — Google Apps Script backend migration  
@@ -11,6 +11,10 @@ A mobile-first salon appointment platform with a Persian RTL customer journey an
 **API + database:** Google Apps Script + private Google Sheets
 
 Live site: https://pooya-labs.github.io/salon-booking/
+
+## Brand and visual identity
+
+The site uses the owner-supplied barber emblem as its primary mark, with a black leather-inspired canvas, warm antique-gold accents and ivory typography. The optimized logo is served locally from `public/images/shayan-barber-logo.webp`.
 
 ## Active architecture
 
