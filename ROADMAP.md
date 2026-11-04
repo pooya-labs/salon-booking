@@ -165,7 +165,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 - [x] Temporary static preview pipeline committed for GitHub Pages (not the production runtime).
 - [x] Enable GitHub Pages publishing source as GitHub Actions (owner completed the one-time setting; deployment verified successful).
-- [x] Document Worker rollback, release backup/export and D1 recovery separation in `docs/DEPLOYMENT.md`; production rollback/restore drill remains untested because no production D1/Worker exists.
+- [x] Document Worker rollback, release backup/export and D1 recovery separation in `docs/DEPLOYMENT.md`; production D1 is provisioned, but no Worker is deployed and live rollback/restore drills remain untested.
 - [x] Cloudflare account created and connected by repository owner.
 - [x] Production D1 `salon-booking` created and its database ID configured in `wrangler.toml` (jurisdiction: none; salon country: Iran).
 - [ ] Production migrations applied.
