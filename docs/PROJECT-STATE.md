@@ -433,3 +433,14 @@ Production blockers and real salon details remain unchanged.
 - A live HTTP smoke test could not be independently issued from the connected execution environment; the successful Cloudflare build/deploy logs are verified, but public endpoint responses and rollback/restore drills remain unverified.
 - GitHub Pages remains a static demo-only UI; it is not the production booking endpoint.
 
+
+
+## Latest production page-loading diagnostic (2026-11-04)
+
+- Reproduced the deployed homepage using Cloudflare Browser Rendering after deployment. The root URL returned HTTP 200, the React application mounted, and the complete homepage DOM rendered (hero, navigation, service section, FAQ, footer); the page did not remain in a loading state in this independent browser session.
+- Public endpoint smoke results: `GET /api/health` returned 200 (`salon-booking-api` v0.6.0); `GET /api/public/config` returned 200 with `configured=false` and `timezone=null`; `GET /api/public/services` returned 200 with an empty services array; `GET /admin` returned the expected setup-blocked page until the one-time owner bootstrap secret is configured.
+- Invocation telemetry captured `/api/public/config` and `/api/public/services` returning 200 in 8–10 ms, with no Worker runtime errors. `/api/admin/me` returned the expected 401 for an unauthenticated browser; `/api/admin/setup-status` returned 200. A request for `/favicon.ico` returned 404, which does not block page rendering.
+- Temporarily enabled Worker invocation logging and query-string redaction in `wrangler.toml` for launch diagnostics. Remove persistent invocation logs after the user's browser issue is resolved if extended operational logging is not desired.
+- This confirms the deployed service responds correctly from Cloudflare's browser environment; it does not establish that the owner's specific browser/network path is healthy. If the user still sees a spinner, request a hard refresh / InPrivate retest and a screenshot or the exact browser error.
+- Production remains intentionally non-bookable: no services or opening hours are populated, and `local_timezone='unset'`. The first owner account is not yet bootstrapped.
+
