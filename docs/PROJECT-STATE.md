@@ -18,12 +18,12 @@
 - **CI passed:** [run 41855195426](https://github.com/pooya-labs/salon-booking/actions/runs/41855195426). It passed lint, unit tests (including the Apps Script contract/syntax checks and archived-Worker config assertions), legacy SQLite migration tests, TypeScript/build, responsive RTL/keyboard/browser QA and owner-dashboard date-range browser QA.
 - **GitHub Pages deployment passed:** [run 41855195855](https://github.com/pooya-labs/salon-booking/actions/runs/41855195855). The site remains in safe demo mode unless the owner has configured the `SALON_RELAY_URL` repository variable.
 - Updated privacy documentation to describe Google Sheets as the active data store and to remove obsolete D1 backup instructions from the current operating guide.
-- No Apps Script Web App has been published from the owner's Google account by repository automation. The account setup, web deployment, Actions variable, manager bootstrap, salon timezone/services/hours and real Iran-network booking/notification checks remain required owner-side acceptance steps.
+- Owner reports that the Apps Script Web App has now been deployed from their Google account and the `/exec` URL has been saved as the GitHub Actions repository variable `SALON_RELAY_URL` (2026-11-04). This is owner-side setup confirmation, not yet proof of a successful Pages rebuild or end-to-end API connectivity. Manager bootstrap, salon timezone/services/hours and real Iran-network booking/notification checks remain open.
 - Cloudflare resources and any historical D1 rows are untouched. Do not delete or migrate them without the owner's explicit data-recovery decision.
 
 ## Current checkpoint — Google Apps Script cutover (2026-11-04)
 
-- Phase: **R09 — Apps Script backend migration committed; owner deployment and end-to-end acceptance remain open**.
+- Phase: **R09 — Apps Script backend migration and owner-side deployment/configuration complete by owner confirmation; Pages rebuild and end-to-end acceptance are next**.
 - Active architecture: GitHub Pages frontend → hidden Apps Script iframe bridge → Google Apps Script API → private Google Sheets.
 - `relay/Code.gs` is the backend itself; it does not call the Cloudflare Worker or use D1.
 - API routes preserve the frontend contract for availability, booking, customer lookup/cancellation, owner bootstrap/login, booking status, services and schedule management.
@@ -33,8 +33,8 @@
 - `AdminSessions` persists hashed browser session IDs for six-hour sessions; CacheService is only an accelerator.
 - The Apps Script V8 implementation avoids unsupported browser/Node globals including `URLSearchParams`, `UrlFetchApp` and `crypto.subtle`.
 - Deployment files: `relay/appsscript.json`, `relay/Bridge.html` and `docs/GITHUB-PAGES-RELAY.md`.
-- **Owner action:** create the Apps Script project, paste the three files, run `setupSalonDatabase()`, deploy as an owner-executed anonymous Web App, add the `/exec` URL as Actions variable `SALON_RELAY_URL`, bootstrap the manager and configure actual salon settings.
-- **Not yet verified:** Google account deployment, live Apps Script URL, Pages live-mode rebuild, actual booking through an Iran-based ISP, and Gmail notification on the manager's Android.
+- **Completed by owner confirmation (2026-11-04):** created the Apps Script project, imported the source files, ran `setupSalonDatabase()` successfully, deployed the owner-executed anonymous Web App and added its `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL`.
+- **Not yet verified:** latest Pages live-mode rebuild, browser-to-Apps-Script bridge health, first-owner bootstrap, admin session round-trip, real booking/availability/conflict handling, customer lookup/cancellation, reachability on an Iran-based ISP and Gmail notification on the manager's Android.
 - Old Worker/D1 infrastructure remains untouched until the new path passes acceptance. No D1-to-Sheets data transfer or Cloudflare deletion has been performed.
 
 ## Legacy Cloudflare deployment history
