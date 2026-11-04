@@ -1068,3 +1068,131 @@ input::placeholder,textarea::placeholder { color:#8f887e !important; }
 @media (prefers-reduced-motion:reduce) {
  .service-card { transition:none; }
 }
+
+
+
+/* Shayan Studio — Obsidian Liquid Glass visual refresh */
+:root {
+  color-scheme: dark;
+  --paper:#090909; --ink:#f4eee3; --muted:#aaa092; --line:rgba(225,196,148,.16);
+  --accent:#d4ad70; --dark:#17130e;
+  background:#090909; color:#f4eee3;
+}
+html { background:#090909; }
+body {
+  background:
+    radial-gradient(ellipse at 78% 4%,rgba(174,125,61,.13),transparent 34rem),
+    radial-gradient(ellipse at 8% 45%,rgba(89,104,103,.09),transparent 32rem),
+    #090909;
+  color:#f4eee3;
+}
+.site-shell { background:transparent; }
+.announcement {
+  background:rgba(12,11,10,.82); color:#d9c8ad;
+  border-bottom:1px solid rgba(220,183,123,.13);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+}
+.site-header {
+  position:sticky; top:0; height:76px; max-width:1320px; margin:12px auto 0;
+  padding:0 28px; border:1px solid rgba(255,232,196,.13);
+  border-radius:26px; background:rgba(22,20,17,.66);
+  box-shadow:0 14px 48px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.08);
+  backdrop-filter:blur(26px) saturate(145%); -webkit-backdrop-filter:blur(26px) saturate(145%);
+}
+.brand-mark,.proof-icon,.icon-button {
+  border:1px solid rgba(225,190,130,.26); border-radius:16px;
+  background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025));
+  color:#e0bd83;
+}
+.brand strong { color:#f5eee2; }
+.brand small,.owner-link,.main-nav,.text-link { color:#b9ad9c; }
+.main-nav a:hover,.owner-link:hover { color:#f0ca8c; }
+.button {
+  border-radius:17px; border:1px solid rgba(239,204,146,.24);
+  box-shadow:0 9px 24px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.12);
+}
+.button-dark {
+  color:#1b150e;
+  background:linear-gradient(135deg,#f0d7a8,#bd9051 55%,#e1bd80);
+}
+.button-dark:hover { background:linear-gradient(135deg,#f8e4bf,#d0a15e); }
+.button-small { border-radius:14px; }
+.section-wrap { max-width:1280px; }
+.hero { min-height:650px; padding-top:74px; padding-bottom:88px; gap:64px; }
+.hero h1 { color:#f7f0e5; }
+.hero-description,.section-heading>p { color:#b5aa9a; }
+.eyebrow { color:#d1aa6d; }
+.eyebrow-line { background:#c79c5d; }
+.hero-art {
+  border:1px solid rgba(238,207,158,.28); border-radius:38px; overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%,rgba(208,165,99,.22),transparent 58%),
+    linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.025)),
+    #171511;
+  box-shadow:0 32px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.14);
+}
+.hero-logo-frame { position:absolute; inset:7%; border-radius:30px; background:rgba(10,9,8,.25); border:1px solid rgba(255,255,255,.1); backdrop-filter:blur(9px); }
+.hero-logo-frame img { filter:drop-shadow(0 18px 30px rgba(0,0,0,.48)); }
+.art-caption,.art-stamp { color:#f1dfc1; }
+.trust-strip { border-color:var(--line); }
+.trust-strip>div { color:#d3c6b4; border-color:var(--line); }
+.trust-number,.proof-icon { color:#d5ae73; }
+.services-section,.faq-section,.contact-section,.booking-banner { color:#f3ecdf; }
+.section-heading h2,.booking-banner h2,.contact-strip h2 { color:#f5eee3; }
+.service-card,.faq-item,.contact-strip,.booking-banner,.booking-flow,.booking-reference-card,
+.booking-management-panel,.admin-card,.admin-section,.admin-login-card {
+  color:#f2ebdf;
+  background:linear-gradient(145deg,rgba(255,255,255,.095),rgba(255,255,255,.025));
+  border:1px solid rgba(231,198,145,.17); border-radius:26px;
+  box-shadow:0 18px 48px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.08);
+  backdrop-filter:blur(22px) saturate(135%); -webkit-backdrop-filter:blur(22px) saturate(135%);
+}
+.service-card { padding:28px; }
+.service-card h3,.service-card strong,.faq-question,.contact-items,.footer-brand-copy strong { color:#f4ecdf; }
+.service-card p,.service-card small,.faq-answer,.contact-items span { color:#b9ad9d; }
+.service-category,.service-index { color:#e0bc82; }
+.booking-banner,.contact-strip { background:linear-gradient(135deg,rgba(211,169,104,.14),rgba(255,255,255,.035)); }
+.site-footer {
+  margin-top:36px; padding:28px max(24px,calc((100vw - 1240px)/2));
+  border-top:1px solid var(--line); color:#b6aa99;
+  background:rgba(12,11,10,.68); backdrop-filter:blur(22px);
+}
+.footer-brand-copy strong { color:#f2e9dc; }
+.footer-credit,.footer-note { color:#b7aa98; }
+.footer-github-link { color:#e4c18b; }
+.booking-flow-backdrop { background:rgba(0,0,0,.76); backdrop-filter:blur(16px); }
+.booking-flow { background:linear-gradient(150deg,rgba(34,30,24,.97),rgba(15,14,12,.98)); border-color:rgba(231,198,145,.22); }
+.booking-flow-header,.booking-flow-footer,.booking-flow-progress { border-color:var(--line); }
+.booking-flow h2,.booking-step h2,.booking-brand-copy strong { color:#f5eee3; }
+.booking-flow p,.booking-step-intro,.booking-footer-caption { color:#b9ad9d; }
+.booking-service-option,.booking-time-option,.booking-date-option,.booking-form-field input,
+.booking-form-field select,.booking-form-field textarea {
+  color:#f2ebdf; background:rgba(255,255,255,.055);
+  border:1px solid rgba(231,198,145,.16); border-radius:17px;
+}
+.booking-service-option.is-selected,.booking-time-option.is-selected,.booking-date-option.is-selected {
+  border-color:#d6ad70; background:rgba(211,169,104,.14);
+}
+.booking-form-field label { color:#d8c8b0; }
+.mobile-book-bar {
+  background:rgba(19,17,14,.88); border:1px solid rgba(231,198,145,.2);
+  border-radius:24px 24px 0 0; box-shadow:0 -16px 45px rgba(0,0,0,.28);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+}
+.mobile-book-bar strong { color:#f3ebde; }
+.mobile-book-bar small { color:#b7aa98; }
+:where(input,select,textarea) { color:#f4eee3; }
+::placeholder { color:#928777; opacity:1; }
+hr { border-color:var(--line); }
+@media (max-width:760px) {
+  .site-header { margin:8px 10px 0; height:66px; padding:0 16px; border-radius:21px; }
+  .hero { padding-top:44px; gap:30px; }
+  .hero-art { min-height:340px; border-radius:28px; }
+  .hero-logo-frame { inset:5%; border-radius:23px; }
+  .service-card,.faq-item,.contact-strip,.booking-banner { border-radius:22px; }
+  .services-section { padding-top:76px; padding-bottom:70px; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .service-card,.faq-item,.button,.icon-button { transition:transform .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease; }
+  .service-card:hover { transform:translateY(-4px); border-color:rgba(231,198,145,.34); box-shadow:0 24px 58px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.12); }
+}
