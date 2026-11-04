@@ -107,7 +107,7 @@ Cloudflare documents that a rollback is a new active deployment and that connect
 - Use the current Cloudflare [D1 export/import guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/) and [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) for the supported export and recovery method for the account/runtime in use.
 - After recovery, list applied migrations again and run the complete production smoke-test checklist.
 
-This runbook is documented but has **not** been exercised against a production Worker or D1 database. The production D1 database is now provisioned and its ID is configured in `wrangler.toml`; remote migrations, Worker deployment and rollback/restore drills remain pending.
+This runbook is documented but has **not** been exercised against a production Worker. The production D1 database is provisioned, its ID is configured in `wrangler.toml`, and migrations 0001–0010 have been applied and verified. Worker deployment and live rollback/restore drills remain pending.
 
 
 ## Temporary GitHub Pages preview
