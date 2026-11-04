@@ -405,3 +405,12 @@ Production blockers and real salon details remain unchanged.
 - The initial D1 metadata reported no jurisdiction restriction and primary region `EEUR`; D1 query metadata also showed serving colo `FRA`. This is an observed placement, not a jurisdictional residency guarantee.
 - No service catalog, opening hours, owner credentials, bookings or customer data were inserted. Keep real bookings disabled until the dedicated Worker, secrets, salon schedule/timezone and production smoke checks are complete.
 - GitHub `main` CI and Pages both passed on commit `0b3e90472233a3005a096218583c29a28f1c4f8c`: CI run 41771031361; Pages run 41771031187.
+
+
+## Workers Builds GitHub authorization blocker (2026-11-04)
+
+- The connected Cloudflare API identity and account can read/manage D1 successfully.
+- A direct Workers Builds repository connection request for GitHub repository `pooya-labs/salon-booking` was rejected with Cloudflare error `8000008`: the project is disconnected from its Git account.
+- Cloudflare's documented prerequisite is to install/authorize the official **Cloudflare Workers & Pages** GitHub App for the GitHub account/organization and grant access to this repository.
+- The owner must complete that one-time GitHub authorization. Do not grant access to unrelated repositories unnecessarily; prefer selecting only `salon-booking`.
+- A pre-existing Worker `withered-shape-ebc0` was found in the account. It is unrelated to this project and must not be reused, edited, or deleted.
