@@ -90,7 +90,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R04 — Scheduling and data layer
 
-- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings, normalized weekly/date intervals, public rate limits and customer management tokens/status history (migrations 0001–0010; production D1 not yet provisioned).
+- [x] D1 schema for services, opening hours, exceptions, bookings, admin identity, salon settings, normalized weekly/date intervals, public rate limits and customer management tokens/status history (migrations 0001–0010; production D1 is provisioned and its ID is configured; remote migrations remain pending).
 - [x] Versioned SQL migrations, with SQLite migration/trigger regression tests.
 - [x] No placeholder services or business hours are seeded into production.
 - [x] Public API input validation and normalized error responses.
@@ -166,8 +166,8 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Temporary static preview pipeline committed for GitHub Pages (not the production runtime).
 - [x] Enable GitHub Pages publishing source as GitHub Actions (owner completed the one-time setting; deployment verified successful).
 - [x] Document Worker rollback, release backup/export and D1 recovery separation in `docs/DEPLOYMENT.md`; production rollback/restore drill remains untested because no production D1/Worker exists.
-- [ ] Cloudflare account connected by repository owner.
-- [ ] D1 database created and database ID configured.
+- [x] Cloudflare account created and connected by repository owner.
+- [x] Production D1 `salon-booking` created and its database ID configured in `wrangler.toml` (jurisdiction: none; salon country: Iran).
 - [ ] Production migrations applied.
 - [ ] Owner authentication secret/credentials provisioned securely.
 - [ ] GitHub-to-Cloudflare deployment configured.
