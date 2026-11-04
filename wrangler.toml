@@ -2,6 +2,8 @@ name = "salon-booking"
 main = "worker/index.ts"
 compatibility_date = "2026-11-03"
 compatibility_flags = ["nodejs_compat"]
+# Keep versioned Preview URLs off until a separate staging D1 database exists.
+preview_urls = false
 
 [assets]
 directory = "./dist"
