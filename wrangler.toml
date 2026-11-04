@@ -16,3 +16,16 @@ database_name = "salon-booking"
 # Production D1 database provisioned and verified on 2026-11-04.
 database_id = "646e31ad-82c9-45bf-8afc-ed6e6b81e025"
 migrations_dir = "migrations"
+
+
+# Temporary production diagnostics: capture Worker request outcomes during launch QA.
+[observability]
+enabled = true
+head_sampling_rate = 1
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
+head_sampling_rate = 1
