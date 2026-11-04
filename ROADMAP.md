@@ -40,14 +40,14 @@ This document is the durable source of truth for scope, completion, test evidenc
 
 ## R01 — Brand and visual system
 
-- [x] Supersede the provisional «فُرم» identity with the owner-supplied «شایان» barber logo and a black-leather / warm-gold visual direction.
+- [x] Supersede the provisional «فُرم» identity with the owner-supplied «شایان» brand and an obsidian-black / antique-gold visual direction.
 - [x] Add a temporary preview banner and mark the not-yet-built admin entry as unavailable.
 - [x] Confirm salon name, barber category and brand direction from the owner-supplied logo.
-- [x] Incorporate the supplied barber emblem as the primary brand asset across the public site, booking flow, owner workspace, favicon and PWA identity.
+- [~] Existing Shayan mark is wired through the public site, booking flow, owner workspace and PWA; the latest two user-supplied WebP files still need to be committed byte-for-byte and assigned to the hero and emblem positions.
 - [ ] Define typography with Persian and Latin coverage.
-- [x] Define a responsive black, antique-gold and ivory visual system with leather-like texture, framed identity artwork and reduced-motion support.
+- [x] Define a responsive obsidian, antique-gold and ivory Liquid Glass system with translucent blurred surfaces, softer radii, layered lighting and reduced-motion support.
 - [x] Rework responsive navigation and footer around the Shayan identity.
-- [ ] Build reusable buttons, fields, cards, badges, dialogs and empty states.
+- [~] Apply shared rounded glass treatments to buttons, forms, service cards, booking dialogs, admin tabs, schedule editor, manual booking and notification surfaces; remaining component-level consistency and visual QA are still open.
 - [ ] Add loading, success, error and offline states.
 - [x] Validate contrast, keyboard focus and reduced-motion behavior: dual-ring focus styling and reduced-motion checks passed; automated axe-core WCAG 2.2 AA scans passed across the public homepage, booking and customer-management dialogs, owner dashboard, service editor, schedule tab, login and cancellation confirmation in [CI run 41668286672](https://github.com/pooya-labs/salon-booking/actions/runs/41668286672).
 
@@ -60,7 +60,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Initial about/studio section.
 - [~] Initial contact/location section; real address and working hours still need owner details.
 - [ ] Gallery support (only owner-approved photos).
-- [~] Mobile-first black-and-gold design implemented with an optimized local WebP logo; CI browser QA and physical-device visual acceptance remain.
+- [~] Customer site and owner dashboard are moving to the Liquid Glass visual system; latest owner-supplied hero/emblem files are not yet present in `public/images`, and final physical-device acceptance remains open.
 - [~] Add basic page title, description and social metadata; custom favicon/social artwork remains.
 - [ ] Replace all placeholder copy/content before public launch.
 
