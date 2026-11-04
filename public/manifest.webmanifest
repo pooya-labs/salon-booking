@@ -11,10 +11,10 @@
   "theme_color": "#0d0c0b",
   "icons": [
     {
-      "src": "images/shayan-barber-logo.webp",
-      "sizes": "240x240",
+      "src": "images/shayan-emblem.webp",
+      "sizes": "2048x2048",
       "type": "image/webp",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icons/salon-icon.svg",
