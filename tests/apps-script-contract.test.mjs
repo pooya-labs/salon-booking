@@ -59,7 +59,7 @@ test('manifest deploys an anonymous web app as its deploying owner', () => {
 
 
 test('customer first and last names are normalized into one display name', () => {
-  const helpers = runInNewContext(backend + '\\n({ bookingFullName_ })')
+  const helpers = runInNewContext(backend + String.fromCharCode(10) + '({ bookingFullName_ })')
   assert.equal(helpers.bookingFullName_({
     firstName: '  Pooya   Ali  ',
     lastName: '  Rezaei   Nouri ',
@@ -67,13 +67,13 @@ test('customer first and last names are normalized into one display name', () =>
 })
 
 test('phone booking email alerts show confirmed status and the booking source', () => {
-  assert.match(backend, /booking\\.source === 'phone' \\? 'یک نوبت تلفنی جدید ثبت شد\\.'/)
-  assert.match(backend, /booking\\.status === 'confirmed' \\? 'تأیید شده' : 'در انتظار تأیید'/)
+  assert.ok(backend.includes("booking.source === 'phone' ? 'یک نوبت تلفنی جدید ثبت شد.'"))
+  assert.ok(backend.includes("booking.status === 'confirmed' ? 'تأیید شده' : 'در انتظار تأیید'"))
 })
 
 test('foreground push uses ServiceWorkerRegistration notifications on mobile browsers', () => {
-  assert.match(pushClient, /registration\\.showNotification/)
-  assert.match(pushClient, /new URL\\('\\?admin=1'/)
+  assert.ok(pushClient.includes('registration.showNotification'))
+  assert.ok(pushClient.includes("new URL('?admin=1'"))
 })
 
 test('bridge accepts API messages only from the GitHub Pages origin', () => {
