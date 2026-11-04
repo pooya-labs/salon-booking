@@ -1,15 +1,21 @@
 {
-  "name": "فُرم | رزرو و مدیریت نوبت",
-  "short_name": "فُرم",
-  "description": "سامانه رزرو و مدیریت نوبت استودیو",
+  "name": "آرایشگاه شایان | رزرو و مدیریت نوبت",
+  "short_name": "شایان",
+  "description": "سامانه رزرو و مدیریت نوبت آرایشگاه شایان",
   "lang": "fa",
   "dir": "rtl",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
-  "background_color": "#f4f1ea",
-  "theme_color": "#171714",
+  "background_color": "#0d0c0b",
+  "theme_color": "#0d0c0b",
   "icons": [
+    {
+      "src": "images/shayan-barber-logo.webp",
+      "sizes": "240x240",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
     {
       "src": "icons/salon-icon.svg",
       "sizes": "any",
