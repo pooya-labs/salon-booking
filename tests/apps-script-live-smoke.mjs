@@ -39,6 +39,7 @@ try {
 
   const relayFrame = page.frames().find(frame => frame.parentFrame() === page.mainFrame())
   assert.ok(relayFrame, 'Apps Script relay iframe must create a child browsing context')
+  await relayFrame.waitForLoadState('load', { timeout: 30000 })
   const frameDiagnostics = await relayFrame.evaluate(() => {
     const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\n')
     const expectedOrigin = /PARENT_ORIGIN\s*=\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
