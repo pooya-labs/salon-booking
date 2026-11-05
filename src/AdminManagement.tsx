@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CalendarDays, Check, Clock3, Bell, Mail, Phone, Plus, Save, Scissors, Settings2, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
+import { CalendarDays, Check, Clock3, Bell, Mail, Plus, Save, Scissors, Settings2, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
 import { listenForOwnerPushMessages, registerOwnerPushDevice } from './push-notifications'
 import { JalaliDatePicker } from './JalaliDatePicker'
 import { formatJalaliDate } from './jalali-date'
 import { nextAvailableInterval } from './schedule-intervals'
+import { AdminCalendar } from './AdminCalendar'
 
 type Service = {
   id: string
@@ -75,7 +76,7 @@ const requestError = async (response: Response, fallback: string) => {
 }
 
 export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () => void }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'schedule' | 'phone-booking' | 'notifications'>('services')
+  const [activeTab, setActiveTab] = useState<'services' | 'schedule' | 'calendar' | 'notifications'>('services')
   const [services, setServices] = useState<Service[]>([])
   const [serviceDraft, setServiceDraft] = useState<Omit<Service, 'id'> & { id?: string }>(emptyService())
   const [editingService, setEditingService] = useState(false)
@@ -102,13 +103,6 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
   ])
   const [exceptionNote, setExceptionNote] = useState('')
   const [busyException, setBusyException] = useState<string | null>(null)
-
-  const [manualDraft, setManualDraft] = useState({ serviceId: '', date: '', time: '', firstName: '', lastName: '', phone: '', note: '' })
-  const [manualSlots, setManualSlots] = useState<string[]>([])
-  const [manualSlotsLoading, setManualSlotsLoading] = useState(false)
-  const [manualSlotsMessage, setManualSlotsMessage] = useState('')
-  const [manualSaving, setManualSaving] = useState(false)
-  const [manualBookingReference, setManualBookingReference] = useState('')
 
   const [notificationSettings, setNotificationSettings] = useState({ emailEnabled: false, firebaseProjectId: '', pushDeviceCount: 0, pushReady: false })
   const [notificationsLoading, setNotificationsLoading] = useState(false)
@@ -202,37 +196,6 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
     })
     return () => { active = false; unsubscribe() }
   }, [pushListenerRevision])
-
-  useEffect(() => {
-    if (!manualDraft.serviceId || !manualDraft.date) {
-      setManualSlots([])
-      setManualSlotsMessage('')
-      setManualSlotsLoading(false)
-      return
-    }
-    const controller = new AbortController()
-    const loadManualSlots = async () => {
-      setManualSlotsLoading(true)
-      setManualSlotsMessage('')
-      setManualSlots([])
-      try {
-        const params = new URLSearchParams({ date: manualDraft.date, serviceId: manualDraft.serviceId })
-        const response = await fetch(`/api/admin/availability?${params.toString()}`, {
-          credentials: 'same-origin', headers: { accept: 'application/json' }, signal: controller.signal,
-        })
-        if (response.status === 401) throw new Error('نشست شما منقضی شده است؛ دوباره وارد پنل شوید.')
-        if (!response.ok) throw new Error(await requestError(response, 'دریافت ساعت‌های آزاد ممکن نشد.'))
-        const payload = await response.json() as { slots?: string[] }
-        if (!controller.signal.aborted) setManualSlots(Array.isArray(payload.slots) ? payload.slots : [])
-      } catch (slotError) {
-        if (!controller.signal.aborted) setManualSlotsMessage(slotError instanceof Error ? slotError.message : 'دریافت ساعت‌های آزاد ممکن نشد.')
-      } finally {
-        if (!controller.signal.aborted) setManualSlotsLoading(false)
-      }
-    }
-    void loadManualSlots()
-    return () => controller.abort()
-  }, [manualDraft.serviceId, manualDraft.date])
 
   const saveService = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -408,43 +371,6 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
     }
   }
 
-  const saveManualBooking = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (manualSaving) return
-    if (!manualDraft.date) {
-      setError('لطفاً تاریخ نوبت را از تقویم شمسی انتخاب کن.')
-      return
-    }
-    setManualSaving(true)
-    setError('')
-    setNotice('')
-    setManualBookingReference('')
-    try {
-      const response = await fetch('/api/admin/bookings', {
-        method: 'POST', credentials: 'same-origin',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({
-          serviceId: manualDraft.serviceId, date: manualDraft.date, time: manualDraft.time,
-          firstName: manualDraft.firstName, lastName: manualDraft.lastName,
-          phone: manualDraft.phone, note: manualDraft.note,
-        }),
-      })
-      if (!response.ok) throw new Error(await requestError(response, 'ثبت نوبت تلفنی انجام نشد.'))
-      const payload = await response.json() as { booking?: { reference?: string } }
-      if (!payload.booking?.reference) throw new Error('نوبت ثبت شد، اما کد پیگیری دریافت نشد.')
-      setManualBookingReference(payload.booking.reference)
-      setNotice('نوبت تلفنی ثبت و زمان آن برای رزرو آنلاین مسدود شد.')
-      setManualSlots((current) => current.filter((slot) => slot !== manualDraft.time))
-      setManualDraft((current) => ({ ...current, time: '', firstName: '', lastName: '', phone: '', note: '' }))
-      await loadServices()
-      onBookingCreated?.()
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'ثبت نوبت تلفنی انجام نشد.')
-    } finally {
-      setManualSaving(false)
-    }
-  }
-
   const saveNotifications = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setNotificationsSaving(true)
@@ -566,7 +492,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
     }
   }
 
-  const tabButton = (key: 'services' | 'schedule' | 'phone-booking' | 'notifications', label: string, Icon: typeof Scissors) => (
+  const tabButton = (key: 'services' | 'schedule' | 'calendar' | 'notifications', label: string, Icon: typeof Scissors) => (
     <button type="button" className={activeTab === key ? 'admin-manage-tab is-active' : 'admin-manage-tab'} onClick={() => setActiveTab(key)}>
       <Icon size={15} /> {label}
     </button>
@@ -579,7 +505,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
         <div className="admin-manage-tabs">
           {tabButton('services', 'خدمات', Scissors)}
           {tabButton('schedule', 'برنامه کاری', CalendarDays)}
-          {tabButton('phone-booking', 'رزرو تلفنی', Phone)}
+          {tabButton('calendar', 'تقویم روز', CalendarDays)}
           {tabButton('notifications', 'اعلان‌ها', Bell)}
         </div>
       </div>
@@ -625,43 +551,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
         </div>
       )}
 
-      {activeTab === 'phone-booking' && (
-        <div className="admin-manage-grid admin-phone-booking-layout">
-          <section className="admin-manage-panel">
-            <div className="admin-manage-panel-heading"><div><h3>ثبت نوبت تلفنی</h3><p>اطلاعات تماس را از مشتری بگیر و ساعت را از طرف سالن قطعی کن.</p></div><Phone size={19} /></div>
-            <form className="admin-manage-form" onSubmit={saveManualBooking}>
-              <label><span>خدمت</span><select required value={manualDraft.serviceId} onChange={(event) => setManualDraft((current) => ({ ...current, serviceId: event.target.value, time: '' }))}>
-                <option value="">انتخاب خدمت</option>
-                {services.filter((service) => service.isActive).map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} دقیقه</option>)}
-              </select></label>
-              <JalaliDatePicker label="تاریخ نوبت" value={manualDraft.date} onChange={(date) => setManualDraft((current) => ({ ...current, date, time: '' }))} />
-              <label><span>ساعت‌های آزاد همان روز</span><select required value={manualDraft.time} disabled={!manualDraft.date || !manualDraft.serviceId || manualSlotsLoading || manualSlots.length === 0} onChange={(event) => setManualDraft((current) => ({ ...current, time: event.target.value }))}>
-                <option value="">{manualSlotsLoading ? 'در حال بررسی ساعت‌ها…' : 'انتخاب ساعت آزاد'}</option>
-                {manualSlots.map((time) => <option key={time} value={time}>{toPersianDigits(time)}</option>)}
-              </select></label>
-              {manualSlotsMessage && <p className="admin-error" role="alert">{manualSlotsMessage}</p>}
-              {manualDraft.date && manualDraft.serviceId && !manualSlotsLoading && !manualSlotsMessage && manualSlots.length === 0 && <p className="admin-form-hint">برای این خدمت در این تاریخ ساعت آزادی وجود ندارد.</p>}
-              <div className="admin-form-two-cols">
-                <label><span>نام</span><input required minLength={2} maxLength={80} value={manualDraft.firstName} onChange={(event) => setManualDraft((current) => ({ ...current, firstName: event.target.value }))} placeholder="نام مشتری" /></label>
-                <label><span>نام خانوادگی</span><input required minLength={2} maxLength={80} value={manualDraft.lastName} onChange={(event) => setManualDraft((current) => ({ ...current, lastName: event.target.value }))} placeholder="نام خانوادگی" /></label>
-              </div>
-              <label><span>شماره تماس</span><input required inputMode="tel" maxLength={24} value={manualDraft.phone} onChange={(event) => setManualDraft((current) => ({ ...current, phone: event.target.value }))} placeholder="مثلاً ۰۹۱۲..." dir="ltr" /></label>
-              <label><span>یادداشت (اختیاری)</span><textarea maxLength={500} rows={2} value={manualDraft.note} onChange={(event) => setManualDraft((current) => ({ ...current, note: event.target.value }))} placeholder="هماهنگی تلفنی یا درخواست مشتری…" /></label>
-              <div className="admin-manual-booking-hint"><Check size={16} /><span>نوبت بلافاصله تأیید می‌شود و همان بازه از رزرو آنلاین حذف خواهد شد.</span></div>
-              <button className="button button-dark admin-manage-submit" disabled={manualSaving || manualSlotsLoading || !manualSlots.includes(manualDraft.time)}>{manualSaving ? 'در حال ثبت…' : 'ثبت نوبت تلفنی و رزرو ساعت'} <Save size={15} /></button>
-            </form>
-          </section>
-          <section className="admin-manage-panel admin-manual-booking-side">
-            <div className="admin-manage-panel-heading"><div><h3>قواعد رزرو دستی</h3><p>همه رزروها در یک تقویم و یک دیتابیس ثبت می‌شوند.</p></div><CalendarDays size={19} /></div>
-            <ul>
-              <li>ساعت آزاد بر اساس بازه کاری، مدت خدمت، فاصله بین نوبت‌ها و رزروهای فعال محاسبه می‌شود.</li>
-              <li>محدودیت حداقل زمان اطلاع‌رسانی آنلاین برای رزرو تلفنی اعمال نمی‌شود؛ اما زمان گذشته قابل رزرو نیست.</li>
-              <li>ثبت نهایی زیر قفل مشترک انجام می‌شود تا مشتری آنلاین و مدیر نتوانند هم‌زمان یک ساعت را بگیرند.</li>
-            </ul>
-            {manualBookingReference && <div className="admin-manual-booking-result" role="status"><strong>نوبت ثبت شد</strong><span>کد پیگیری: <b dir="ltr">{manualBookingReference}</b></span></div>}
-          </section>
-        </div>
-      )}
+      {activeTab === 'calendar' && <AdminCalendar slotIntervalMinutes={settings.slotIntervalMinutes} />}
 
       {activeTab === 'notifications' && (
         <div className="admin-manage-grid admin-notification-layout">
@@ -705,35 +595,45 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
           </section>
 
           <section className="admin-manage-panel">
-            <div className="admin-manage-panel-heading"><div><h3>ساعات هفتگی</h3><p>برای ذخیره ساعت‌ها ابتدا منطقه زمانی را تنظیم کنید.</p></div><Clock3 size={19} /></div>
+            <div className="admin-manage-panel-heading"><div><h3>ساعات هفتگی</h3><p>هر بازه را جداگانه تنظیم کن؛ فاصله‌ی بین دو بازه به‌صورت استراحت نمایش داده می‌شود.</p></div><Clock3 size={19} /></div>
             {scheduleLoading ? <div className="admin-manage-empty">در حال دریافت برنامه…</div> : (
               <div className="admin-weekly-list">
                 {weeklyHours.map((day) => (
-                  <article className={day.isClosed ? 'admin-weekday-row is-closed' : 'admin-weekday-row'} key={day.weekday}>
-                    <div className="admin-weekday-name">
-                      <strong>{day.name}</strong>
-                      <label>
-                        <input type="checkbox" checked={!day.isClosed} onChange={(event) => changeWeekday(day.weekday, {
+                  <article className={day.isClosed ? 'admin-weekday-card is-closed' : 'admin-weekday-card'} key={day.weekday}>
+                    <header className="admin-weekday-card-header">
+                      <div className="admin-weekday-card-title"><strong>{day.name}</strong><span className={day.isClosed ? 'admin-day-status is-closed' : 'admin-day-status is-open'}>{day.isClosed ? 'تعطیل' : 'ساعات کاری فعال'}</span></div>
+                      <div className="admin-weekday-card-actions">
+                        <label className="admin-day-toggle"><input type="checkbox" checked={!day.isClosed} onChange={(event) => changeWeekday(day.weekday, {
                           isClosed: !event.target.checked,
-                          intervals: !event.target.checked && day.intervals.length === 0
-                            ? [{ startsAt: '09:00', endsAt: '17:00' }]
-                            : day.intervals,
-                        })} />
-                        <span>{day.isClosed ? 'تعطیل' : 'فعال'}</span>
-                      </label>
+                          intervals: !event.target.checked && day.intervals.length === 0 ? [{ startsAt: '09:00', endsAt: '17:00' }] : day.intervals,
+                        })} /><span>{day.isClosed ? 'باز کردن روز' : 'تعطیل کردن'}</span></label>
+                        <button type="button" className="admin-save-day" disabled={savingWeekday === day.weekday} onClick={() => void saveWeekday(day)}>{savingWeekday === day.weekday ? '…' : <Save size={14} />} ذخیره</button>
+                      </div>
+                    </header>
+                    <div className="admin-weekday-timeline" role="img" aria-label={`نمای ساعت کاری ${day.name}`}>
+                      <div className="admin-weekday-timeline-track">
+                        {day.intervals.map((interval, index) => {
+                          const start = Number(interval.startsAt.slice(0, 2)) * 60 + Number(interval.startsAt.slice(3, 5))
+                          const end = Number(interval.endsAt.slice(0, 2)) * 60 + Number(interval.endsAt.slice(3, 5))
+                          return <span key={index} style={{ left: `${start / 1440 * 100}%`, width: `${(end - start) / 1440 * 100}%` }} />
+                        })}
+                      </div>
+                      <div className="admin-weekday-timeline-labels"><span>۰۰</span><span>۰۶</span><span>۱۲</span><span>۱۸</span><span>۲۴</span></div>
                     </div>
                     <div className="admin-weekday-hours">
                       {day.intervals.map((interval, index) => (
-                        <div className="admin-form-two-cols admin-interval-row" key={index}>
-                          <label><span>{index === 0 ? 'ابتدای روز · شروع' : index === day.intervals.length - 1 ? 'انتهای روز · شروع' : `بازه میانی ${toPersianDigits(index + 1)} · شروع`}</span><input type="time" lang="en-GB" dir="ltr" aria-label={`شروع بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.startsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { startsAt: event.target.value })} /></label>
-                          <label><span>{index === 0 ? 'پایان بازه اول' : index === day.intervals.length - 1 ? 'پایان روز' : 'پایان بازه میانی'}</span><input type="time" lang="en-GB" dir="ltr" aria-label={`پایان بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.endsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { endsAt: event.target.value })} /></label>
+                        <div className="admin-weekday-range" key={index}>
+                          <span className="admin-weekday-range-index">بازه {toPersianDigits(index + 1)}</span>
+                          <label><span>شروع</span><input type="time" lang="en-GB" dir="ltr" aria-label={`شروع بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.startsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { startsAt: event.target.value })} /></label>
+                          <span className="admin-weekday-range-separator">تا</span>
+                          <label><span>پایان</span><input type="time" lang="en-GB" dir="ltr" aria-label={`پایان بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.endsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { endsAt: event.target.value })} /></label>
                           <button type="button" className="admin-icon-button" aria-label={`حذف بازه ${index + 1} ${day.name}`} onClick={() => removeWeekdayInterval(day.weekday, index)}><Trash2 size={14} /></button>
                         </div>
                       ))}
+                      {day.isClosed && <p className="admin-form-hint">این روز برای رزرو آنلاین بسته است.</p>}
                       {!day.isClosed && day.intervals.length === 0 && <p className="admin-form-hint">برای این روز هنوز بازه‌ای ثبت نشده است.</p>}
-                      <button type="button" className="admin-light-button" disabled={day.intervals.length >= 8} onClick={() => addWeekdayInterval(day.weekday)}><Plus size={13} /> افزودن بازه</button>
+                      <button type="button" className="admin-light-button admin-add-weekday-range" disabled={day.intervals.length >= 8} onClick={() => addWeekdayInterval(day.weekday)}><Plus size={13} /> افزودن بازه کاری</button>
                     </div>
-                    <button type="button" className="admin-save-day" disabled={savingWeekday === day.weekday} onClick={() => void saveWeekday(day)}>{savingWeekday === day.weekday ? '…' : <Save size={14} />} ذخیره</button>
                   </article>
                 ))}
               </div>

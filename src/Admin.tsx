@@ -356,7 +356,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
           <article><span>انجام‌شده</span><strong>{toPersianDigits(finishedCount)}</strong><small>نوبت‌های تکمیل‌شده</small></article>
         </div>
 
-        <AdminManagement onBookingCreated={() => { void loadBookings(filter, bookingRange) }} />
+        <AdminManagement />
 
         <section className="admin-bookings-panel">
           <div className="admin-bookings-heading">
