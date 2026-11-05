@@ -189,9 +189,11 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Add owner-only setup guards and rolling 30-day persistent owner sessions, renewed during regular use and revoked immediately on logout.
 - [x] Add editable service type/category, daily multi-interval hours, split first/last-name customer details and owner-entered phone reservations.
 - [x] Add Firebase Cloud Messaging Web Push sender and manager-device registration; email notifications now default off and are configurable in the owner panel.
-- [x] Owner confirmed importing the latest Apps Script source/manifest, rerunning additive `setupSalonDatabase()`, authorizing requested scopes and deploying a new Web App version (2026-11-05); live verification remains pending.
-- [ ] Owner configures a Firebase web app/VAPID key and links the Apps Script standard Google Cloud project to Firebase; add seven `FIREBASE_*` GitHub Actions variables and rebuild Pages.
-- [ ] Verify push delivery on manager Android in foreground/background; verify email remains off unless explicitly enabled.
+- [x] Owner confirmed importing the latest Apps Script source/manifest, rerunning additive `setupSalonDatabase()`, authorizing requested scopes and deploying a new Web App version (2026-11-05).
+- [x] Owner configured the Firebase web app/VAPID key, linked the standard Google Cloud project, added all seven `FIREBASE_*` GitHub Actions variables and rebuilt Pages.
+- [x] Owner completed Google OAuth test-user authorization for `pooya16.pg@gmail.com`; the existing Apps Script Web App opens successfully again.
+- [x] Owner confirmed the manager notification project/device is connected and notifications are working. The test-send control remains correctly gated until a Firebase project ID is saved and at least one active device is registered.
+- [x] Email notifications remain off by default; owner can opt in separately.
 - [x] Replace the Apps Script proxy-to-Worker relay with direct in-script API handling; no Cloudflare forwarding is present in the active backend.
 - [x] Add Apps Script manifest, origin-restricted iframe bridge, deployment guide and Node V8 syntax/contract tests.
 - [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.
@@ -318,3 +320,13 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - Weekly closed-day checkbox now means exactly what it says: checked = closed.
 - Apps Script reuses the Spreadsheet handle and memoizes table reads within a single request; writes invalidate the affected table cache. Booking and time-block reads remain fresh for conflict safety.
 - Backend target: **1.5.3**; deploy `relay/Code.gs` as a new version of the existing Apps Script Web App. This hardens Sheets date/time normalization, daily-calendar refresh, time-block clock validation and the locked/audited owner booking deletion endpoint. Desktop and Android owner views share a confirmed delete action; the homepage includes direct mobile owner access.
+
+## Latest owner-confirmed launch configuration — 2026-11-05
+
+- The Apps Script OAuth consent screen was in External / Testing mode with zero test users. The owner added `pooya16.pg@gmail.com` to Test users; the Web App permission flow then completed and the existing active deployment opened successfully. No new deployment or `/exec` URL change was required for this OAuth fix.
+- Active Apps Script deployment observed by the owner: Version 6, Execute as `pooya16.pg@gmail.com`, access `Anyone`. Preserve this deployment and its existing private spreadsheet.
+- Firebase project `pooya-notif` is configured. All seven GitHub Actions repository variables are present: `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`, `FIREBASE_VAPID_KEY`. The Firebase Cloud Messaging API and the deployer account's Firebase Cloud Messaging Service Editor IAM role were confirmed by the owner.
+- Owner reports that the notification project/device is now connected and notifications work. This is owner-confirmed operational evidence; no independent notification delivery log or physical-device capture is attached to this checkpoint.
+- The test notification button is intentionally disabled until the backend reports both a saved Firebase project ID and at least one active registered device. Save `pooya-notif` in Admin → Notifications, then register the manager's current browser/PWA. Do not bypass this readiness guard.
+- No customer bookings, customer records, service catalog, prices or opening hours were changed by this OAuth/Firebase setup session.
+- Remaining first-release acceptance: verify the owner's actual service catalog, prices, weekly hours/closures and timezone; perform one controlled end-to-end booking/cancellation test with the salon owner and verify its manager notification; complete owner operating handoff and approval. Physical Android testing is recommended; browser emulation is not physical-device certification.
