@@ -10,7 +10,7 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.5.0';
+var APP_VERSION_ = '1.5.1';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
@@ -543,10 +543,11 @@ function getAdminBookings_(query, owner) {
   var allowed = ['all', 'pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
   if (allowed.indexOf(status) === -1) return error_(400, 'invalid_status', 'فیلتر وضعیت معتبر نیست.');
   var rows = readTable_('Bookings').filter(function (row) {
-    return Date.parse(row.startsAt) >= start.getTime() && Date.parse(row.startsAt) < end.getTime() &&
+    var startsAt = rowStartMs_(row, settings.timezone);
+    return startsAt >= start.getTime() && startsAt < end.getTime() &&
       (status === 'all' || row.status === status);
   });
-  rows.sort(function (a, b) { return Date.parse(a.startsAt) - Date.parse(b.startsAt); });
+  rows.sort(function (a, b) { return rowStartMs_(a, settings.timezone) - rowStartMs_(b, settings.timezone); });
   return { status: 200, payload: { ok: true, timezone: settings.timezone, from: from, to: to, bookings: rows.map(function (row) {
     return {
       id: row.id, reference: row.reference, name: row.name, phone: row.phone,
@@ -638,20 +639,28 @@ function getAdminDaySchedule_(query) {
   var nextDay = localDateTimeToUtc_(addDays_(date, 1), '00:00', settings.timezone);
   if (!dayStart || !nextDay) return error_(400, 'invalid_date', 'تاریخ انتخاب‌شده معتبر نیست.');
 
-  var bookings = readTable_('Bookings').filter(function (row) {
-    return row.status !== 'cancelled' && (
-      row.date === date || (
-        Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime()
-      )
+  var bookings = readTable_('Bookings').map(function (row) {
+    var startMs = rowStartMs_(row, settings.timezone);
+    var endMs = rowEndMs_(row, settings.timezone);
+    var startDate = isFinite(startMs) ? getLocalDateKey_(new Date(startMs), settings.timezone) : rowDateKey_(row, settings.timezone);
+    var startTime = rowClock_(row, settings.timezone) || (isFinite(startMs) ? clockForInstant_(new Date(startMs), settings.timezone) : '');
+    var endTime = isFinite(endMs) ? clockForInstant_(new Date(endMs), settings.timezone) : clockFromMinutes_(startTime, Number(row.durationMinutes));
+    return { row: row, startMs: startMs, endMs: endMs, date: startDate, time: startTime, endTime: endTime };
+  }).filter(function (item) {
+    if (String(item.row.status || '').toLowerCase() === 'cancelled') return false;
+    return item.date === date || (
+      isFinite(item.startMs) && isFinite(item.endMs) &&
+      item.startMs < nextDay.getTime() && item.endMs > dayStart.getTime()
     );
-  }).map(function (row) {
+  }).map(function (item) {
     return {
-      id: row.id, date: row.date,
-      time: row.time || (row.startsAt ? clockForInstant_(row.startsAt, settings.timezone) : ''),
-      endTime: row.endsAt ? clockForInstant_(row.endsAt, settings.timezone) : clockFromMinutes_(row.time || (row.startsAt ? clockForInstant_(row.startsAt, settings.timezone) : ''), Number(row.durationMinutes)),
-      serviceName: row.serviceName, durationMinutes: Number(row.durationMinutes),
-      status: row.status
+      id: item.row.id, date: item.date,
+      time: item.time, endTime: item.endTime,
+      serviceName: item.row.serviceName, durationMinutes: Number(item.row.durationMinutes),
+      status: item.row.status
     };
+  }).filter(function (booking) {
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(booking.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(booking.endTime);
   }).sort(function (a, b) { return a.time.localeCompare(b.time); });
 
   var blocks = readTable_('TimeBlocks').filter(function (row) { return row.date === date; })
@@ -696,8 +705,8 @@ function createTimeBlock_(input, owner) {
     if (!fitsHours) return error_(409, 'outside_working_hours', 'این بازه باید کاملاً داخل یکی از ساعت‌های کاری باشد.');
 
     var overlapsBooking = readTable_('Bookings').some(function (row) {
-      return ['pending', 'confirmed'].indexOf(row.status) !== -1 &&
-        Date.parse(row.startsAt) < end.getTime() && Date.parse(row.endsAt) > start.getTime();
+      return ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1 &&
+        rowStartMs_(row, settings.timezone) < end.getTime() && rowEndMs_(row, settings.timezone) > start.getTime();
     });
     if (overlapsBooking) return error_(409, 'time_already_booked', 'این زمان با نوبت مشتری تداخل دارد.');
     var overlapsBlock = readTable_('TimeBlocks').some(function (row) {
@@ -871,8 +880,11 @@ function hasExceptionConflict_(date, intervals, timezone) {
 }
 function fitsIntervals_(booking, intervals, timezone) {
   if (!intervals.length) return false;
-  var start = getZonedParts_(new Date(booking.startsAt), timezone);
-  var end = getZonedParts_(new Date(booking.endsAt), timezone);
+  var startMs = rowStartMs_(booking, timezone);
+  var endMs = rowEndMs_(booking, timezone);
+  if (!isFinite(startMs) || !isFinite(endMs)) return false;
+  var start = getZonedParts_(new Date(startMs), timezone);
+  var end = getZonedParts_(new Date(endMs), timezone);
   var startClock = pad2_(start.hour) + ':' + pad2_(start.minute);
   var endClock = pad2_(end.hour) + ':' + pad2_(end.minute);
   return intervals.some(function (interval) { return startClock >= interval.startsAt && endClock <= interval.endsAt; });
@@ -882,8 +894,8 @@ function activeBookingsOnDate_(date, timezone) {
   var end = localDateTimeToUtc_(addDays_(date, 1), '00:00', timezone);
   if (!start || !end) return [];
   return readTable_('Bookings').filter(function (row) {
-    return ['pending', 'confirmed'].indexOf(row.status) !== -1 &&
-      Date.parse(row.startsAt) < end.getTime() && Date.parse(row.endsAt) > start.getTime();
+    return ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1 &&
+      rowStartMs_(row, settings.timezone) < end.getTime() && rowEndMs_(row, settings.timezone) > start.getTime();
   });
 }
 
@@ -899,10 +911,17 @@ function getAvailability_(dateKey, service, settings, ignoreNotice) {
   var dayStart = localDateTimeToUtc_(dateKey, '00:00', settings.timezone);
   var nextDay = localDateTimeToUtc_(addDays_(dateKey, 1), '00:00', settings.timezone);
   if (!dayStart || !nextDay) throw new Error('invalid_salon_timezone');
-  var busy = readTable_('Bookings').filter(function (row) {
-    return ['pending', 'confirmed'].indexOf(row.status) !== -1 &&
-      Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime();
-  }).map(function (row) { return { start: Date.parse(row.startsAt), end: Date.parse(row.endsAt) }; });
+  var busy = readTable_('Bookings').map(function (row) {
+    return {
+      status: String(row.status || '').toLowerCase(),
+      start: rowStartMs_(row, settings.timezone),
+      end: rowEndMs_(row, settings.timezone)
+    };
+  }).filter(function (item) {
+    return ['pending', 'confirmed'].indexOf(item.status) !== -1 &&
+      isFinite(item.start) && isFinite(item.end) &&
+      item.start < nextDay.getTime() && item.end > dayStart.getTime();
+  }).map(function (item) { return { start: item.start, end: item.end }; });
   readTable_('TimeBlocks').filter(function (row) { return row.date === dateKey; }).forEach(function (row) {
     busy.push({ start: Date.parse(row.startsAt), end: Date.parse(row.endsAt) });
   });
@@ -988,18 +1007,96 @@ function readTable_(name) {
     return row.some(function (value) { return value !== '' && value !== null; });
   }).map(function (row) {
     var item = {};
-    headers.forEach(function (header, index) { item[header] = row[index] == null ? '' : String(row[index]); });
+    headers.forEach(function (header, index) { item[header] = normalizeSheetCell_(header, row[index]); });
     return item;
   });
   REQUEST_TABLE_CACHE_[name] = rows;
   return rows.map(function (row) { return Object.assign({}, row); });
 }
+function normalizeSheetCell_(header, value) {
+  if (value === null || value === undefined || value === '') return '';
+  var timezone = IRAN_TIMEZONE_;
+  var dateTimeHeaders = ['startsAt', 'endsAt', 'createdAt', 'updatedAt', 'expiresAt'];
+  if (value instanceof Date && isFinite(value.getTime())) {
+    if (header === 'date') return getLocalDateKey_(value, timezone);
+    if (header === 'time') return Utilities.formatDate(value, timezone, 'HH:mm');
+    if (dateTimeHeaders.indexOf(header) !== -1) return value.toISOString();
+  }
+
+  var raw = normalizeDigits_(String(value).trim());
+  if (header === 'date') {
+    var dateMatch = /^(\d{4}-\d{2}-\d{2})/.exec(raw);
+    if (dateMatch) return dateMatch[1];
+    var parsedDate = Date.parse(raw);
+    if (isFinite(parsedDate)) return getLocalDateKey_(new Date(parsedDate), timezone);
+  }
+  if (header === 'time') {
+    var timeMatch = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(raw);
+    if (timeMatch) return pad2_(Number(timeMatch[1])) + ':' + timeMatch[2];
+    var parsedTime = Date.parse(raw);
+    if (isFinite(parsedTime)) return Utilities.formatDate(new Date(parsedTime), timezone, 'HH:mm');
+  }
+  if (dateTimeHeaders.indexOf(header) !== -1) {
+    var parsedInstant = Date.parse(raw);
+    if (isFinite(parsedInstant)) return new Date(parsedInstant).toISOString();
+  }
+  return raw;
+}
+
+function rowDateKey_(row, timezone) {
+  var value = row && row.date;
+  if (value instanceof Date && isFinite(value.getTime())) return getLocalDateKey_(value, timezone);
+  var raw = normalizeDigits_(String(value == null ? '' : value).trim());
+  var match = /^(\d{4}-\d{2}-\d{2})/.exec(raw);
+  if (match && parseDateKey_(match[1])) return match[1];
+  var parsed = Date.parse(raw);
+  if (isFinite(parsed)) return getLocalDateKey_(new Date(parsed), timezone);
+  var start = rowStartMs_(row, timezone);
+  return isFinite(start) ? getLocalDateKey_(new Date(start), timezone) : '';
+}
+
+function rowClock_(row, timezone) {
+  var value = row && row.time;
+  if (value instanceof Date && isFinite(value.getTime())) return Utilities.formatDate(value, timezone, 'HH:mm');
+  var raw = normalizeDigits_(String(value == null ? '' : value).trim());
+  var match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(raw);
+  if (match) {
+    var hour = Number(match[1]), minute = Number(match[2]);
+    return hour <= 23 && minute <= 59 ? pad2_(hour) + ':' + match[2] : '';
+  }
+  var parsed = Date.parse(raw);
+  return isFinite(parsed) ? clockForInstant_(new Date(parsed), timezone) : '';
+}
+
+function rowStartMs_(row, timezone) {
+  var value = row && row.startsAt;
+  var parsed = value instanceof Date ? value.getTime() : Date.parse(String(value == null ? '' : value));
+  if (isFinite(parsed)) return parsed;
+  var date = rowDateKey_(row, timezone);
+  var time = rowClock_(row, timezone);
+  var fallback = date && time ? localDateTimeToUtc_(date, time, timezone) : null;
+  return fallback ? fallback.getTime() : NaN;
+}
+
+function rowEndMs_(row, timezone) {
+  var value = row && row.endsAt;
+  var parsed = value instanceof Date ? value.getTime() : Date.parse(String(value == null ? '' : value));
+  if (isFinite(parsed)) return parsed;
+  var start = rowStartMs_(row, timezone);
+  var duration = Number(row && row.durationMinutes);
+  return isFinite(start) && Number.isFinite(duration) && duration > 0 ? start + duration * 60000 : NaN;
+}
+
 function appendRecord_(name, record) {
   delete REQUEST_TABLE_CACHE_[name];
   var sheet = getSheet_(name);
   var lastColumn = Math.max(sheet.getLastColumn(), 1);
   var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
-  sheet.appendRow(headers.map(function (key) { return record[key] == null ? '' : String(record[key]); }));
+  var rowIndex = sheet.getLastRow() + 1;
+  var range = sheet.getRange(rowIndex, 1, 1, headers.length);
+  // Force text before writing: Sheets must not reinterpret ISO dates, clocks or IDs.
+  range.setNumberFormat('@');
+  range.setValues([headers.map(function (key) { return record[key] == null ? '' : String(record[key]); })]);
 }
 function findBy_(name, key, value) {
   return readTable_(name).filter(function (row) { return String(row[key]) === String(value); })[0] || null;
@@ -1013,7 +1110,9 @@ function updateRecord_(name, key, value, record) {
   var keyIndex = headers.indexOf(key);
   for (var rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
     if (String(values[rowIndex][keyIndex]) === String(value)) {
-      sheet.getRange(rowIndex + 1, 1, 1, headers.length).setValues([headers.map(function (header) {
+      var target = sheet.getRange(rowIndex + 1, 1, 1, headers.length);
+      target.setNumberFormat('@');
+      target.setValues([headers.map(function (header) {
         return record[header] == null ? '' : String(record[header]);
       })]);
       return true;
