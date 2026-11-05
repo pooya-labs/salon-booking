@@ -74,6 +74,10 @@ jobs:
         run: npm run build:pages
       - name: Windows desktop and Android touch visual QA
         run: npm run test:browser
+      - name: Build production assets for Windows owner dashboard QA
+        run: npm run build
+      - name: Windows owner dashboard desktop and mobile QA
+        run: npm run test:browser:admin
       - name: Upload Windows browser visual QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
