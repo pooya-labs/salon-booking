@@ -566,3 +566,10 @@ Production blockers and real salon details remain unchanged.
 - Time-block creation is guarded by the shared script lock and rechecks opening hours, customer booking overlap and existing blocks. Public availability also treats blocks as busy ranges.
 - Schedule and date-exception edits cannot close hours around existing manager blocks.
 - The previous manual phone-booking form is replaced by the graphical daily calendar. Live acceptance remains pending Apps Script import/setup/deployment.
+
+
+## Owner panel final interaction detail (2026-11-05)
+
+- Manager time-block duration defaults to the current slot step (normally 15 minutes), so the core action is one tap on a free slot followed by one confirmation. Longer presets remain optional.
+- A selected duration must fit within one opening interval, avoid bookings/blocks and end before midnight; past times are disabled.
+- Corrected the automated owner browser test to cover day navigation, exact minimal POST payload (date/time/duration only), successful block creation and confirmed removal.

@@ -71,7 +71,7 @@ export function availableBlockDurations(
   if (date < today || (date === today && time <= currentClock)) return []
 
   return durations.filter((duration) => {
-    if (!Number.isInteger(duration) || duration < 5 || start + duration > 1440) return false
+    if (!Number.isInteger(duration) || duration < 5 || start + duration >= 1440) return false
     const end = start + duration
     const fitsWorkingHours = intervals.some((interval) => {
       const open = minuteOf(interval.startsAt), close = minuteOf(interval.endsAt)

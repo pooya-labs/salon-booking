@@ -106,7 +106,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
     const options = schedule
       ? availableBlockDurations(date, time, DURATION_OPTIONS, intervals, bookings, blocks)
       : []
-    setDuration(options.includes(60) ? 60 : options[options.length - 1] ?? 15)
+    setDuration(options.includes(step) ? step : options[0] ?? 15)
   }
 
   const confirmBlock = async () => {

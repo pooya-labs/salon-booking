@@ -33,3 +33,9 @@ test('block duration cannot extend beyond midnight or into a break', () => {
   assert.deepEqual(durations, [15, 30])
   assert.equal(addClockMinutes('23:45', 30), null)
 })
+
+test('a block cannot end at midnight because its end belongs to the following date', () => {
+  assert.deepEqual(availableBlockDurations('2026-11-05', '23:45', [15], [
+    { startsAt: '23:00', endsAt: '23:59' },
+  ], [], [], new Date('2026-11-05T05:00:00Z')), [])
+})
