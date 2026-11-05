@@ -40,7 +40,34 @@ try {
   const relayFrame = page.frames().find(frame => frame.parentFrame() === page.mainFrame())
   assert.ok(relayFrame, 'Apps Script relay iframe must create a child browsing context')
   await relayFrame.waitForLoadState('load', { timeout: 30000 })
-  const frameDiagnostics = await relayFrame.evaluate(() => {
+
+  const frameSnapshots = await Promise.all(page.frames().filter(frame => frame !== page.mainFrame()).map(async frame => {
+    try {
+      return await frame.evaluate(() => {
+        const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\n')
+        const expectedOrigin = /PARENT_ORIGIN\s*=\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
+        return {
+          url: location.href,
+          origin: location.origin,
+          title: document.title,
+          readyState: document.readyState,
+          expectedParentOrigin: expectedOrigin,
+          googleScriptRunAvailable: typeof google !== 'undefined' && Boolean(google.script && google.script.run),
+          bodyText: (document.body?.innerText || '').slice(0, 700),
+          scriptSources: Array.from(document.scripts).map(script => script.src).filter(Boolean).slice(0, 8),
+          childFrames: Array.from(document.querySelectorAll('iframe')).map(iframe => iframe.src).slice(0, 8),
+        }
+      })
+    } catch (error) {
+      return { url: frame.url(), snapshotError: String(error) }
+    }
+  }))
+  console.log('[apps-script-live] all frame snapshots: ' + JSON.stringify(frameSnapshots))
+
+  const bridgeFrame = page.frames().find(frame => frame !== page.mainFrame() && frameSnapshots.some(snapshot =>
+    snapshot.url === frame.url() && snapshot.googleScriptRunAvailable
+  ))
+  const frameDiagnostics = bridgeFrame ? await bridgeFrame.evaluate(() => {
     const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\n')
     const expectedOrigin = /PARENT_ORIGIN\s*=\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
     return {
@@ -49,7 +76,15 @@ try {
       expectedParentOrigin: expectedOrigin,
       googleScriptRunAvailable: typeof google !== 'undefined' && Boolean(google.script && google.script.run),
     }
-  })
+  }) : {
+    readyState: '',
+    origin: '',
+    expectedParentOrigin: '',
+    googleScriptRunAvailable: false,
+  }
+  if (!bridgeFrame) {
+    throw new Error('No Apps Script HtmlService frame exposed google.script.run. Frame diagnostics: ' + JSON.stringify(frameSnapshots))
+  }
   const bridgeMessages = await page.evaluate(() => window.__salonRelayMessages)
   console.log('[apps-script-live] iframe diagnostics: ' + JSON.stringify({
     readyState: frameDiagnostics.readyState,
@@ -59,7 +94,7 @@ try {
     readyMessageReceived: bridgeMessages.some(message => message.type === 'SALON_RELAY_READY'),
   }))
 
-  const directHealth = await relayFrame.evaluate(() => new Promise(resolve => {
+  const directHealth = await bridgeFrame.evaluate(() => new Promise(resolve => {
     let settled = false
     const finish = value => {
       if (settled) return
