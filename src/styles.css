@@ -2169,3 +2169,15 @@ hr { border-color:var(--line); }
   .admin-delete-confirm-actions { flex-direction:column-reverse; }
   .admin-delete-confirm-actions button { width:100%; }
 }
+
+@media (max-width:680px) {
+  .site-header .header-actions > .owner-link:not(.booking-manage-link) {
+    display:inline-flex;
+    align-items:center;
+    white-space:nowrap;
+    font-size:10px;
+  }
+}
+@media (max-width:340px) {
+  .site-header .header-actions > .owner-link:not(.booking-manage-link) { display:none; }
+}
