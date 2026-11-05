@@ -280,3 +280,12 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - Smoke evidence: the published Pages site loaded the configured Apps Script iframe; nested `script.googleusercontent.com` frame emitted READY to the Pages top window; direct health returned `ok=true`, service `salon-booking-apps-script`, version `1.1.0`; public config/services and private Sheets read routes passed; anonymous owner access was rejected.
 - Live data is still intentionally empty: public services count 0, salon timezone configured=false, owner account initialized=false. The smoke created no booking, customer PII, owner mutation or notification.
 - Remaining release work: first-owner bootstrap, timezone confirmation, service catalog/prices, opening hours and exceptions, Firebase Web App/VAPID setup and manager Android push acceptance. Email notifications remain off by default. Do not enable real booking until operational configuration and end-to-end acceptance are complete.
+
+
+## Latest admin scheduling usability correction (2026-11-05)
+
+- Weekly-hours “add interval” now works on closed weekdays by reopening the day and creating a default 09:00–17:00 range when none exists; subsequent ranges are added without overlap.
+- Admin exception and manual phone-booking date selection now use a Jalali calendar. Backend requests remain Gregorian ISO date keys.
+- Salon timezone is fixed to Iran `Asia/Tehran` in the panel and Apps Script, not an editable free-text field.
+- Time controls declare `en-GB` locale and LTR direction for 24-hour time presentation.
+- Backend version 1.2.0 includes the server-side timezone pin; owner must update the existing Apps Script deployment before live verification.

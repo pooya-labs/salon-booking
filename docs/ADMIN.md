@@ -9,7 +9,7 @@ The owner workspace is served by the GitHub Pages frontend at `https://pooya-lab
 - Booking list, date-range navigation, status filtering and client contact details.
 - Allowed transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
 - Service create/edit/activate/deactivate, including category/type, description, price, currency, duration and public visibility; deactivation preserves historical reservations.
-- Salon timezone, slot interval, booking notice, booking horizon and buffer settings.
+- Iran-fixed `Asia/Tehran` timezone (not editable), slot interval, booking notice, booking horizon and buffer settings. Admin date entry uses a Jalali calendar; working-hour fields use 24-hour time.
 - Weekly working hours with up to eight separate intervals per day; start, midday and closing periods can be edited independently.
 - Date-specific closures and alternate opening intervals, with notes.
 - Manual phone reservations with first name, last name and phone; confirmed phone bookings share the same availability lock and block online reservations.

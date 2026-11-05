@@ -544,3 +544,15 @@ Production blockers and real salon details remain unchanged.
 - Correct public owner panel URL: `https://pooya-labs.github.io/salon-booking/?admin=1`.
 - A direct request to `/salon-booking/admin` can return GitHub Pages 404 because it is not a physical route or SPA fallback file. Keep `/admin` only for local development / legacy Worker contexts; do not send it to Pages users.
 - Updated README and deployment/admin guides to use the confirmed Pages query route.
+
+
+## Iran-first admin scheduling controls (2026-11-05)
+
+- Fixed weekly-hours add-range behavior: the add button is enabled for closed weekdays. Clicking it reactivates the day; if no interval exists it creates a default 09:00–17:00 window. Otherwise a non-overlapping interval is appended after the final interval or into an available gap. The eight-interval cap remains.
+- Added pure interval-allocation tests for empty days, normal append, gap reuse and fully occupied days.
+- Pinned Apps Script scheduling calculations and settings writes to `Asia/Tehran`; default settings also use Tehran. The owner panel displays Iran/Tehran as fixed and non-editable.
+- Added reusable Jalali calendar date pickers for date exceptions and manual phone bookings. API requests remain normalized to Gregorian ISO date keys.
+- Exception dates are displayed in Jalali; existing dashboard booking date formatting was already Persian-calendar based.
+- Time inputs now declare `lang="en-GB"` and LTR direction to request 24-hour presentation; API values remain `HH:mm`.
+- Apps Script backend version is 1.2.0. Owner must import the updated `relay/Code.gs` and deploy a new Web App version while retaining the same /exec URL.
+- Automated tests cover Persian/Gregorian conversion, calendar weekdays, interval allocation and Apps Script timezone contract.

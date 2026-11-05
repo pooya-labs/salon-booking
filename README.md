@@ -32,7 +32,7 @@ The GitHub Pages → Apps Script relay has passed a read-only live smoke test (b
 ## Main capabilities
 
 - Service catalog and duration-aware available slots.
-- Jalali calendar presentation with salon-timezone calculations.
+- Jalali calendar presentation with Iran-only `Asia/Tehran` scheduling; admin date pickers use the Persian calendar and time fields use 24-hour presentation.
 - Conflict-safe reservation creation, idempotent retries and reference codes.
 - Customer self-service lookup and cancellation with a one-time management token.
 - Owner bootstrap/login, booking status management, service administration and weekly/date-specific scheduling.

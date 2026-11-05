@@ -10,7 +10,7 @@ This is the active deployment path. GitHub Pages serves the React site; an Apps 
 4. Add an HTML file named `Bridge` and paste [`relay/Bridge.html`](../relay/Bridge.html).
 5. In Project Settings, enable **Show "appsscript.json" manifest file in editor**. Replace it with [`relay/appsscript.json`](../relay/appsscript.json), then save.
 
-The manifest selects V8, spreadsheet, optional email, Firebase Messaging and external-request scopes, `Asia/Tehran` as the script timezone, owner execution and anonymous Web App access. Google's [manifest reference](https://developers.google.com/apps-script/manifest/web-app-api-executable) documents these access and execution values.
+The manifest selects V8, spreadsheet, optional email, Firebase Messaging and external-request scopes, `Asia/Tehran` as the script timezone, owner execution and anonymous Web App access. Application-level booking calculations are also pinned to `Asia/Tehran`. Google's [manifest reference](https://developers.google.com/apps-script/manifest/web-app-api-executable) documents these access and execution values.
 
 ## 2. Create the private database and authorize email
 
@@ -47,7 +47,7 @@ Live site: [https://pooya-labs.github.io/salon-booking/](https://pooya-labs.gith
 1. Open the live site and choose **مدیریت**, or visit [the direct owner panel link](https://pooya-labs.github.io/salon-booking/?admin=1). Do not use `/admin` as a standalone path on GitHub Pages.
 2. Enter the one-time bootstrap token from the Apps Script execution log.
 3. Choose the manager username and a password of at least 12 characters.
-4. In **تنظیمات استودیو**, select the salon's actual timezone. For a salon in Iran, use `Asia/Tehran`.
+4. In **تنظیمات استودیو**, the timezone is fixed to `Asia/Tehran` (Iran); it is not editable. Save scheduling settings, then enter working intervals. Admin date pickers use the Jalali calendar and working-hour fields use 24-hour time.
 5. Add real services, prices, weekly opening intervals and date-specific closures.
 
 The one-time bootstrap token is deleted after the first owner is created. Owner sessions expire after six hours.
