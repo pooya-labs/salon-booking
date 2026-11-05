@@ -347,7 +347,7 @@ function BookingWizard({
               <h2 id="booking-flow-title">همه‌چیز آماده‌ست؟</h2>
               <p className="booking-step-intro">جزئیات انتخابتان را یک بار بررسی کنید.</p>
               <div className="booking-review-card">
-                <div className="booking-review-top"><span className="review-mark"><Scissors size={18} /></span><span><small>FORM STUDIO</small><strong>خلاصه انتخاب شما</strong></span><span className="review-preview-label">{demoMode ? 'پیش‌نمایش' : 'بازبینی'}</span></div>
+                <div className="booking-review-top"><span className="review-mark"><Scissors size={18} /></span><span><small>SHAYAN BARBER STUDIO</small><strong>خلاصه انتخاب شما</strong></span><span className="review-preview-label">{demoMode ? 'پیش‌نمایش' : 'بازبینی'}</span></div>
                 <div className="booking-review-row"><span>خدمت</span><strong>{selectedService?.name}</strong></div>
                 <div className="booking-review-row"><span>تاریخ</span><strong>{selectedDate?.full}</strong></div>
                 <div className="booking-review-row"><span>ساعت</span><strong>{draft.time}</strong></div>
@@ -503,7 +503,7 @@ function App() {
 
         <section className="manifesto" id="about"><div className="manifesto-mark">✳</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> THE SHAYAN SIGNATURE</div><h2>استایل شما،<br /><em>قابل تشخیص است.</em></h2><p>ما به‌جای یک اصلاح تکراری، به فرم چهره، سلیقه و جزئیاتی توجه می‌کنیم که استایل شما را منحصربه‌فرد می‌سازند. نتیجه باید به شما بیاید؛ نه به همه.</p><span className="manifesto-signature">HERE WE CREATE THE STYLE — SHAYAN</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></div></div></section>
 
-        <section className="booking-banner section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> YOUR TIME, YOUR STYLE</div><h2>وقتِ خودتان را<br /><em>برای خودتان رزرو کنید.</em></h2><p>زمان مناسب را انتخاب کنید؛ بقیه مسیر ساده است.</p></div><button className="button button-dark" onClick={() => startBooking()}>شروع رزرو <ArrowLeft size={17} /></button><div className="banner-decoration" aria-hidden="true">F.</div></section>
+        <section className="booking-banner section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> YOUR TIME, YOUR STYLE</div><h2>وقتِ خودتان را<br /><em>برای خودتان رزرو کنید.</em></h2><p>زمان مناسب را انتخاب کنید؛ بقیه مسیر ساده است.</p></div><button className="button button-dark" onClick={() => startBooking()}>شروع رزرو <ArrowLeft size={17} /></button><div className="banner-decoration" aria-hidden="true">S</div></section>
 
         <section className="faq-section section-wrap" id="faq"><div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> GOOD TO KNOW</div><h2>سؤال‌های <em>شما.</em></h2></div><p>اگر پیش از رزرو سؤالی دارید، شاید پاسخ آن را اینجا پیدا کنید.</p></div><div className="faq-list">{faqs.map((faq, i) => <div className={faqOpen === i ? 'faq-item active' : 'faq-item'} key={faq.q}><button onClick={() => setFaqOpen(faqOpen === i ? null : i)} aria-expanded={faqOpen === i}><span className="faq-index">۰{i + 1}</span><strong>{faq.q}</strong><span className="faq-plus">{faqOpen === i ? '−' : '+'}</span></button>{faqOpen === i && <p>{faq.a}</p>}</div>)}</div></section>
 
