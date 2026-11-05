@@ -8,26 +8,31 @@
     (function () {
       'use strict';
       var PARENT_ORIGIN = 'https://pooya-labs.github.io';
+      var sendToTop = function (message) {
+        window.top.postMessage(message, PARENT_ORIGIN);
+      };
+
       window.addEventListener('message', function (event) {
-        if (event.source !== window.parent || event.origin !== PARENT_ORIGIN) return;
+        if (event.source !== window.top || event.origin !== PARENT_ORIGIN) return;
         var message = event.data;
         if (!message || message.type !== 'SALON_RELAY_REQUEST' || !message.id) return;
         google.script.run
           .withSuccessHandler(function (result) {
-            window.parent.postMessage({ type: 'SALON_RELAY_RESPONSE', id: message.id, result: result }, PARENT_ORIGIN);
+            sendToTop({ type: 'SALON_RELAY_RESPONSE', id: message.id, result: result });
           })
           .withFailureHandler(function () {
-            window.parent.postMessage({
+            sendToTop({
               type: 'SALON_RELAY_RESPONSE', id: message.id,
               result: { status: 502, body: JSON.stringify({
                 ok: false, error: 'apps_script_error',
                 message: 'درگاه رزرو نتوانست درخواست را پردازش کند.'
               })}
-            }, PARENT_ORIGIN);
+            });
           })
           .proxyRequest(message.request);
       });
-      window.parent.postMessage({ type: 'SALON_RELAY_READY' }, PARENT_ORIGIN);
+
+      sendToTop({ type: 'SALON_RELAY_READY' });
     }());
   </script>
 </head>

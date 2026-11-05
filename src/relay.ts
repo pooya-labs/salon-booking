@@ -21,12 +21,53 @@ if (relayUrl && typeof window !== 'undefined') {
   let frame: HTMLIFrameElement | null = null
   let frameReady: Promise<void> | null = null
   let memorySessionId = ''
+  let bridgeWindow: Window | null = null
+  let bridgeOrigin = ''
+  let bridgeReadyPromise: Promise<void> | null = null
+  let bridgeReadyResolve: (() => void) | null = null
+  let bridgeReadyTimer: number | undefined
 
   const createSessionId = () => {
     if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
     return Array.from(crypto.getRandomValues(new Uint8Array(24)), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('')
+  }
+
+  const isAppsScriptOrigin = (origin: string): boolean => {
+    try {
+      const url = new URL(origin)
+      return url.protocol === 'https:' &&
+        (url.hostname === 'script.googleusercontent.com' ||
+          /^[a-z0-9-]+-script\.googleusercontent\.com$/i.test(url.hostname))
+    } catch {
+      return false
+    }
+  }
+
+  const isNestedFrameWindow = (source: MessageEventSource | null): source is Window => {
+    if (!source || !frame?.contentWindow) return false
+
+    const queue: Window[] = [frame.contentWindow]
+    const visited = new Set<Window>()
+    while (queue.length) {
+      const current = queue.shift()
+      if (!current || visited.has(current)) continue
+      if (current === source) return current !== frame.contentWindow
+      visited.add(current)
+
+      // Cross-origin WindowProxy exposes a limited frame-navigation surface.
+      // Read child frame references only; never access a cross-origin document.
+      try {
+        for (let index = 0; index < current.length; index += 1) {
+          const child = current.frames[index]
+          if (child) queue.push(child)
+        }
+      } catch {
+        // A child may navigate while the Apps Script wrapper is redirecting.
+      }
+    }
+    return false
   }
 
   const getSessionId = () => {
@@ -54,6 +95,8 @@ if (relayUrl && typeof window !== 'undefined') {
         if (frame === nextFrame) {
           frame = null
           frameReady = null
+          bridgeWindow = null
+          bridgeOrigin = ''
           nextFrame.remove()
         }
         reject(new Error(message))
@@ -81,9 +124,25 @@ if (relayUrl && typeof window !== 'undefined') {
   }
 
   window.addEventListener('message', (event: MessageEvent) => {
-    if (!frame?.contentWindow || event.source !== frame.contentWindow) return
-    const message = event.data as { type?: string; id?: string; result?: RelayResult }
-    if (message?.type !== 'SALON_RELAY_RESPONSE' || !message.id) return
+    const message = event.data as { type?: string; id?: string; result?: RelayResult } | null
+    if (!message || typeof message.type !== 'string') return
+
+    if (message.type === 'SALON_RELAY_READY') {
+      if (!isAppsScriptOrigin(event.origin) || !isNestedFrameWindow(event.source)) return
+      bridgeWindow = event.source
+      bridgeOrigin = event.origin
+      if (bridgeReadyTimer !== undefined) window.clearTimeout(bridgeReadyTimer)
+      bridgeReadyTimer = undefined
+      bridgeReadyResolve?.()
+      return
+    }
+
+    if (
+      message.type !== 'SALON_RELAY_RESPONSE' ||
+      !message.id ||
+      event.source !== bridgeWindow ||
+      event.origin !== bridgeOrigin
+    ) return
 
     const request = pending.get(message.id)
     if (!request) return
@@ -95,10 +154,38 @@ if (relayUrl && typeof window !== 'undefined') {
     request.resolve(message.result ?? { status: 502, body: '{"message":"پاسخ درگاه معتبر نیست."}' })
   })
 
+  const waitForBridge = async () => {
+    if (bridgeWindow) return
+    if (!bridgeReadyPromise) {
+      bridgeReadyPromise = new Promise<void>((resolve, reject) => {
+        bridgeReadyResolve = resolve
+        bridgeReadyTimer = window.setTimeout(() => {
+          const staleFrame = frame
+          frame = null
+          frameReady = null
+          bridgeWindow = null
+          bridgeOrigin = ''
+          staleFrame?.remove()
+          reject(new Error('پل ارتباطی Google Apps Script آماده نشد. نسخهٔ Web App را بررسی و دوباره منتشر کنید.'))
+        }, 25000)
+      })
+    }
+
+    try {
+      await bridgeReadyPromise
+    } finally {
+      if (bridgeReadyTimer !== undefined) window.clearTimeout(bridgeReadyTimer)
+      bridgeReadyTimer = undefined
+      bridgeReadyPromise = null
+      bridgeReadyResolve = null
+    }
+  }
+
   const relayRequest = async (request: Request): Promise<Response> => {
     try {
       await ensureFrame()
-      if (!frame?.contentWindow) throw new Error('درگاه ارتباطی در دسترس نیست.')
+      await waitForBridge()
+      if (!bridgeWindow) throw new Error('پل ارتباطی Google Apps Script در دسترس نیست.')
       if (request.signal.aborted) throw new DOMException('درخواست لغو شد.', 'AbortError')
 
       const id = createSessionId()
@@ -132,7 +219,7 @@ if (relayUrl && typeof window !== 'undefined') {
         pending.set(id, pendingRequest)
 
         try {
-          frame?.contentWindow?.postMessage({
+          bridgeWindow?.postMessage({
             type: 'SALON_RELAY_REQUEST',
             id,
             request: {
@@ -142,7 +229,7 @@ if (relayUrl && typeof window !== 'undefined') {
               body,
               sessionId,
             },
-          }, '*')
+          }, bridgeOrigin)
         } catch (error) {
           pending.delete(id)
           cleanup()

@@ -197,7 +197,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.
 - [x] Owner created the Apps Script project, imported the backend files, ran `setupSalonDatabase()`, authorized the required Google access and deployed the owner-executed anonymous Web App (owner-confirmed 2026-11-04).
 - [x] Owner added the deployed `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL` (owner-confirmed 2026-11-04).
-- [ ] Verify the new GitHub Pages rebuild succeeds and the deployed frontend initializes the Apps Script relay.
+- [~] GitHub Pages artifact builds and deploys, but the read-only live relay smoke currently fails: the deployed Apps Script reports version 1.0.0 (repository source is 1.1.0) and its older Bridge does not deliver the readiness handshake to the Pages top window. The bridge fix is committed; owner must update/redeploy Apps Script before this gate can pass.
 - [ ] Complete first-owner bootstrap; configure actual timezone, services, prices and working hours.
 - [ ] Verify real booking, conflict rejection, owner session, customer lookup/cancellation and Gmail Android notification from an Iran-based network without VPN.
 - [ ] Export any required historical D1 data only after owner approval; retain the old database until cutover is accepted.
@@ -251,3 +251,12 @@ Do not redo completed tasks. Read this file and `docs/PROJECT-STATE.md` before r
 ## R08 addendum — Apps Script backend cutover
 
 This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active Pages frontend targets the Apps Script implementation in `relay/Code.gs`; the bridge no longer forwards to a Worker. Owner deployment, GitHub variable setup and Iran-network acceptance remain open as recorded in R09.
+
+
+## Latest Apps Script nested-frame relay checkpoint (2026-11-05)
+
+- GitHub Actions CI passed on commit c185453f60a45186885017b895a17873d00700c8; the Pages build and deploy steps also succeeded, but the post-deploy read-only relay smoke failed.
+- The live diagnostic reached the nested HtmlService frame and called google.script.run.proxyRequest('/api/health') successfully, but the deployed script returned backend version 1.0.0; the repository's current relay/Code.gs reports 1.1.0.
+- The previous bridge sent messages to window.parent, which is Google's intermediate wrapper in this nested-frame deployment. The bridge now targets window.top; the Pages client discovers the descendant frame, verifies the Google Apps Script origin and exact MessageEvent.source, then posts requests to that frame with its exact origin.
+- The live smoke now checks the sender origin correctly. CI must pass after this patch. Full Pages live acceptance remains blocked until the owner imports current Code.gs, Bridge.html and manifest into the existing Apps Script project, reruns additive setupSalonDatabase(), and deploys a new Web App version. The /exec URL and existing spreadsheet are preserved.
+- No real booking, customer data, push registration or email was created during diagnostics. Do not use the public form for real appointments until live relay smoke and owner acceptance pass.

@@ -502,3 +502,14 @@ Production blockers and real salon details remain unchanged.
 - Added `docs/GITHUB-PAGES-RELAY.md` with exact owner setup and deployment steps.
 - **Owner action required:** create the Apps Script project from `relay/Code.gs` and `relay/Bridge.html`, run `authorizeRelay`, deploy as a web app accessible to anyone, add its `/exec` URL as the GitHub Actions variable `SALON_RELAY_URL`, then rerun Pages deployment.
 - **Not yet verified:** Google Apps Script availability on the owner's Iranian ISP, real booking flow through the relay, and owner session round-trip. Do not claim that Pages is live-bookable until those checks pass.
+
+
+## Latest Apps Script nested-frame relay diagnosis (2026-11-05)
+
+- Inspected current GitHub main tree and active release architecture. The active production path is GitHub Pages + Google Apps Script + a private Google Spreadsheet. Cloudflare Worker/D1 files are retained as recovery material and are not in the active request path.
+- Verified SALON_RELAY_URL is configured in the GitHub Pages workflow environment. The Pages build, artifact upload and GitHub Pages deployment succeeded for commit c185453f60a45186885017b895a17873d00700c8, but the post-deployment live smoke failed.
+- Read the actual workflow log: the browser found the nested Apps Script HtmlService frame, google.script.run was available, and direct proxyRequest('/api/health') returned HTTP 200. The deployed backend reported version 1.0.0, while repository source is 1.1.0. The readiness message was not received by the Pages top-level window.
+- Root cause: Apps Script renders the HTML output under a Google wrapper and a nested script.googleusercontent.com frame. The old Bridge used window.parent.postMessage, targeting the intermediate wrapper instead of the Pages top window. The updated bridge uses window.top.postMessage; the Pages client authenticates the nested frame by Google origin plus descendant MessageEvent.source, and uses exact target origins for requests and responses.
+- Updated files: src/relay.ts, relay/Bridge.html, tests/apps-script-contract.test.mjs, tests/apps-script-live-smoke.mjs, ROADMAP.md and this handoff file.
+- Next owner action after CI: import current relay/Code.gs, relay/Bridge.html and relay/appsscript.json into the existing Apps Script project; run setupSalonDatabase() again (additive only, preserving existing rows); reauthorize newly requested scopes if prompted; deploy a new Web App version while keeping the same /exec URL. Then rerun Pages and verify backend version 1.1.0, relay handshake, public config/services and anonymous admin rejection.
+- Firebase push registration/delivery and real reservation lifecycle are still not accepted. No customer data or live booking was created by smoke. Keep launch blocked until owner configuration and end-to-end acceptance are complete.

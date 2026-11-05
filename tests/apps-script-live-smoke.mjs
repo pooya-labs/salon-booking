@@ -138,8 +138,13 @@ try {
   assert.equal(directHealth.result?.status, 200, 'direct Apps Script health must respond with HTTP 200: ' + JSON.stringify(directHealth))
   const directHealthPayload = JSON.parse(directHealth.result?.body || '{}')
   assert.equal(directHealthPayload.service, 'salon-booking-apps-script', 'deployed Apps Script must expose the current backend health contract')
-  assert.equal(bridgeMessages.some(message => message.type === 'SALON_RELAY_READY' && message.origin === new URL(pagesUrl).origin), true,
-    'Bridge.html must announce readiness to the exact GitHub Pages origin: ' + JSON.stringify({ frameDiagnostics, bridgeMessages }))
+  const readyMessage = bridgeMessages.find(message => message.type === 'SALON_RELAY_READY')
+  const readyHost = readyMessage ? new URL(readyMessage.origin).hostname : ''
+  assert.ok(
+    readyMessage && (readyHost === 'script.googleusercontent.com' || /^[a-z0-9-]+-script\.googleusercontent\.com$/i.test(readyHost)),
+    'Bridge.html must announce readiness from the nested Apps Script origin to the Pages top window: ' +
+      JSON.stringify({ frameDiagnostics, bridgeMessages }),
+  )
 
   const result = await page.evaluate(async () => {
     const read = async (path) => {

@@ -93,3 +93,18 @@ The manager can add more than one device by repeating activation on each phone/b
 ## 7. Email alert preference
 
 Email alerts are off by default. In the admin panel's اعلان‌ها tab, leave the email checkbox off to receive phone push only. Enabling it sends a parallel MailApp email to the configured manager address. If email is disabled, no booking email is sent.
+
+
+## 8. Verify the deployed relay and upgrade an existing Web App
+
+The live Pages check expects the Apps Script health endpoint to report backend version 1.1.0. A response of 1.0.0 means the existing Google Web App deployment is still serving an older version, even when GitHub Pages has already been rebuilt.
+
+To upgrade without creating a new spreadsheet or changing the public URL:
+
+1. In the existing Apps Script project, replace Code.gs, Bridge.html and appsscript.json with the latest files from this repository.
+2. Save all files and run setupSalonDatabase() once from the Apps Script editor. Its schema update is additive: it creates missing tabs/columns and preserves existing rows.
+3. Review and approve any newly requested Apps Script scopes.
+4. Open Deploy → Manage deployments → Edit → New version → Deploy. Keep the existing deployment and /exec URL.
+5. Push or rerun the GitHub Pages workflow, then confirm its read-only smoke check passes. It verifies iframe handshake, backend version, public config/services, setup status and anonymous admin rejection; it does not create a booking.
+
+The Apps Script HTML Service may render its page in a nested iframe. The current bridge communicates with the Pages top window using postMessage while validating the exact Pages origin and sender frame. Do not replace this with wildcard target origins.

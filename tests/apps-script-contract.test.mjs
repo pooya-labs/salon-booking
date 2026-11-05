@@ -91,8 +91,18 @@ test('Pages relay has bounded, recoverable iframe and request failures', () => {
   assert.match(relayClient, /پاسخی از سامانه رزرو دریافت نشد/)
 })
 
-test('bridge accepts API messages only from the GitHub Pages origin', () => {
+test('nested Apps Script bridge accepts only the Pages top window and replies to it', () => {
+  assert.match(bridge, /event\.source !== window\.top/)
   assert.match(bridge, /event\.origin !== PARENT_ORIGIN/)
+  assert.match(bridge, /window\.top\.postMessage/)
   assert.match(bridge, /google\.script\.run/)
   assert.match(bridge, /\.proxyRequest\(message\.request\)/)
+})
+
+test('Pages relay authenticates the nested Apps Script frame and exact response source', () => {
+  assert.match(relayClient, /isAppsScriptOrigin/)
+  assert.match(relayClient, /isNestedFrameWindow/)
+  assert.match(relayClient, /event\.source !== bridgeWindow/)
+  assert.match(relayClient, /event\.origin !== bridgeOrigin/)
+  assert.match(relayClient, /bridgeWindow\?\.postMessage/)
 })
