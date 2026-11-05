@@ -85,6 +85,11 @@ test('owner sessions persist for 30 days, renew on activity, and logout revokes 
   const helpers = runInNewContext(backend + String.fromCharCode(10) +
     '({ setSession_, getSession_, revokeSession_, SESSION_TTL_, SESSION_CACHE_TTL_ })', {
     Date: FixedDate,
+    Utilities: {
+      DigestAlgorithm: { SHA_256: 'SHA_256' },
+      Charset: { UTF_8: 'UTF_8' },
+      computeDigest: () => new Array(32).fill(7),
+    },
     CacheService: { getScriptCache: () => cache },
     sha256_: value => 'digest:' + value,
     findBy_: (_table, column, value) => store.session?.[column] === value ? { ...store.session } : null,
