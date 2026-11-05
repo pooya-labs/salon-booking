@@ -277,6 +277,8 @@ try {
   await page.getByRole('button', { name: 'تقویم روز' }).click()
   await page.locator('.admin-calendar').waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'owner daily visual booking calendar')
+  await page.locator('.admin-day-slot.is-booked').waitFor({ state: 'visible' })
+  await page.locator('.admin-calendar-list-panel').filter({ hasText: 'نوبت‌های مشتری' }).getByText('کوتاهی مو').waitFor({ state: 'visible' })
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
   const nextDayResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200)
   await page.getByRole('button', { name: 'روز بعد' }).click()
@@ -329,57 +331,10 @@ try {
   await responsePromise
   await page.waitForFunction(() => !document.querySelector('button[aria-label="هفت روز قبل"]')?.disabled)
 
-  await page.locator('.admin-filter select').selectOption('pending')
-  await page.waitForFunction(() => Array.from(document.querySelectorAll('.admin-filter select')).some(select => select.value === 'pending'))
-  assert.ok(apiCalls.some(call => call.from === '2026-11-03' && call.to === '2026-11-09' && call.status === 'pending'),
-    'status filter should preserve the selected date range')
-
-  responsePromise = page.waitForResponse(response => {
-    const url = new URL(response.url())
-    return url.pathname === '/api/admin/bookings'
-      && !url.searchParams.has('from')
-      && !url.searchParams.has('to')
-      && url.searchParams.get('status') === 'pending'
-      && response.status() === 200
-  })
-  await page.getByRole('button', { name: 'هفت روز آینده' }).click()
-  await responsePromise
-  await page.waitForFunction(() => !document.querySelector('button[aria-label="هفت روز بعد"]')?.disabled)
-  assert.ok(apiCalls.some(call => call.from === '2026-11-03' && call.to === '2026-11-09' && call.status === 'pending'),
-    'reset should restore the API default seven-day range and preserve the status filter')
-
-  await page.locator('.admin-filter select').selectOption('all')
-  await page.waitForFunction(() => Array.from(document.querySelectorAll('.admin-filter select')).some(select => select.value === 'all'))
-
-  const pendingCard = page.locator('.admin-booking-card').filter({ hasText: 'QA Client Pending' })
-  await pendingCard.getByRole('button', { name: 'لغو', exact: true }).click()
-  let confirmation = pendingCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
-  await confirmation.waitFor({ state: 'visible' })
-  await assertNoAccessibilityViolations(page, 'owner cancellation confirmation')
-  assert.equal(statusUpdates.length, 0, 'requesting cancellation must not mutate booking status')
-  await confirmation.getByRole('button', { name: 'انصراف' }).click()
-  assert.equal(statusUpdates.length, 0, 'cancelling the confirmation must not mutate booking status')
-
-  await pendingCard.getByRole('button', { name: 'لغو', exact: true }).click()
-  confirmation = pendingCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
-  await confirmation.getByRole('button', { name: 'تأیید لغو نوبت' }).click()
-  await page.waitForFunction(() => document.querySelector('.admin-booking-card')?.innerText.includes('لغو شده'))
-  assert.deepEqual(statusUpdates[0], { bookingId: 'qa-pending', status: 'cancelled' })
-
-  const noShowCard = page.locator('.admin-booking-card').filter({ hasText: 'QA Client No-show' })
-  await noShowCard.getByRole('button', { name: 'عدم مراجعه', exact: true }).click()
-  confirmation = noShowCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
-  await confirmation.getByRole('button', { name: 'تأیید عدم مراجعه' }).click()
-  await page.waitForFunction(() => document.querySelectorAll('.admin-booking-card').length > 0)
-  assert.deepEqual(statusUpdates[1], { bookingId: 'qa-confirmed-noshow', status: 'no_show' })
-
-  const completeCard = page.locator('.admin-booking-card').filter({ hasText: 'QA Client Complete' })
-  await completeCard.getByRole('button', { name: 'انجام شد', exact: true }).click()
-  confirmation = completeCard.getByRole('group', { name: 'تأیید تغییر وضعیت' })
-  await confirmation.getByRole('button', { name: 'تأیید انجام نوبت' }).click()
-  assert.deepEqual(statusUpdates[2], { bookingId: 'qa-confirmed-complete', status: 'completed' })
-  console.log('[admin-browser] cancellation, completion and no-show actions require explicit confirmation')
-  console.log('[admin-browser] cancelling a confirmation does not send a status mutation')
+  assert.equal(await page.locator('.admin-filter').count(), 0, 'appointment status filters are removed')
+  assert.equal(await page.getByRole('button', { name: 'انجام شد', exact: true }).count(), 0, 'completion actions are removed')
+  assert.equal(await page.getByRole('button', { name: 'تأیید', exact: true }).count(), 0, 'approval actions are removed from appointments')
+  console.log('[admin-browser] appointments are read-only; approval and completion controls are absent')
 
   for (const width of [360, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 })
@@ -449,7 +404,7 @@ try {
 
   assert.deepEqual(diagnostics.externalRequests, [], 'owner dashboard should not load third-party resources')
   console.log('[admin-browser] seven-day range navigation forward/back/reset passed')
-  console.log('[admin-browser] status filter preserves selected range')
+  console.log('[admin-browser] read-only appointments and date navigation passed')
   console.log('[admin-browser] responsive owner dashboard matrix passed: 360, 390, 768, 1024, 1440px')
   console.log('[admin-browser] no uncaught exceptions, console/network errors or third-party requests')
   console.log('PASS: autonomous owner dashboard browser QA completed')
