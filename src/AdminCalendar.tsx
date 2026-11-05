@@ -8,7 +8,6 @@ type DayBooking = {
   id: string
   time: string
   endTime: string
-  status: 'pending' | 'confirmed' | 'completed' | 'no_show'
   serviceName: string
   durationMinutes: number
 }
@@ -34,7 +33,6 @@ const shiftDate = (dateKey: string, amount: number) => {
   date.setUTCDate(date.getUTCDate() + amount)
   return date.toISOString().slice(0, 10)
 }
-const statusLabel = (status: DayBooking['status']) => ({ pending: 'در انتظار تأیید', confirmed: 'تأییدشده', completed: 'انجام‌شده', no_show: 'عدم مراجعه' })[status]
 
 export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: number }) {
   const [date, setDate] = useState(getIranTodayDateKey)
@@ -258,7 +256,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
             <div className="admin-calendar-list-panel">
               <header><h4>نوبت‌های مشتری</h4><span>{toFa(bookings.length)}</span></header>
               {bookings.length === 0 ? <p>برای این روز نوبت فعالی ثبت نشده است.</p> : bookings.map(booking => (
-                <article key={booking.id}><time dir="ltr">{booking.time}–{booking.endTime}</time><div><strong>{booking.serviceName}</strong><small>{statusLabel(booking.status)} · {toFa(booking.durationMinutes)} دقیقه</small></div></article>
+                <article key={booking.id}><time dir="ltr">{booking.time}–{booking.endTime}</time><div><strong>{booking.serviceName}</strong><small>{toFa(booking.durationMinutes)} دقیقه</small></div></article>
               ))}
             </div>
             <div className="admin-calendar-list-panel">
