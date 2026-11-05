@@ -282,7 +282,7 @@ try {
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
   await Promise.all([
     page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200),
-    page.getByRole('button', { name: 'روز بعد' }).click(),
+    page.getByRole('button', { name: 'روز بعد', exact: true }).click(),
   ])
   await page.locator('.admin-day-slot.is-free').filter({ hasText: '11:00' }).click()
   await page.locator('.admin-block-confirm').waitFor({ state: 'visible' })
