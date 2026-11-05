@@ -272,6 +272,9 @@ try {
   assert.ok(androidTopMetrics.document <= androidTopMetrics.width + 1, 'Android page must not overflow horizontally: ' + JSON.stringify(androidTopMetrics))
   assert.ok(androidTopMetrics.body <= androidTopMetrics.width + 1, 'Android body must not overflow horizontally: ' + JSON.stringify(androidTopMetrics))
   assert.ok(androidTopMetrics.menuButtonVisible && androidTopMetrics.stickyBarVisible, 'Android mobile navigation and booking bar should be available')
+  const androidHeaderOwnerLink = androidPage.locator('.header-actions > a.owner-link:not(.booking-manage-link)')
+  assert.ok(await androidHeaderOwnerLink.isVisible(), 'Android homepage header must show a direct owner-panel entry')
+  assert.equal(await androidHeaderOwnerLink.getAttribute('href'), '?admin=1', 'Android header owner entry must point to the Pages admin route')
 
   await androidPage.locator('.menu-toggle').tap()
   assert.ok(await androidPage.locator('.main-nav').evaluate(element => element.classList.contains('is-open')), 'Android touch menu should open')
