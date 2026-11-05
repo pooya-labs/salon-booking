@@ -9,6 +9,7 @@ const manifest = JSON.parse(readFileSync(new URL('../relay/appsscript.json', imp
 const bridge = readFileSync(new URL('../relay/Bridge.html', import.meta.url), 'utf8')
 const pushClient = readFileSync(new URL('../src/push-notifications.ts', import.meta.url), 'utf8')
 const worker = readFileSync(new URL('../public/firebase-messaging-sw.js', import.meta.url), 'utf8')
+const relayClient = readFileSync(new URL('../src/relay.ts', import.meta.url), 'utf8')
 
 test('Apps Script backend parses as V8 JavaScript', () => {
   execFileSync(process.execPath, ['--check'], { input: backend, stdio: ['pipe', 'pipe', 'pipe'] })
@@ -78,6 +79,16 @@ test('foreground and background push use the Pages admin route and service-worke
   assert.ok(backend.includes("fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/?admin=1' }"))
   assert.ok(worker.indexOf("self.addEventListener('notificationclick'") < worker.indexOf('importScripts('))
   assert.doesNotMatch(worker, /onBackgroundMessage/)
+})
+
+test('Pages relay has bounded, recoverable iframe and request failures', () => {
+  assert.match(relayClient, /loadTimeout = window\.setTimeout\([\s\S]*?20000\)/)
+  assert.match(relayClient, /frameReady = null/)
+  assert.match(relayClient, /pendingRequest\.timeoutId = window\.setTimeout\([\s\S]*?30000\)/)
+  assert.match(relayClient, /window\.clearTimeout\(request\.timeoutId\)/)
+  assert.match(relayClient, /window\.clearTimeout\(pendingRequest\.timeoutId\)/)
+  assert.match(relayClient, /درخواست لغو شد/)
+  assert.match(relayClient, /پاسخی از سامانه رزرو دریافت نشد/)
 })
 
 test('bridge accepts API messages only from the GitHub Pages origin', () => {
