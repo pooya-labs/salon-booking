@@ -1,79 +1,79 @@
 # Shayan Barber Booking
 
-A premium barber appointment platform for Shayan, with a Persian RTL customer journey and a coordinated owner workspace.
+A production-ready barber appointment platform for Shayan Barber Studio, with a Persian RTL customer booking journey and a coordinated owner workspace.
 
-**Brand:** Shayan Barber Studio (شایان)  
+**Product:** Shayan Barber Studio (شایان)  
 **Engineering / creator:** Pooya  
-**Default branch:** `main`  
-**Current release line:** 0.7.0 — Google Apps Script backend migration  
-**Frontend:** React, TypeScript, Vite, Tailwind CSS  
+**Release:** **1.0.0** · 2026-11-05  
+**Default branch:** main  
+**Frontend:** React · TypeScript · Vite · Tailwind CSS  
 **Hosting:** GitHub Pages  
-**API + database:** Google Apps Script + private Google Sheets
+**API + database:** Google Apps Script · private Google Sheets  
+**Manager notifications:** Firebase Cloud Messaging
 
-Live site: https://pooya-labs.github.io/salon-booking/
+**Live website:** https://pooya-labs.github.io/salon-booking/  
+**Owner panel:** https://pooya-labs.github.io/salon-booking/?admin=1
 
 **Studio contact:** میدان نامجو، خیابان پازوکی، کوچه دهقانی، پلاک ۱۱۸ · [Instagram @shayan_tatsu](https://www.instagram.com/shayan_tatsu/) · [۰۹۱۰ ۶۸۴ ۱۵۵۰](tel:+989106841550)
 
-## Brand and visual identity
+## Version 1.0.0
 
-The site uses the owner-supplied barber emblem as its primary mark, with an obsidian-black canvas, warm antique-gold accents, ivory typography, rounded surfaces and layered Liquid Glass treatments. The public customer journey and owner workspace share the same visual system; the supplied logo assets remain separate brand elements. Reduced-motion preferences are respected across all interactive surfaces.
+The first release is owner-accepted. The public site, live Apps Script connection, owner workspace, scheduling configuration and manager notifications have been tested by the owner. The latest automated CI and Pages deployment workflows also passed; see ROADMAP.md for release evidence and scope.
+
+### Included
+
+- Shayan brand identity and responsive obsidian / antique-gold Liquid Glass design.
+- Persian RTL customer experience with Jalali date presentation and Iran timezone (Asia/Tehran).
+- Service catalogue with owner-managed descriptions, duration and prices.
+- Live availability and conflict-safe online appointment booking.
+- Booking reference and customer self-service lookup/cancellation.
+- Owner sign-in with persistent rolling sessions.
+- Owner dashboard, daily calendar, appointment management and time blocking.
+- Weekly opening hours, breaks, closures and one-off schedule exceptions.
+- Firebase push notifications to the registered manager device.
+- Optional email notifications (off by default).
 
 ## Active architecture
 
-1. GitHub Pages serves the customer website and manager panel.
-2. A hidden iframe loads the owner's Google Apps Script Web App. The frontend forwards its same-origin `/api/*` calls through `google.script.run`.
-3. Apps Script performs the API logic and stores application records in a private Google Spreadsheet.
-4. Apps Script sends Firebase Cloud Messaging push notifications to registered manager devices; optional email notifications are off by default.
+1. GitHub Pages serves the public website and manager panel.
+2. A hidden iframe loads the owner's Google Apps Script Web App and bridges API requests.
+3. Apps Script executes the API and stores application records in a private Google Spreadsheet.
+4. Firebase Cloud Messaging sends push notifications to registered manager devices.
 
-**Cloudflare is no longer in the active request path.** The former Worker, Wrangler configuration and D1 migrations remain in the repository as temporary recovery material until the Apps Script deployment passes acceptance. Existing D1 data is not copied automatically into Sheets.
+**Cloudflare Workers and D1 are not in the active request path.** Their files remain in the repository as legacy recovery material and must not be treated as the current production architecture.
 
-The Pages build requires the GitHub Actions variable `SALON_RELAY_URL`. Without it, the site intentionally remains a demo and will not submit customer information.
+The Pages deployment uses the repository's SALON_RELAY_URL Actions variable and Firebase configuration variables. Without the Apps Script relay variable, a Pages build intentionally falls back to demo mode and must not be used for real customer bookings.
 
-The live Apps Script relay was previously verified on backend 1.5.0; backend 1.5.3 is the current deployment target. Backend 1.5.3 hardens owner-calendar booking lookup against Google Sheets converting date/time cells into Date values, preserves new records as text, and derives missing timestamp fields from the stored local date, time and duration. The owner calendar also refreshes automatically while visible. Version 1.5.3 also corrects the manager time-block clock validator and adds authenticated `DELETE /api/admin/bookings/{id}` with an owner confirmation step and audit record. The same responsive delete control is available on desktop and Android; the owner entry is available inside the mobile hamburger menu only, without a separate header control. Deploy the updated `relay/Code.gs` as a new version of the existing Web App to activate backend changes; GitHub Pages updates automatically.
+## Backend version
 
-## Main capabilities
+The Apps Script source in relay/Code.gs reports backend version **1.5.3**. This is separate from the product release version **1.0.0**. The active Apps Script Web App deployment and its existing /exec URL are owner-managed; do not replace the deployment or spreadsheet casually.
 
-- Service catalog and duration-aware available slots.
-- Jalali calendar presentation with Iran-only `Asia/Tehran` scheduling; admin date pickers use the Persian calendar and time fields use 24-hour presentation.
-- Conflict-safe reservation creation, idempotent retries and reference codes.
-- Customer self-service lookup and cancellation with a one-time management token.
-- Owner bootstrap/login, booking status management, service administration and weekly/date-specific scheduling.
-- Editable services and prices; visual weekly opening-hour cards with a 24-hour timeline; a Jalali daily calendar for customer bookings, free slots and manager-blocked time; one-tap time blocking without customer name or phone; owner push notifications.
+## Local development and checks
 
-## Local development
+Requirements: Node.js 22 and npm.
 
-Requirements: Node.js 22.13+ and npm.
+    npm install
+    npm run dev
+    npm run lint
+    npm run test:unit
+    npm run test:migrations
+    npm run build
+    npm run build:pages
 
-```bash
-npm install
-npm run dev
-npm run lint
-npm run test:unit
-npm run test:migrations
-npm run build
-npm run build:pages
-```
+Without VITE_SALON_RELAY_URL, local development and preview use demo data. Never enter real customer information in demo mode.
 
-Without `VITE_SALON_RELAY_URL`, local development uses sample data only. Never enter real customer information in local/demo mode.
+## Deployment and operations
 
-## Apps Script deployment
+The production Apps Script project, private spreadsheet, OAuth authorization and Web App deployment are owned and administered through the salon owner's Google account. The GitHub Pages workflow builds and deploys the public frontend. See:
 
-Complete the owner-only steps in [docs/GITHUB-PAGES-RELAY.md](./docs/GITHUB-PAGES-RELAY.md):
-- Create the Apps Script project from `relay/Code.gs`, `relay/Bridge.html` and `relay/appsscript.json`.
-- Run `setupSalonDatabase()` to create the private spreadsheet and one-time bootstrap token.
-- Deploy as a Web App executing as the owner with anonymous access.
-- Add its `/exec` URL as the GitHub Actions variable `SALON_RELAY_URL`.
-- Complete first-owner bootstrap at `https://pooya-labs.github.io/salon-booking/?admin=1`, then configure the salon's actual timezone, services and hours.
-
-The Google account owner must authorize and deploy the Web App inside their own account. Repository code cannot publish a Web App into that account automatically.
-
-## Project records
-
-- [Delivery roadmap](./ROADMAP.md)
+- [Delivery roadmap and release evidence](./ROADMAP.md)
 - [Project state and handoff](./docs/PROJECT-STATE.md)
+- [Apps Script relay guide](./docs/GITHUB-PAGES-RELAY.md)
 - [Deployment guide](./docs/DEPLOYMENT.md)
 - [API contract](./docs/API.md)
 - [Owner workspace guide](./docs/ADMIN.md)
 - [Privacy operations](./docs/PRIVACY-OPERATIONS.md)
 
-All customer-facing copy, services, prices, hours, contact information and imagery require owner approval before launch.
+## Release policy
+
+Version 1.0.0 is complete. New features belong in a subsequent release. Preserve the active Pages + Apps Script + Sheets + Firebase architecture unless a deliberate, documented migration is approved.
