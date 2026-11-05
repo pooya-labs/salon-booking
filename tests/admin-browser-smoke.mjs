@@ -138,9 +138,9 @@ try {
     if (message.type() === 'error') diagnostics.consoleErrors.push(message.text())
   })
   page.on('request', request => {
-    if (new URL(route.request().url()).origin !== origin) diagnostics.externalRequests.push(route.request().url())
+    if (new URL(request.url()).origin !== origin) diagnostics.externalRequests.push(request.url())
   })
-  page.on('requestfailed', request => diagnostics.failedRequests.push(route.request().url()))
+  page.on('requestfailed', request => diagnostics.failedRequests.push(request.url()))
   page.on('response', response => {
     if (response.status() >= 400 && new URL(response.url()).origin === origin) {
       diagnostics.badResponses.push(response.status() + ' ' + response.url())
