@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
-import { readFile, readdir, stat } from 'node:fs/promises'
+import { mkdir, readFile, readdir, stat } from 'node:fs/promises'
 import { extname, resolve, sep } from 'node:path'
 import { chromium } from 'playwright'
 
 const distRoot = resolve('dist')
+const visualArtifacts = resolve('test-artifacts')
+await mkdir(visualArtifacts, { recursive: true })
 const basePath = '/salon-booking/'
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -157,6 +159,24 @@ try {
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'document direction must be RTL')
   assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1, 'home page must have one primary heading')
 
+  // Desktop-size capture used for Windows/large-screen visual review.
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.screenshot({ path: resolve(visualArtifacts, 'desktop-homepage.png'), fullPage: true })
+  for (const width of [1280, 1366, 1440, 1536, 1920]) {
+    await page.setViewportSize({ width, height: width <= 1366 ? 768 : 960 })
+    const desktopMetrics = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth,
+      footerWidth: document.querySelector('.site-footer')?.getBoundingClientRect().width ?? 0,
+      bookingBarDisplay: getComputedStyle(document.querySelector('.mobile-book-bar')).display,
+    }))
+    assert.ok(desktopMetrics.document <= desktopMetrics.viewport + 1, 'desktop horizontal overflow: ' + JSON.stringify(desktopMetrics))
+    assert.ok(desktopMetrics.body <= desktopMetrics.viewport + 1, 'desktop body overflow: ' + JSON.stringify(desktopMetrics))
+    assert.equal(desktopMetrics.bookingBarDisplay, 'none', 'mobile booking bar must stay hidden on desktop')
+  }
+  console.log('[visual] Windows desktop viewport matrix passed: 1280, 1366, 1440, 1536, 1920px')
+
   for (const width of [320, 360, 390, 430, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: width < 600 ? 844 : 960 })
     await page.evaluate(() => window.scrollTo(0, 0))
@@ -199,9 +219,105 @@ try {
   assert.ok(footerLayout.brandLogoWidth <= 50 && footerLayout.brandLogoHeight <= 50, 'Shayan footer emblem should remain compact')
   assert.ok(footerLayout.creatorLogoWidth <= 20 && footerLayout.creatorLogoHeight <= 20, 'Pooya Labs mark should remain compact')
   assert.ok(footerLayout.creditFits, 'Pooya Labs credit must fit without text overflow')
-  assert.ok(footerLayout.footerVisible && footerLayout.barVisible, 'footer and sticky booking bar should both be visible')
+  console.log('[visual] mobile footer metrics: ' + JSON.stringify(footerLayout))
+  await page.screenshot({ path: resolve(visualArtifacts, 'mobile-footer-viewport.png') })
+  await page.screenshot({ path: resolve(visualArtifacts, 'mobile-full-page.png'), fullPage: true })
+  assert.ok(footerLayout.footerVisible && footerLayout.barVisible, 'footer and sticky booking bar should both be visible: ' + JSON.stringify(footerLayout))
   assert.ok(footerLayout.footerAboveBookingBar, 'sticky booking bar must not cover the footer at the bottom of the page')
   console.log('[browser] mobile footer logo sizing, creator-credit wrapping and sticky booking-bar clearance passed')
+
+  // Touch-enabled Android-like browser context (Pixel-sized viewport and DPR).
+  const androidContext = await browser.newContext({
+    viewport: { width: 412, height: 915 },
+    deviceScaleFactor: 2.625,
+    isMobile: true,
+    hasTouch: true,
+    locale: 'fa-IR',
+    timezoneId: 'Asia/Tehran',
+    userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36',
+  })
+  const androidPage = await androidContext.newPage()
+  watchPage(androidPage)
+  await androidPage.goto(homeUrl, { waitUntil: 'networkidle' })
+  await androidPage.locator('.site-header').waitFor({ state: 'visible' })
+  const androidTopMetrics = await androidPage.evaluate(() => ({
+    width: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth,
+    menuButtonVisible: getComputedStyle(document.querySelector('.menu-toggle')).display !== 'none',
+    stickyBarVisible: getComputedStyle(document.querySelector('.mobile-book-bar')).display !== 'none',
+  }))
+  assert.ok(androidTopMetrics.document <= androidTopMetrics.width + 1, 'Android page must not overflow horizontally: ' + JSON.stringify(androidTopMetrics))
+  assert.ok(androidTopMetrics.body <= androidTopMetrics.width + 1, 'Android body must not overflow horizontally: ' + JSON.stringify(androidTopMetrics))
+  assert.ok(androidTopMetrics.menuButtonVisible && androidTopMetrics.stickyBarVisible, 'Android mobile navigation and booking bar should be available')
+
+  await androidPage.locator('.menu-toggle').tap()
+  assert.ok(await androidPage.locator('.main-nav').evaluate(element => element.classList.contains('is-open')), 'Android touch menu should open')
+  await androidPage.getByRole('link', { name: 'خدمات', exact: true }).tap()
+  assert.ok(!(await androidPage.locator('.main-nav').evaluate(element => element.classList.contains('is-open'))), 'Android menu should close after navigation')
+
+  await androidPage.locator('.header-book').tap()
+  const androidDialog = androidPage.getByRole('dialog')
+  await androidDialog.waitFor({ state: 'visible' })
+  await androidDialog.locator('.booking-service-option').first().tap()
+  await androidDialog.getByRole('button', { name: /ادامه/ }).tap()
+  await androidDialog.locator('.booking-date-option').first().tap()
+  await androidDialog.locator('.booking-time-option:not([disabled])').first().tap()
+  await androidDialog.getByRole('button', { name: /ادامه/ }).tap()
+  const androidFormMetrics = await androidDialog.evaluate(element => {
+    const body = element.querySelector('.booking-flow-body')
+    const footer = element.querySelector('.booking-flow-footer')
+    const fields = [...element.querySelectorAll('.booking-field input')]
+    const bodyRect = body.getBoundingClientRect()
+    return {
+      columns: getComputedStyle(element.querySelector('.booking-form-two-cols')).gridTemplateColumns.trim().split(' ').length,
+      fieldsFit: fields.every(input => {
+        const rect = input.getBoundingClientRect()
+        return rect.left >= bodyRect.left - 1 && rect.right <= bodyRect.right + 1
+      }),
+      footerVisible: footer.getBoundingClientRect().bottom <= element.getBoundingClientRect().bottom + 1,
+      bodyScrollable: body.scrollHeight >= body.clientHeight,
+    }
+  })
+  assert.equal(androidFormMetrics.columns, 1, 'Android customer name fields should stack')
+  assert.ok(androidFormMetrics.fieldsFit, 'Android customer form fields must fit inside the dialog')
+  assert.ok(androidFormMetrics.footerVisible, 'Android booking actions must remain visible')
+  await androidDialog.screenshot({ path: resolve(visualArtifacts, 'android-booking-details.png') })
+  await androidPage.keyboard.press('Escape')
+  await androidDialog.waitFor({ state: 'detached' })
+
+  await androidPage.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await androidPage.waitForTimeout(150)
+  const androidFooterMetrics = await androidPage.evaluate(() => {
+    const footer = document.querySelector('.site-footer')
+    const logo = footer.querySelector('.footer-brand > img').getBoundingClientRect()
+    const creatorMark = footer.querySelector('.footer-pooya-mark').getBoundingClientRect()
+    const credit = footer.querySelector('.footer-credit')
+    const footerRect = footer.getBoundingClientRect()
+    const barRect = document.querySelector('.mobile-book-bar').getBoundingClientRect()
+    return {
+      width: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+      footerTop: Math.round(footerRect.top),
+      footerBottom: Math.round(footerRect.bottom),
+      barTop: Math.round(barRect.top),
+      barBottom: Math.round(barRect.bottom),
+      logo: { width: logo.width, height: logo.height },
+      creator: { width: creatorMark.width, height: creatorMark.height },
+      creditFits: credit.scrollWidth <= credit.clientWidth + 1,
+      footerAboveBar: footerRect.bottom <= barRect.top - 6,
+    }
+  })
+  console.log('[visual] Android footer metrics: ' + JSON.stringify(androidFooterMetrics))
+  await androidPage.screenshot({ path: resolve(visualArtifacts, 'android-footer.png') })
+  await androidPage.screenshot({ path: resolve(visualArtifacts, 'android-full-page.png'), fullPage: true })
+  assert.ok(androidFooterMetrics.document <= androidFooterMetrics.width + 1, 'Android footer must not overflow horizontally')
+  assert.ok(androidFooterMetrics.logo.width <= 50 && androidFooterMetrics.logo.height <= 50, 'Android Shayan emblem must be compact')
+  assert.ok(androidFooterMetrics.creator.width <= 20 && androidFooterMetrics.creator.height <= 20, 'Android Pooya Labs mark must be compact')
+  assert.ok(androidFooterMetrics.creditFits, 'Android creator credit must fit')
+  assert.ok(androidFooterMetrics.footerAboveBar, 'Android sticky booking bar must not cover the footer: ' + JSON.stringify(androidFooterMetrics))
+  await androidContext.close()
+  console.log('[visual] Android touch navigation, booking form, footer and sticky-bar clearance passed')
 
 
   const menuToggle = page.getByRole('button', { name: 'باز کردن منو' })
