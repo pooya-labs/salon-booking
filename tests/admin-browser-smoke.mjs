@@ -138,9 +138,9 @@ try {
     if (message.type() === 'error') diagnostics.consoleErrors.push(message.text())
   })
   page.on('request', request => {
-    if (new URL(request.url()).origin !== origin) diagnostics.externalRequests.push(request.url())
+    if (new URL(route.request().url()).origin !== origin) diagnostics.externalRequests.push(route.request().url())
   })
-  page.on('requestfailed', request => diagnostics.failedRequests.push(request.url()))
+  page.on('requestfailed', request => diagnostics.failedRequests.push(route.request().url()))
   page.on('response', response => {
     if (response.status() >= 400 && new URL(response.url()).origin === origin) {
       diagnostics.badResponses.push(response.status() + ' ' + response.url())
@@ -190,8 +190,8 @@ try {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, status: body.status }) })
       return
     }
-    if (path === '/api/admin/day-schedule' && request.method() === 'GET') {
-      const requestedDate = new URL(request.url()).searchParams.get('date')
+    if (path === '/api/admin/day-schedule' && route.request().method() === 'GET') {
+      const requestedDate = new URL(route.request().url()).searchParams.get('date')
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         ok: true, date: requestedDate, timezone: 'Asia/Tehran', slotIntervalMinutes: 15,
         workingIntervals: [{ startsAt: '09:00', endsAt: '17:00' }],
@@ -203,8 +203,8 @@ try {
       }) })
       return
     }
-    if (path === '/api/admin/time-blocks' && request.method() === 'POST') {
-      const body = request.postDataJSON()
+    if (path === '/api/admin/time-blocks' && route.request().method() === 'POST') {
+      const body = route.request().postDataJSON()
       timeBlockRequests.push(body)
       const [hour, minute] = body.time.split(':').map(Number)
       const end = hour * 60 + minute + body.durationMinutes
@@ -214,7 +214,7 @@ try {
       return
     }
     const timeBlockMatch = /^\/api\/admin\/time-blocks\/([^/]+)$/.exec(path)
-    if (timeBlockMatch && request.method() === 'DELETE') {
+    if (timeBlockMatch && route.request().method() === 'DELETE') {
       mockTimeBlocks = mockTimeBlocks.filter(block => block.id !== timeBlockMatch[1])
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
       return
