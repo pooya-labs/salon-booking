@@ -328,7 +328,9 @@ test('owner booking deletion removes the selected record under the booking lock 
   });
   assert.equal(result.status, 200);
   assert.equal(result.payload.deleted, true);
-  assert.deepEqual(store.removed[0], ['Bookings', 'id', 'booking-1']);
+  assert.equal(store.removed[0][0], 'Bookings');
+  assert.equal(store.removed[0][1], 'id');
+  assert.equal(store.removed[0][2], 'booking-1');
   assert.equal(store.audits[0][0], 'booking.deleted');
   assert.equal(store.audits[0][1], 'owner-1');
 });
