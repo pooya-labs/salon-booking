@@ -2099,3 +2099,73 @@ hr { border-color:var(--line); }
  .admin-weekday-range{grid-template-columns:minmax(0,1fr) 13px minmax(0,1fr) 30px}
  .admin-weekday-range-index{grid-column:1/-1}
 }
+
+
+/* Mobile owner access and confirmed booking deletion. */
+.nav-owner-link { display:none; }
+@media (max-width:680px) {
+  .main-nav .nav-owner-link {
+    display:block;
+    margin-top:5px;
+    padding:15px 0 13px;
+    border-top:1px solid rgba(201,162,100,.28);
+    color:var(--shayan-gold-bright);
+    font-weight:700;
+  }
+}
+.admin-delete-confirm-backdrop {
+  position:fixed;
+  inset:0;
+  z-index:120;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(5,4,3,.78);
+  backdrop-filter:blur(8px);
+}
+.admin-delete-confirm {
+  width:min(100%,430px);
+  padding:26px;
+  border:1px solid rgba(214,174,112,.28);
+  border-radius:20px;
+  background:linear-gradient(145deg,#211b14,#110f0c);
+  color:#f3ead9;
+  box-shadow:0 28px 90px #0009;
+}
+.admin-delete-confirm-icon {
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(222,158,126,.32);
+  border-radius:13px;
+  color:#e6a18a;
+  background:rgba(166,76,58,.13);
+}
+.admin-delete-confirm h2 { margin:17px 0 8px; color:#f4e8d2; font-size:17px; font-weight:600; }
+.admin-delete-confirm p { margin:0; color:#c4b69f; font-size:11px; line-height:2.1; }
+.admin-delete-confirm-actions { display:flex; gap:9px; margin-top:22px; }
+.admin-delete-confirm-actions button {
+  min-height:43px;
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border:1px solid rgba(224,205,173,.2);
+  border-radius:10px;
+  background:#282117;
+  color:#e6d9c3;
+  font:11px Tahoma,sans-serif;
+}
+.admin-delete-confirm-actions button.is-danger {
+  border-color:rgba(211,132,107,.42);
+  background:linear-gradient(135deg,#8f4b3b,#67372d);
+  color:#fff2e9;
+}
+.admin-delete-confirm-actions button:disabled { opacity:.55; cursor:wait; }
+@media(max-width:420px) {
+  .admin-delete-confirm { padding:21px 18px; }
+  .admin-delete-confirm-actions { flex-direction:column-reverse; }
+  .admin-delete-confirm-actions button { width:100%; }
+}
