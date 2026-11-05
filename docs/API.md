@@ -75,8 +75,10 @@ All routes below require a live owner session except `GET /api/admin/setup-statu
 - `POST /api/admin/logout`
 - `GET /api/admin/me`
 - `GET /api/admin/bookings?from=YYYY-MM-DD&to=YYYY-MM-DD&status=all`
-- `GET /api/admin/availability?date=YYYY-MM-DD&serviceId=...` — owner-only availability for phone bookings; skips only public minimum notice.
-- `POST /api/admin/bookings` — owner-only confirmed phone booking. Body contains `serviceId`, `date`, `time`, `firstName`, `lastName`, `phone` and optional `note`. The server rechecks availability under the shared script lock.
+- `GET /api/admin/day-schedule?date=YYYY-MM-DD` — returns opening intervals, non-cancelled customer appointments and manager time blocks for a day without exposing customer name or phone.
+- `POST /api/admin/time-blocks` — blocks a time without creating a customer booking. Body: `{ "date": "YYYY-MM-DD", "time": "HH:mm", "durationMinutes": 60 }`. The server verifies working hours and conflicts under the shared script lock.
+- `DELETE /api/admin/time-blocks/{block-uuid}` — lifts a manager-created time block.
+- `GET /api/admin/availability?date=YYYY-MM-DD&serviceId=...` — owner-only service availability; skips only public minimum notice and respects manager blocks.
 - `GET /api/admin/notifications` / `PUT /api/admin/notifications` — read/update Firebase project ID and email-notification preference.
 - `POST /api/admin/push-subscriptions` / `DELETE /api/admin/push-subscriptions` — add/deactivate the signed-in owner's browser push token.
 - `POST /api/admin/notifications/test` — send a test push to registered manager devices.
@@ -90,7 +92,7 @@ All routes below require a live owner session except `GET /api/admin/setup-statu
 - `POST /api/admin/schedule/exceptions`
 - `DELETE /api/admin/schedule/exceptions/{exception-uuid}`
 
-Service category is editable (1–40 characters). On an existing spreadsheet, rerunning `setupSalonDatabase()` appends the `category`, `source` and `PushSubscriptions` columns/tabs without moving or clearing existing rows.
+Service category is editable (1–40 characters). On an existing spreadsheet, rerunning `setupSalonDatabase()` appends missing columns and creates the `PushSubscriptions` and `TimeBlocks` tabs without moving or clearing existing rows.
 
 Weekly and exception schedules accept an `intervals` array of up to eight non-overlapping `{ "startsAt": "09:00", "endsAt": "13:00" }` ranges. Changes that conflict with active reservations are rejected. Booking status transitions are validated and audited.
 

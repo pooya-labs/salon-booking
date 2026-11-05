@@ -289,3 +289,13 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - Salon timezone is fixed to Iran `Asia/Tehran` in the panel and Apps Script, not an editable free-text field.
 - Time controls declare `en-GB` locale and LTR direction for 24-hour time presentation.
 - Backend version 1.2.0 includes the server-side timezone pin; owner must update the existing Apps Script deployment before live verification.
+
+
+## Visual owner calendar and no-PII time blocks (2026-11-05)
+
+- Added a separate daily schedule API and visual owner calendar to show working windows, customer bookings, free time cells and manager-created blocks.
+- The manager can select a free start time, choose a duration preset and confirm. Only date/time/duration and audit metadata are stored; no customer name, phone, note or fake booking record is created.
+- Added an additive `TimeBlocks` Google Sheets table and authenticated day-view/create/delete endpoints. Block creation rechecks working hours, active reservations and existing blocks under the shared Apps Script lock.
+- Public availability treats manager blocks as busy ranges. Weekly-hour and date-exception changes cannot strand existing blocks.
+- The old manual phone-booking form is replaced in the owner workspace by the graphical time-block flow.
+- Backend target version: 1.3.0. Owner must import updated `Code.gs`, run additive setup to create the new tab, and deploy a new Web App version before live use.

@@ -556,3 +556,13 @@ Production blockers and real salon details remain unchanged.
 - Time inputs now declare `lang="en-GB"` and LTR direction to request 24-hour presentation; API values remain `HH:mm`.
 - Apps Script backend version is 1.2.0. Owner must import the updated `relay/Code.gs` and deploy a new Web App version while retaining the same /exec URL.
 - Automated tests cover Persian/Gregorian conversion, calendar weekdays, interval allocation and Apps Script timezone contract.
+
+
+## Visual daily owner calendar and manager time blocks (2026-11-05)
+
+- Added a daily owner calendar foundation with Jalali date navigation, 24-hour time slots and distinct visual states for active customer bookings, free time and manager blocks.
+- Quick blocking requires only selecting a free start, choosing a duration preset and confirming. It does not collect a name, surname, phone or note and does not create a row in Bookings.
+- Apps Script backend v1.3.0 adds the additive Sheets `TimeBlocks` table and authenticated endpoints `GET /api/admin/day-schedule`, `POST /api/admin/time-blocks`, and `DELETE /api/admin/time-blocks/{id}`.
+- Time-block creation is guarded by the shared script lock and rechecks opening hours, customer booking overlap and existing blocks. Public availability also treats blocks as busy ranges.
+- Schedule and date-exception edits cannot close hours around existing manager blocks.
+- The previous manual phone-booking form is replaced by the graphical daily calendar. Live acceptance remains pending Apps Script import/setup/deployment.

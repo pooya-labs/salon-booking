@@ -12,7 +12,7 @@ The owner workspace is served by the GitHub Pages frontend at `https://pooya-lab
 - Iran-fixed `Asia/Tehran` timezone (not editable), slot interval, booking notice, booking horizon and buffer settings. Admin date entry uses a Jalali calendar; working-hour fields use 24-hour time.
 - Weekly working hours with up to eight separate intervals per day; start, midday and closing periods can be edited independently.
 - Date-specific closures and alternate opening intervals, with notes.
-- Manual phone reservations with first name, last name and phone; confirmed phone bookings share the same availability lock and block online reservations.
+- Visual daily calendar with separate states for customer bookings, free slots and manager-blocked times. A manager can block a selected time with one confirmation and a duration choice; no customer name, phone or synthetic booking record is created.
 - Audit records for owner changes and booking status history.
 
 Schedule intervals are validated in Apps Script; the global script lock protects the critical availability-recheck-and-booking-write section from concurrent requests.
@@ -45,7 +45,7 @@ Email notifications are **disabled by default**. The manager can keep the email 
 
 ## Service, schedule and phone bookings
 
-Service categories, descriptions, prices, currencies, durations, display order and public visibility are editable. Each weekday supports multiple independently editable opening intervals, including midday breaks. The manager can also enter phone reservations with first name, last name and phone; a successful manual reservation is confirmed and blocks the same time from online availability.
+Service categories, descriptions, prices, currencies, durations, display order and public visibility are editable. Each weekday supports multiple independently editable opening intervals, including midday breaks. For appointments arranged outside the website, open the daily calendar, tap an empty time, choose a duration and confirm. This blocks the window without creating a customer booking or collecting personal data.
 
 ## Phone notifications
 

@@ -80,7 +80,6 @@ export function availableBlockDurations(
     const candidate = { time, endTime: clockOf(end) }
     return !bookings.some((item) => overlaps(start, end, item))
       && !blocks.some((item) => overlaps(start, end, item))
-      && !overlaps(start, end, candidate) === false ? false : true
   })
 }
 
