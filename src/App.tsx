@@ -460,6 +460,7 @@ function App() {
           <a href="#about" onClick={() => setMenuOpen(false)}>درباره استودیو</a>
           <a href="#faq" onClick={() => setMenuOpen(false)}>سؤالات متداول</a>
           <button type="button" className="nav-manage-button" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
+          <a className="nav-owner-link" href={import.meta.env.MODE === 'pages' ? '?admin=1' : '/admin'} onClick={() => setMenuOpen(false)}>ورود به پنل مدیریت</a>
         </nav>
         <div className="header-actions">
           <button type="button" className="owner-link booking-manage-link" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
