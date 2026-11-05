@@ -368,6 +368,29 @@ try {
   }))
   assert.ok(mobileAdminMetrics.document <= mobileAdminMetrics.viewport + 1, 'mobile owner dashboard must not overflow horizontally: ' + JSON.stringify(mobileAdminMetrics))
   assert.ok(mobileAdminMetrics.body <= mobileAdminMetrics.viewport + 1, 'mobile owner dashboard body must not overflow: ' + JSON.stringify(mobileAdminMetrics))
+  const mobileHeaderMetrics = await page.evaluate(async () => {
+    await new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)))
+    const topbar = document.querySelector('.admin-topbar')
+    const brand = topbar?.querySelector('.admin-brand')
+    const actions = topbar?.querySelector('.admin-topbar-actions')
+    const subtitle = topbar?.querySelector('.admin-brand-copy small')
+    if (!topbar || !brand || !actions || !subtitle) return null
+    const brandRect = brand.getBoundingClientRect()
+    const actionsRect = actions.getBoundingClientRect()
+    const subtitleRect = subtitle.getBoundingClientRect()
+    return {
+      brandBottom: Math.round(brandRect.bottom),
+      actionsTop: Math.round(actionsRect.top),
+      headerBottom: Math.round(topbar.getBoundingClientRect().bottom),
+      subtitleBottom: Math.round(subtitleRect.bottom),
+      subtitleFits: subtitle.scrollWidth <= subtitle.clientWidth + 1,
+      noOverlap: brandRect.bottom <= actionsRect.top + 1,
+    }
+  })
+  assert.ok(mobileHeaderMetrics, 'mobile owner header should render')
+  assert.ok(mobileHeaderMetrics.noOverlap, 'mobile owner brand and account actions must occupy separate rows: ' + JSON.stringify(mobileHeaderMetrics))
+  assert.ok(mobileHeaderMetrics.subtitleFits, 'mobile owner subtitle must wrap inside its own width')
+  assert.ok(mobileHeaderMetrics.subtitleBottom <= mobileHeaderMetrics.headerBottom + 1, 'mobile owner subtitle must remain inside header')
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-dashboard.png'), fullPage: true })
   await page.getByRole('button', { name: 'رزرو تلفنی' }).click()
   await page.locator('.admin-phone-booking-layout').waitFor({ state: 'visible' })
