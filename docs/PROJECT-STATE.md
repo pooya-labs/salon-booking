@@ -609,3 +609,15 @@ Production blockers and real salon details remain unchanged.
 - Weekly-hours checkbox is explicit: checked means the day is closed.
 - Apps Script now reuses the spreadsheet object and caches each table read within a single execution; writes invalidate the affected in-memory table. Booking/time-block data is not cached across requests.
 - Owner must import the latest `relay/Code.gs` into the existing Apps Script project and deploy a new Web App version. Preserve the existing `/exec` URL; no database setup rerun is required. Release 1.5.3 normalizes Sheets date/time cells for the daily calendar and uses a 30-second visible-page refresh.
+
+## Current handoff — OAuth recovery and Firebase push setup (2026-11-05)
+
+- Repository: `pooya-labs/salon-booking`; default branch: `main`; live customer site: https://pooya-labs.github.io/salon-booking/; owner panel: https://pooya-labs.github.io/salon-booking/?admin=1.
+- The owner reported that the Admin panel had shown “وضعیت راه‌اندازی پنل قابل دریافت نیست”. Apps Script Executions had no new entries during a panel refresh. The existing active Web App deployment was inspected and found to be Version 6, Execute as `pooya16.pg@gmail.com`, access `Anyone`; its existing `/exec` URL was retained.
+- Directly opening the Web App exposed an OAuth 403 `access_denied`: the External OAuth app was in Testing with zero Test users. The owner successfully added `pooya16.pg@gmail.com` to Test users and confirmed the Web App then opened. Do not repeat the Cloud project linking, API enablement, or IAM role setup; the owner already confirmed those.
+- Firebase project `pooya-notif` and its Web App/VAPID configuration are set. All seven GitHub Actions repository variables are registered: `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`, `FIREBASE_VAPID_KEY`.
+- Owner reports that the manager notification project/device is connected and notifications work. Treat this as owner-confirmed, not independently observed proof from a device log.
+- Source behavior verified in `src/AdminManagement.tsx` and `relay/Code.gs`: “ارسال اعلان آزمایشی” is disabled until `pushReady` is true; backend defines this as a saved Firebase project ID plus at least one active PushSubscriptions device. Keep this guard. Save `pooya-notif` in the notification settings if not already saved, register the current Android browser/PWA, then test send.
+- The OAuth recovery changed Google Cloud consent/test-user configuration only; no Apps Script deployment, `/exec` URL, spreadsheet, bookings, customer records or salon data were modified.
+- Last repository commit inspected before this handoff: `1844764a85c45b57369bebb95a4ad499d1d2775c`. No application code change was needed for the OAuth issue.
+- Next: commit this documentation checkpoint; run the repository CI and Pages deploy/live relay smoke on the new main head. Then perform the salon owner's controlled acceptance of actual services/prices/hours and one test booking lifecycle with notification delivery. Do not claim full production booking acceptance until that is completed.
