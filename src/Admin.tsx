@@ -4,7 +4,7 @@ import { addDateKeyDays } from './date-range'
 import type { FormEvent } from 'react'
 import {
   ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock3, LogOut, RefreshCw,
-  ShieldCheck, UserRound,
+  ShieldCheck, Trash2, UserRound,
 } from 'lucide-react'
 
 type AdminUser = { id: string; username: string }
@@ -77,6 +77,8 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   const [bookingRange, setBookingRange] = useState<BookingRange | null>(null)
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [dashboardError, setDashboardError] = useState('')
+  const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null)
+  const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null)
 
   const loadBookings = async (
     range: BookingRange | null = bookingRange,
@@ -112,6 +114,34 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
       setDashboardError(error instanceof Error ? error.message : 'ارتباط با سرور برقرار نشد.')
     } finally {
       setLoadingBookings(false)
+    }
+  }
+
+  const deleteBooking = async () => {
+    const booking = bookingToDelete
+    if (!booking || deletingBookingId) return
+    setDeletingBookingId(booking.id)
+    setDashboardError('')
+    try {
+      const response = await fetch(`/api/admin/bookings/${encodeURIComponent(booking.id)}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+      })
+      if (response.status === 401) {
+        setBookingToDelete(null)
+        setUser(null)
+        setView('login')
+        return
+      }
+      if (!response.ok) throw new Error(await apiMessage(response, 'حذف نوبت انجام نشد.'))
+      setBookings(current => current.filter(item => item.id !== booking.id))
+      setBookingToDelete(null)
+      window.dispatchEvent(new Event('salon-bookings-updated'))
+    } catch (error) {
+      setDashboardError(error instanceof Error ? error.message : 'حذف نوبت انجام نشد.')
+    } finally {
+      setDeletingBookingId(null)
     }
   }
 
@@ -324,11 +354,38 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                     <p>{booking.service} · {toPersianDigits(booking.durationMinutes)} دقیقه</p>
                     <small className="admin-booking-origin">{booking.source === 'phone' ? 'ثبت‌شده با تماس تلفنی' : 'رزرو آنلاین'}</small>
                   </div>
+                  <div className="admin-booking-actions">
+                    <button type="button" className="is-danger" aria-label={`حذف نوبت ${booking.name}`}
+                      disabled={deletingBookingId !== null}
+                      onClick={() => setBookingToDelete(booking)}>
+                      <Trash2 size={13} /> حذف نوبت
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
           )}
         </section>
+
+        {bookingToDelete && (
+          <div className="admin-delete-confirm-backdrop">
+            <section className="admin-delete-confirm" role="alertdialog" aria-modal="true"
+              aria-labelledby="admin-delete-title" aria-describedby="admin-delete-description">
+              <div className="admin-delete-confirm-icon"><Trash2 size={20} /></div>
+              <h2 id="admin-delete-title">حذف نوبت</h2>
+              <p id="admin-delete-description">
+                نوبت «{bookingToDelete.name}» در {formatDateTime(bookingToDelete.startsAt, timezone)} حذف شود؟
+                این عملیات قابل بازگشت نیست.
+              </p>
+              <div className="admin-delete-confirm-actions">
+                <button type="button" onClick={() => setBookingToDelete(null)} disabled={deletingBookingId !== null}>انصراف</button>
+                <button type="button" className="is-danger" onClick={() => void deleteBooking()} disabled={deletingBookingId !== null}>
+                  <Trash2 size={14} /> {deletingBookingId === bookingToDelete.id ? 'در حال حذف…' : 'حذف قطعی نوبت'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
 
         <div className="admin-next-step"><Clock3 size={17} /><span><strong>تنظیمات استودیو</strong><small>خدمات، برنامه هفتگی، فاصله‌های کاری و تعطیلات را از بخش مدیریت بالاتر همین صفحه به‌روزرسانی کنید.</small></span></div>
       </section>
