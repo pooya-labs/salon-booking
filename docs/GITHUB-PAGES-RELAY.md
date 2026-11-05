@@ -97,7 +97,7 @@ Email alerts are off by default. In the admin panel's اعلان‌ها tab, lea
 
 ## 8. Verify the deployed relay and upgrade an existing Web App
 
-The current source and live Pages check expect Apps Script backend version `1.4.0`. A response below `1.4.0` means the existing Google Web App deployment is still serving older code, even when GitHub Pages has already been rebuilt.
+The current source and live Pages check expect Apps Script backend version `1.5.0`. A response below `1.5.0` means the existing Google Web App deployment is still serving older code, even when GitHub Pages has already been rebuilt.
 
 To upgrade without creating a new spreadsheet or changing the public URL:
 
