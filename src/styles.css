@@ -1828,7 +1828,8 @@ hr { border-color:var(--line); }
   }
 }
 @media (max-width:680px) {
-  body { padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
+  body { padding-bottom:0; }
+  .site-shell { padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
 }
 @media (max-width:360px) {
   .site-footer .footer-credit {
