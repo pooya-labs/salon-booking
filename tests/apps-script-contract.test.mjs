@@ -109,9 +109,9 @@ test('Pages relay authenticates the nested Apps Script frame and exact response 
 
 
 test('Apps Script salon timezone is pinned to Iran', () => {
-  assert.match(backend, /var IRAN_TIMEZONE_ = 'Asia\\/Tehran'/)
-  assert.match(backend, /local_timezone: 'Asia\\/Tehran'/)
-  assert.match(backend, /requestedTimezone !== IRAN_TIMEZONE_/)
-  assert.match(backend, /var timezone = IRAN_TIMEZONE_/)
-  assert.match(backend, /var APP_VERSION_ = '1\\.2\\.0'/)
+  assert.ok(backend.includes("var IRAN_TIMEZONE_ = 'Asia/Tehran'"))
+  assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
+  assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
+  assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.2.0'"))
 })
