@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { CalendarDays, Check, Clock3, Bell, Mail, Phone, Plus, Save, Scissors, Settings2, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
 import { listenForOwnerPushMessages, registerOwnerPushDevice } from './push-notifications'
+import { JalaliDatePicker } from './JalaliDatePicker'
+import { formatJalaliDate } from './jalali-date'
+import { nextAvailableInterval } from './schedule-intervals'
 
 type Service = {
   id: string
@@ -80,13 +83,12 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
   const [serviceSaving, setServiceSaving] = useState(false)
 
   const [settings, setSettings] = useState<SalonSettings>({
-    timezone: 'unset',
+    timezone: 'Asia/Tehran',
     slotIntervalMinutes: 15,
     minBookingNoticeMinutes: 120,
     bookingWindowDays: 30,
     bufferMinutes: 0,
   })
-  const [timezoneDraft, setTimezoneDraft] = useState('unset')
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHour[]>([])
   const [exceptions, setExceptions] = useState<ScheduleException[]>([])
   const [scheduleLoading, setScheduleLoading] = useState(false)
@@ -155,7 +157,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
       }
       if (payload.settings) {
         setSettings(payload.settings)
-        setTimezoneDraft(payload.settings.timezone || 'unset')
+        setSettings({ ...payload.settings, timezone: 'Asia/Tehran' })
       }
       setWeeklyHours(Array.isArray(payload.weeklyHours) ? payload.weeklyHours : [])
       setExceptions(Array.isArray(payload.exceptions) ? payload.exceptions : [])
@@ -299,18 +301,6 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
     setWeeklyHours((current) => current.map((day) => day.weekday === weekday ? { ...day, ...patch } : day))
   }
 
-  const addIntervalAfter = (intervals: TimeInterval[]): TimeInterval | null => {
-    const start = intervals[intervals.length - 1]?.endsAt ?? '09:00'
-    const [hours, minutes] = start.split(':').map(Number)
-    const startMinutes = hours * 60 + minutes
-    const endMinutes = Math.min(startMinutes + 60, 23 * 60 + 59)
-    if (endMinutes <= startMinutes) return null
-    return {
-      startsAt: start,
-      endsAt: String(Math.floor(endMinutes / 60)).padStart(2, '0') + ':' + String(endMinutes % 60).padStart(2, '0'),
-    }
-  }
-
   const updateWeekdayInterval = (weekday: number, index: number, patch: Partial<TimeInterval>) => {
     setWeeklyHours((current) => current.map((day) => day.weekday !== weekday ? day : ({
       ...day,
@@ -321,11 +311,19 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
   }
 
   const addWeekdayInterval = (weekday: number) => {
-    setWeeklyHours((current) => current.map((day) => {
-      if (day.weekday !== weekday || day.isClosed || day.intervals.length >= 8) return day
-      const next = addIntervalAfter(day.intervals)
-      return next ? { ...day, intervals: [...day.intervals, next] } : day
-    }))
+    const day = weeklyHours.find((item) => item.weekday === weekday)
+    if (!day || day.intervals.length >= 8) return
+    const next = nextAvailableInterval(day.intervals)
+    if (!next) {
+      setError('برای این روز فضای خالی کافی جهت افزودن بازه وجود ندارد.')
+      return
+    }
+    setError('')
+    changeWeekday(weekday, {
+      isClosed: false,
+      intervals: [...day.intervals, next].sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+    })
+    setNotice('بازه جدید اضافه شد؛ برای ثبت نهایی، برنامه همین روز را ذخیره کن.')
   }
 
   const removeWeekdayInterval = (weekday: number, index: number) => {
@@ -344,8 +342,13 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
 
   const addExceptionInterval = () => {
     if (exceptionIntervals.length >= 8) return
-    const next = addIntervalAfter(exceptionIntervals)
-    if (next) setExceptionIntervals((current) => [...current, next])
+    const next = nextAvailableInterval(exceptionIntervals)
+    if (!next) {
+      setError('برای این تاریخ فضای خالی کافی جهت افزودن بازه وجود ندارد.')
+      return
+    }
+    setError('')
+    setExceptionIntervals((current) => [...current, next].sort((a, b) => a.startsAt.localeCompare(b.startsAt)))
   }
 
   const removeExceptionInterval = (index: number) => {
@@ -388,7 +391,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({
-          timezone: timezoneDraft.trim() || 'unset',
+          timezone: 'Asia/Tehran',
           slotIntervalMinutes: Number(settings.slotIntervalMinutes),
           minBookingNoticeMinutes: Number(settings.minBookingNoticeMinutes),
           bookingWindowDays: Number(settings.bookingWindowDays),
@@ -397,8 +400,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
       })
       if (!response.ok) throw new Error(await requestError(response, 'ذخیره تنظیمات ممکن نشد.'))
       const payload = await response.json() as { settings?: SalonSettings }
-      if (payload.settings) setSettings(payload.settings)
-      setTimezoneDraft(payload.settings?.timezone ?? timezoneDraft)
+      if (payload.settings) setSettings({ ...payload.settings, timezone: 'Asia/Tehran' })
       setNotice('تنظیمات رزرو ذخیره شد.')
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'ذخیره تنظیمات ممکن نشد.')
@@ -410,6 +412,10 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
   const saveManualBooking = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (manualSaving) return
+    if (!manualDraft.date) {
+      setError('لطفاً تاریخ نوبت را از تقویم شمسی انتخاب کن.')
+      return
+    }
     setManualSaving(true)
     setError('')
     setNotice('')
@@ -507,6 +513,10 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
   const saveException = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (exceptionSaving) return
+    if (!exceptionDate) {
+      setError('لطفاً تاریخ را از تقویم شمسی انتخاب کن.')
+      return
+    }
     setExceptionSaving(true)
     setError('')
     setNotice('')
@@ -625,7 +635,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
                 <option value="">انتخاب خدمت</option>
                 {services.filter((service) => service.isActive).map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} دقیقه</option>)}
               </select></label>
-              <label><span>تاریخ نوبت</span><input type="date" required value={manualDraft.date} onChange={(event) => setManualDraft((current) => ({ ...current, date: event.target.value, time: '' }))} /></label>
+              <JalaliDatePicker label="تاریخ نوبت" value={manualDraft.date} onChange={(date) => setManualDraft((current) => ({ ...current, date, time: '' }))} />
               <label><span>ساعت‌های آزاد همان روز</span><select required value={manualDraft.time} disabled={!manualDraft.date || !manualDraft.serviceId || manualSlotsLoading || manualSlots.length === 0} onChange={(event) => setManualDraft((current) => ({ ...current, time: event.target.value }))}>
                 <option value="">{manualSlotsLoading ? 'در حال بررسی ساعت‌ها…' : 'انتخاب ساعت آزاد'}</option>
                 {manualSlots.map((time) => <option key={time} value={time}>{toPersianDigits(time)}</option>)}
@@ -682,8 +692,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
           <section className="admin-manage-panel">
             <div className="admin-manage-panel-heading"><div><h3>تنظیمات زمان‌بندی</h3><p>منطقه زمانی و قواعد محاسبه نوبت‌ها.</p></div><Settings2 size={19} /></div>
             <form className="admin-manage-form" onSubmit={saveSettings}>
-              <label><span>منطقه زمانی استودیو (IANA)</span><input required value={timezoneDraft === 'unset' ? '' : timezoneDraft} onChange={(event) => setTimezoneDraft(event.target.value)} placeholder="مثلاً Europe/Berlin یا Asia/Tehran" dir="ltr" /></label>
-              <p className="admin-form-hint">این منطقه زمانی باید با محل واقعی آرایشگاه مطابقت داشته باشد؛ انتخاب آن روی تاریخ و ساعت تمام رزروها اثر می‌گذارد.</p>
+              <div className="admin-fixed-timezone"><span>منطقه زمانی استودیو</span><strong>ایران · تهران</strong><small dir="ltr">Asia/Tehran · ثابت</small><p>تمام تاریخ‌ها و ساعت‌های رزرو بر اساس وقت رسمی ایران محاسبه می‌شوند.</p></div>
               <div className="admin-form-two-cols">
                 <label><span>گام زمانی (دقیقه)</span><input type="number" min={5} max={120} step={5} value={settings.slotIntervalMinutes} onChange={(event) => setSettings((current) => ({ ...current, slotIntervalMinutes: Number(event.target.value) }))} /></label>
                 <label><span>فاصله بین نوبت‌ها (دقیقه)</span><input type="number" min={0} max={240} step={5} value={settings.bufferMinutes} onChange={(event) => setSettings((current) => ({ ...current, bufferMinutes: Number(event.target.value) }))} /></label>
@@ -717,13 +726,13 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
                     <div className="admin-weekday-hours">
                       {day.intervals.map((interval, index) => (
                         <div className="admin-form-two-cols admin-interval-row" key={index}>
-                          <label><span>{index === 0 ? 'ابتدای روز · شروع' : index === day.intervals.length - 1 ? 'انتهای روز · شروع' : `بازه میانی ${toPersianDigits(index + 1)} · شروع`}</span><input type="time" aria-label={`شروع بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.startsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { startsAt: event.target.value })} /></label>
-                          <label><span>{index === 0 ? 'پایان بازه اول' : index === day.intervals.length - 1 ? 'پایان روز' : 'پایان بازه میانی'}</span><input type="time" aria-label={`پایان بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.endsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { endsAt: event.target.value })} /></label>
+                          <label><span>{index === 0 ? 'ابتدای روز · شروع' : index === day.intervals.length - 1 ? 'انتهای روز · شروع' : `بازه میانی ${toPersianDigits(index + 1)} · شروع`}</span><input type="time" lang="en-GB" dir="ltr" aria-label={`شروع بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.startsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { startsAt: event.target.value })} /></label>
+                          <label><span>{index === 0 ? 'پایان بازه اول' : index === day.intervals.length - 1 ? 'پایان روز' : 'پایان بازه میانی'}</span><input type="time" lang="en-GB" dir="ltr" aria-label={`پایان بازه ${index + 1} ${day.name}`} disabled={day.isClosed} value={interval.endsAt} onChange={(event) => updateWeekdayInterval(day.weekday, index, { endsAt: event.target.value })} /></label>
                           <button type="button" className="admin-icon-button" aria-label={`حذف بازه ${index + 1} ${day.name}`} onClick={() => removeWeekdayInterval(day.weekday, index)}><Trash2 size={14} /></button>
                         </div>
                       ))}
                       {!day.isClosed && day.intervals.length === 0 && <p className="admin-form-hint">برای این روز هنوز بازه‌ای ثبت نشده است.</p>}
-                      <button type="button" className="admin-light-button" disabled={day.isClosed || day.intervals.length >= 8} onClick={() => addWeekdayInterval(day.weekday)}><Plus size={13} /> افزودن بازه</button>
+                      <button type="button" className="admin-light-button" disabled={day.intervals.length >= 8} onClick={() => addWeekdayInterval(day.weekday)}><Plus size={13} /> افزودن بازه</button>
                     </div>
                     <button type="button" className="admin-save-day" disabled={savingWeekday === day.weekday} onClick={() => void saveWeekday(day)}>{savingWeekday === day.weekday ? '…' : <Save size={14} />} ذخیره</button>
                   </article>
@@ -735,14 +744,14 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
           <section className="admin-manage-panel admin-exceptions-panel">
             <div className="admin-manage-panel-heading"><div><h3>تعطیلات و ساعت‌های استثنایی</h3><p>تعطیلی یا ساعت متفاوت برای یک تاریخ خاص.</p></div><CalendarDays size={19} /></div>
             <form className="admin-exception-form" onSubmit={saveException}>
-              <label><span>تاریخ</span><input type="date" required value={exceptionDate} onChange={(event) => setExceptionDate(event.target.value)} /></label>
+              <JalaliDatePicker label="تاریخ" value={exceptionDate} onChange={setExceptionDate} />
               <label className="admin-check-line"><input type="checkbox" checked={exceptionClosed} onChange={(event) => setExceptionClosed(event.target.checked)} /><span>این روز کاملاً تعطیل است</span></label>
               {!exceptionClosed && (
                 <div className="admin-exception-intervals">
                   {exceptionIntervals.map((interval, index) => (
                     <div className="admin-form-two-cols admin-interval-row" key={index}>
-                      <label><span>شروع بازه {toPersianDigits(index + 1)}</span><input type="time" required value={interval.startsAt} onChange={(event) => updateExceptionInterval(index, { startsAt: event.target.value })} /></label>
-                      <label><span>پایان</span><input type="time" required value={interval.endsAt} onChange={(event) => updateExceptionInterval(index, { endsAt: event.target.value })} /></label>
+                      <label><span>شروع بازه {toPersianDigits(index + 1)}</span><input type="time" lang="en-GB" dir="ltr" required value={interval.startsAt} onChange={(event) => updateExceptionInterval(index, { startsAt: event.target.value })} /></label>
+                      <label><span>پایان</span><input type="time" lang="en-GB" dir="ltr" required value={interval.endsAt} onChange={(event) => updateExceptionInterval(index, { endsAt: event.target.value })} /></label>
                       {exceptionIntervals.length > 1 && <button type="button" className="admin-icon-button" aria-label="حذف بازه" onClick={() => removeExceptionInterval(index)}><Trash2 size={14} /></button>}
                     </div>
                   ))}
@@ -755,7 +764,7 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
             <div className="admin-exception-list">
               {exceptions.length === 0 ? <p className="admin-manage-empty">هنوز تعطیلی یا ساعت استثنایی ثبت نشده است.</p> : exceptions.map((exception) => (
                 <article className="admin-exception-row" key={exception.id}>
-                  <div><strong dir="ltr">{exception.date}</strong><small>{exception.isClosed ? 'تعطیل' : exception.intervals.map((interval) => `${interval.startsAt} تا ${interval.endsAt}`).join('، ')}{exception.note ? ` · ${exception.note}` : ''}</small></div>
+                  <div><strong>{formatJalaliDate(exception.date)}</strong><small>{exception.isClosed ? 'تعطیل' : exception.intervals.map((interval) => `${interval.startsAt} تا ${interval.endsAt}`).join('، ')}{exception.note ? ` · ${exception.note}` : ''}</small></div>
                   <button type="button" aria-label="حذف استثنا" disabled={busyException === exception.id} onClick={() => void deleteException(exception)}><Trash2 size={15} /></button>
                 </article>
               ))}

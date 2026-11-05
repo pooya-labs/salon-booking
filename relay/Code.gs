@@ -10,13 +10,14 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.1.0';
+var APP_VERSION_ = '1.2.0';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
 var EMAIL_NOTIFICATIONS_PROPERTY_ = 'EMAIL_NOTIFICATIONS_ENABLED';
 var FIREBASE_PROJECT_PROPERTY_ = 'FIREBASE_PROJECT_ID';
 var SESSION_TTL_ = 21600; // Apps Script CacheService max TTL: 6 hours.
+var IRAN_TIMEZONE_ = 'Asia/Tehran';
 
 var TABLES_ = {
   Settings: ['key', 'value'],
@@ -31,7 +32,7 @@ var TABLES_ = {
 };
 
 var DEFAULT_SETTINGS_ = {
-  local_timezone: 'unset',
+  local_timezone: 'Asia/Tehran',
   slot_interval_minutes: '15',
   min_booking_notice_minutes: '120',
   booking_window_days: '30',
@@ -643,12 +644,13 @@ function getAdminSchedule_() {
 
 function saveSettings_(input, owner) {
   var current = getSettings_();
-  var timezone = input.timezone === undefined ? current.timezone : input.timezone;
+  var requestedTimezone = input.timezone === undefined ? IRAN_TIMEZONE_ : input.timezone;
+  var timezone = IRAN_TIMEZONE_;
   var interval = input.slotIntervalMinutes === undefined ? current.slotIntervalMinutes : Number(input.slotIntervalMinutes);
   var notice = input.minBookingNoticeMinutes === undefined ? current.minBookingNoticeMinutes : Number(input.minBookingNoticeMinutes);
   var horizon = input.bookingWindowDays === undefined ? current.bookingWindowDays : Number(input.bookingWindowDays);
   var buffer = input.bufferMinutes === undefined ? current.bufferMinutes : Number(input.bufferMinutes);
-  if (typeof timezone !== 'string' || (timezone !== 'unset' && !validTimezone_(timezone))) return error_(400, 'invalid_timezone', 'منطقه زمانی باید یک شناسه معتبر مانند Asia/Tehran باشد.');
+  if (requestedTimezone !== IRAN_TIMEZONE_) return error_(400, 'invalid_timezone', 'منطقه زمانی این سامانه روی Asia/Tehran ثابت است.');
   if (!Number.isInteger(interval) || interval < 5 || interval > 120) return error_(400, 'invalid_slot_interval', 'فاصله زمانی نوبت‌ها باید بین ۵ تا ۱۲۰ دقیقه باشد.');
   if (!Number.isInteger(notice) || notice < 0 || notice > 10080) return error_(400, 'invalid_notice', 'حداقل فاصله رزرو باید بین صفر تا ۷ روز باشد.');
   if (!Number.isInteger(horizon) || horizon < 1 || horizon > 365) return error_(400, 'invalid_horizon', 'بازه رزرو باید بین ۱ تا ۳۶۵ روز باشد.');
@@ -796,8 +798,8 @@ function scheduleWindows_(dateKey) {
 function getSettings_() {
   var map = {};
   readTable_('Settings').forEach(function (row) { map[row.key] = row.value; });
-  var timezone = map.local_timezone || 'unset';
-  if (timezone !== 'unset' && !validTimezone_(timezone)) throw new Error('invalid_salon_timezone');
+  // This salon operates in Iran; never derive booking dates from the visitor's device.
+  var timezone = IRAN_TIMEZONE_;
   return {
     timezone: timezone,
     slotIntervalMinutes: intSetting_(map.slot_interval_minutes, 15, 5, 120),
