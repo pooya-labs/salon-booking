@@ -12,6 +12,7 @@ type PendingRequest = {
   reject: (error: Error) => void
   signal?: AbortSignal
   abortHandler?: () => void
+  timeoutId?: number
 }
 
 if (relayUrl && typeof window !== 'undefined') {
@@ -46,17 +47,34 @@ if (relayUrl && typeof window !== 'undefined') {
     if (frameReady) return frameReady
 
     frameReady = new Promise<void>((resolve, reject) => {
-      frame = document.createElement('iframe')
-      frame.title = 'Salon booking API relay'
-      frame.setAttribute('aria-hidden', 'true')
-      frame.tabIndex = -1
-      frame.style.display = 'none'
-      frame.addEventListener('load', () => resolve(), { once: true })
-      frame.addEventListener('error', () => reject(new Error('درگاه ارتباطی بارگذاری نشد.')), { once: true })
-      frame.src = relayUrl
-      document.body.appendChild(frame)
+      const nextFrame = document.createElement('iframe')
+      let loadTimeout = 0
+      const fail = (message: string) => {
+        window.clearTimeout(loadTimeout)
+        if (frame === nextFrame) {
+          frame = null
+          frameReady = null
+          nextFrame.remove()
+        }
+        reject(new Error(message))
+      }
 
-      window.setTimeout(() => reject(new Error('پاسخی از درگاه ارتباطی دریافت نشد.')), 20000)
+      frame = nextFrame
+      nextFrame.title = 'Salon booking API relay'
+      nextFrame.setAttribute('aria-hidden', 'true')
+      nextFrame.tabIndex = -1
+      nextFrame.style.display = 'none'
+      nextFrame.addEventListener('load', () => {
+        window.clearTimeout(loadTimeout)
+        if (frame === nextFrame) resolve()
+      }, { once: true })
+      nextFrame.addEventListener('error', () => fail('درگاه ارتباطی بارگذاری نشد.'), { once: true })
+      nextFrame.src = relayUrl
+      document.body.appendChild(nextFrame)
+
+      loadTimeout = window.setTimeout(() => {
+        fail('پاسخی از درگاه ارتباطی دریافت نشد.')
+      }, 20000)
     })
 
     return frameReady
@@ -70,6 +88,7 @@ if (relayUrl && typeof window !== 'undefined') {
     const request = pending.get(message.id)
     if (!request) return
     pending.delete(message.id)
+    if (request.timeoutId !== undefined) window.clearTimeout(request.timeoutId)
     if (request.signal && request.abortHandler) {
       request.signal.removeEventListener('abort', request.abortHandler)
     }
@@ -93,24 +112,42 @@ if (relayUrl && typeof window !== 'undefined') {
       const body = ['GET', 'HEAD'].includes(request.method) ? null : await request.clone().text()
       const result = await new Promise<RelayResult>((resolve, reject) => {
         const pendingRequest: PendingRequest = { resolve, reject, signal: request.signal }
+        const cleanup = () => {
+          if (pendingRequest.timeoutId !== undefined) window.clearTimeout(pendingRequest.timeoutId)
+          if (request.signal && pendingRequest.abortHandler) {
+            request.signal.removeEventListener('abort', pendingRequest.abortHandler)
+          }
+        }
         pendingRequest.abortHandler = () => {
           pending.delete(id)
+          cleanup()
           reject(new DOMException('درخواست لغو شد.', 'AbortError'))
         }
+        pendingRequest.timeoutId = window.setTimeout(() => {
+          pending.delete(id)
+          cleanup()
+          reject(new Error('پاسخی از سامانه رزرو دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.'))
+        }, 30000)
         request.signal.addEventListener('abort', pendingRequest.abortHandler, { once: true })
         pending.set(id, pendingRequest)
 
-        frame?.contentWindow?.postMessage({
-          type: 'SALON_RELAY_REQUEST',
-          id,
-          request: {
-            path: new URL(request.url).pathname + new URL(request.url).search,
-            method: request.method,
-            headers,
-            body,
-            sessionId,
-          },
-        }, '*')
+        try {
+          frame?.contentWindow?.postMessage({
+            type: 'SALON_RELAY_REQUEST',
+            id,
+            request: {
+              path: new URL(request.url).pathname + new URL(request.url).search,
+              method: request.method,
+              headers,
+              body,
+              sessionId,
+            },
+          }, '*')
+        } catch (error) {
+          pending.delete(id)
+          cleanup()
+          reject(error instanceof Error ? error : new Error('ارسال درخواست به درگاه رزرو ممکن نشد.'))
+        }
       })
 
       return new Response(result.body ?? '', {
