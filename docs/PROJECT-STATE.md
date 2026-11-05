@@ -1,3 +1,17 @@
+# Latest owner workspace checkpoint — visual daily calendar (2026-11-05)
+
+- Latest main commit at this checkpoint: `c7d6b93042d21bf54c3762ec644f6cb11a50cd0c`; the current implementation is on `main`.
+- The owner panel has a new **تقویم روز** tab. It shows working windows as a 24-hour visual grid, active/history customer reservations, free slots and manager-created blocked windows. Dates are selected in the Jalali calendar.
+- The old phone-booking form has been removed from the owner panel. For offline appointments, the manager taps a free slot, confirms, and the selected slot is blocked. The default duration equals one slot step (normally 15 minutes); longer presets are optional.
+- This flow stores only date, start/end, duration and audit metadata in a separate `TimeBlocks` sheet. It does not ask for or store customer name, surname, phone or note, and it does not create a synthetic customer booking.
+- Apps Script backend target is `1.3.0`. The new `TimeBlocks` tab is an additive schema migration: import updated `relay/Code.gs` and `relay/appsscript.json`, run `setupSalonDatabase()` once against the existing database, then deploy a new Web App version while keeping the same `/exec` URL.
+- Server-side block creation/deletion uses the shared Apps Script lock, verifies opening windows and overlaps, and participates in public availability calculations. Therefore a manager block removes the same interval from customer online booking.
+- Weekly opening hours now use responsive day cards, a 24-hour visual timeline, separate start/end fields for every interval, a clear open/closed toggle, add-range action and per-day save button.
+- The UI and backend changes are committed. Latest green CI/Pages verification is still pending at the time of this note; do not claim the new browser test or live Apps Script v1.3.0 smoke passed until a successful run for the current main head is recorded.
+- This checkpoint supersedes the earlier phone-booking-panel description below. Historical phone bookings already recorded in `Bookings` remain intact; only the new manual phone-booking UI was removed.
+ 
+---
+
 # Project State & Handoff
 
 ## Current checkpoint — Shayan responsive visual QA passed (2026-11-05)

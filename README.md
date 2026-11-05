@@ -27,7 +27,7 @@ The site uses the owner-supplied barber emblem as its primary mark, with an obsi
 
 The Pages build requires the GitHub Actions variable `SALON_RELAY_URL`. Without it, the site intentionally remains a demo and will not submit customer information.
 
-The GitHub Pages → Apps Script relay has passed a read-only live smoke test (backend 1.1.0 and iframe handshake verified). The spreadsheet is still empty of public services, the salon timezone is unset and no owner account has been initialized. The site is **not yet ready for real bookings**; complete first-owner setup and the remaining launch checks first.
+The last confirmed live relay smoke verified the nested iframe bridge, but the live Apps Script deployment still needs the new 1.3.0 source and `TimeBlocks` sheet. The owner panel is implemented, but do not use time-blocking/live booking until the owner imports the updated `Code.gs`, runs the additive setup and deploys a new Web App version.
 
 ## Main capabilities
 
@@ -36,7 +36,7 @@ The GitHub Pages → Apps Script relay has passed a read-only live smoke test (b
 - Conflict-safe reservation creation, idempotent retries and reference codes.
 - Customer self-service lookup and cancellation with a one-time management token.
 - Owner bootstrap/login, booking status management, service administration and weekly/date-specific scheduling.
-- Editable service categories, descriptions, prices and durations; multi-interval weekly hours; manual phone reservations that block online slots; owner push notifications.
+- Editable services and prices; visual weekly opening-hour cards with a 24-hour timeline; a Jalali daily calendar for customer bookings, free slots and manager-blocked time; one-tap time blocking without customer name or phone; owner push notifications.
 
 ## Local development
 

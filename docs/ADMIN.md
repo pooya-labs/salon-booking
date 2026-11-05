@@ -12,10 +12,10 @@ The owner workspace is served by the GitHub Pages frontend at `https://pooya-lab
 - Iran-fixed `Asia/Tehran` timezone (not editable), slot interval, booking notice, booking horizon and buffer settings. Admin date entry uses a Jalali calendar; working-hour fields use 24-hour time.
 - Weekly working hours with up to eight separate intervals per day; start, midday and closing periods can be edited independently.
 - Date-specific closures and alternate opening intervals, with notes.
-- Visual daily calendar with separate states for customer bookings, free slots and manager-blocked times. A manager can block a selected time with one confirmation and a duration choice; no customer name, phone or synthetic booking record is created.
+- Visual daily calendar with separate states for customer bookings, free slots and manager-blocked times. A manager can block a selected time with one confirmation; the default block duration is one slot step (normally 15 minutes), with longer presets available optionally. No customer name, phone or synthetic booking record is created.
 - Audit records for owner changes and booking status history.
 
-Schedule intervals are validated in Apps Script; the global script lock protects the critical availability-recheck-and-booking-write section from concurrent requests.
+Schedule intervals and manager time blocks are validated in Apps Script; the global script lock protects booking creation and time-block changes from concurrent requests. The `TimeBlocks` sheet is created by rerunning `setupSalonDatabase()` as an additive migration; existing data and owner accounts are preserved.
 
 ## First owner setup
 

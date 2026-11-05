@@ -83,7 +83,7 @@ Push is the recommended phone notification path. It can show a native Android no
    - FIREBASE_APP_ID
    - FIREBASE_VAPID_KEY
 
-6. Update the existing Apps Script project's Code.gs and appsscript.json from this repository. Run setupSalonDatabase() again to add the new category, source and PushSubscriptions columns/table without clearing existing rows. Approve the new Firebase Messaging and external-request scopes.
+6. Update the existing Apps Script project's `Code.gs` and `appsscript.json` from this repository. Run `setupSalonDatabase()` again to create the new `TimeBlocks` tab and add any missing columns/tabs (including earlier `PushSubscriptions` changes) without clearing existing rows. This is additive; it must target the existing spreadsheet. Approve the Firebase Messaging and external-request scopes if prompted.
 7. Deploy a new version of the Web App (Deploy → Manage deployments → Edit → New version → Deploy). Keep the deployed /exec URL unchanged when editing the existing deployment.
 8. Rebuild GitHub Pages from Actions. Then sign in through [the owner panel](https://pooya-labs.github.io/salon-booking/?admin=1), open اعلان‌ها, enter the Firebase project ID and save.
 9. On the manager's Android phone, open the live site in Chrome, sign in to the admin panel and tap فعال‌کردن اعلان این گوشی. Allow notifications, then use ارسال اعلان آزمایشی.
@@ -97,12 +97,12 @@ Email alerts are off by default. In the admin panel's اعلان‌ها tab, lea
 
 ## 8. Verify the deployed relay and upgrade an existing Web App
 
-The live Pages check expects the Apps Script health endpoint to report backend version 1.1.0. A response of 1.0.0 means the existing Google Web App deployment is still serving an older version, even when GitHub Pages has already been rebuilt.
+The current source and live Pages check expect Apps Script backend version `1.3.0`. A response below `1.3.0` means the existing Google Web App deployment is still serving older code, even when GitHub Pages has already been rebuilt.
 
 To upgrade without creating a new spreadsheet or changing the public URL:
 
-1. In the existing Apps Script project, replace Code.gs, Bridge.html and appsscript.json with the latest files from this repository.
-2. Save all files and run setupSalonDatabase() once from the Apps Script editor. Its schema update is additive: it creates missing tabs/columns and preserves existing rows.
+1. In the existing Apps Script project, replace `Code.gs` and update `appsscript.json` from this repository. `Bridge.html` has no change for this release; keep the existing bridge and `/exec` URL.
+2. Save all files and run `setupSalonDatabase()` once from the Apps Script editor. Its additive migration creates the `TimeBlocks` tab and any missing columns while preserving all existing records and the current owner account.
 3. Review and approve any newly requested Apps Script scopes.
 4. Open Deploy → Manage deployments → Edit → New version → Deploy. Keep the existing deployment and /exec URL.
 5. Push or rerun the GitHub Pages workflow, then confirm its read-only smoke check passes. It verifies iframe handshake, backend version, public config/services, setup status and anonymous admin rejection; it does not create a booking.
