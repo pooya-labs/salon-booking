@@ -158,6 +158,8 @@ try {
   assert.equal(await page.locator('html').getAttribute('lang'), 'fa', 'document language must be Persian')
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'document direction must be RTL')
   assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1, 'home page must have one primary heading')
+  assert.doesNotMatch(await page.locator('.site-shell').innerText(), /FORM STUDIO|Form Studio|\bF\./, 'legacy Form branding must not remain visible')
+  assert.equal((await page.locator('.banner-decoration').innerText()).trim(), 'S', 'booking banner should use the Shayan monogram')
 
   // Desktop-size capture used for Windows/large-screen visual review.
   await page.setViewportSize({ width: 1440, height: 960 })
@@ -267,6 +269,11 @@ try {
   await androidPage.locator('.header-book').tap()
   const androidDialog = androidPage.getByRole('dialog')
   await androidDialog.waitFor({ state: 'visible' })
+  const modalStack = await androidDialog.evaluate(element => ({
+    dialog: Number.parseInt(getComputedStyle(element).zIndex || '0', 10),
+    bookingBar: Number.parseInt(getComputedStyle(document.querySelector('.mobile-book-bar')).zIndex || '0', 10),
+  }))
+  assert.ok(modalStack.dialog > modalStack.bookingBar, 'Android booking dialog must stack above the persistent booking bar: ' + JSON.stringify(modalStack))
   await androidDialog.locator('.booking-service-option').first().tap()
   await androidDialog.getByRole('button', { name: /ادامه/ }).tap()
   await androidDialog.locator('.booking-date-option').first().tap()
