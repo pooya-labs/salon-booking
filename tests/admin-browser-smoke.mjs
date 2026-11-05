@@ -280,9 +280,10 @@ try {
   await page.locator('.admin-day-slot.is-booked').first().waitFor({ state: 'visible' })
   await page.locator('.admin-calendar-list-panel').filter({ hasText: 'نوبت‌های مشتری' }).getByText('کوتاهی مو').waitFor({ state: 'visible' })
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
-  const nextDayResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200)
-  await page.getByRole('button', { name: 'روز بعد' }).click()
-  await nextDayResponse
+  await Promise.all([
+    page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200),
+    page.getByRole('button', { name: 'روز بعد' }).click(),
+  ])
   await page.locator('.admin-day-slot.is-free').filter({ hasText: '11:00' }).click()
   await page.locator('.admin-block-confirm').waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'manager one-touch time block confirmation')
