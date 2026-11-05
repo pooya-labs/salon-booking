@@ -20,6 +20,9 @@ var SESSION_TTL_ = 30 * 24 * 60 * 60; // Rolling owner-session lifetime: 30 days
 var SESSION_CACHE_TTL_ = 6 * 60 * 60; // CacheService remains a six-hour accelerator.
 var SESSION_RENEWAL_WINDOW_ = SESSION_TTL_ - 24 * 60 * 60; // Renew on authenticated activity at least daily.
 var IRAN_TIMEZONE_ = 'Asia/Tehran';
+// Per-execution memoization avoids reopening Sheets and rereading the same table repeatedly.
+var REQUEST_SPREADSHEET_ = null;
+var REQUEST_TABLE_CACHE_ = {};
 
 var TABLES_ = {
   Settings: ['key', 'value'],
@@ -384,7 +387,7 @@ function createBooking_(input, headers, sessionId) {
     created = {
       id: uuid_(), reference: makeReference_(), serviceId: serviceId, serviceName: String(service.name),
       durationMinutes: String(Number(service.durationMinutes)), name: name, phone: phone, date: date,
-      time: time, startsAt: start.toISOString(), endsAt: end.toISOString(), status: 'pending',
+      time: time, startsAt: start.toISOString(), endsAt: end.toISOString(), status: 'confirmed',
       note: note, manageTokenHash: sha256_(token), idempotencyKeyHash: keyHash, requestHash: requestHash, source: 'online',
       createdAt: nowIso_(), updatedAt: nowIso_()
     };
@@ -397,7 +400,7 @@ function createBooking_(input, headers, sessionId) {
   sendBookingNotifications_(created);
   return { status: 201, payload: { ok: true, booking: {
     reference: created.reference,
-    status: 'pending',
+    status: 'confirmed',
     serviceName: created.serviceName,
     date: created.date,
     time: created.time,
@@ -633,12 +636,15 @@ function getAdminDaySchedule_(query) {
   if (!dayStart || !nextDay) return error_(400, 'invalid_date', 'تاریخ انتخاب‌شده معتبر نیست.');
 
   var bookings = readTable_('Bookings').filter(function (row) {
-    return row.status !== 'cancelled' &&
-      Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime();
+    return row.status !== 'cancelled' && (
+      row.date === date || (
+        Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime()
+      )
+    );
   }).map(function (row) {
     return {
       id: row.id, date: row.date, time: row.time,
-      endTime: clockForInstant_(row.endsAt, settings.timezone),
+      endTime: row.endsAt ? clockForInstant_(row.endsAt, settings.timezone) : clockFromMinutes_(row.time, Number(row.durationMinutes)),
       serviceName: row.serviceName, durationMinutes: Number(row.durationMinutes),
       status: row.status
     };
@@ -946,9 +952,11 @@ function saveSetting_(key, value) {
 function scheduleWindowsDummy_() {}
 
 function getDatabase_() {
+  if (REQUEST_SPREADSHEET_) return REQUEST_SPREADSHEET_;
   var id = PropertiesService.getScriptProperties().getProperty(DB_PROPERTY_);
   if (!id) throw new Error('DATABASE_NOT_INITIALIZED');
-  return SpreadsheetApp.openById(id);
+  REQUEST_SPREADSHEET_ = SpreadsheetApp.openById(id);
+  return REQUEST_SPREADSHEET_;
 }
 function getSheet_(name) {
   var sheet = getDatabase_().getSheetByName(name);
@@ -956,19 +964,28 @@ function getSheet_(name) {
   return sheet;
 }
 function readTable_(name) {
+  if (Object.prototype.hasOwnProperty.call(REQUEST_TABLE_CACHE_, name)) {
+    return REQUEST_TABLE_CACHE_[name].map(function (row) { return Object.assign({}, row); });
+  }
   var sheet = getSheet_(name);
   var values = sheet.getDataRange().getValues();
-  if (values.length < 2) return [];
+  if (values.length < 2) {
+    REQUEST_TABLE_CACHE_[name] = [];
+    return [];
+  }
   var headers = values[0].map(String);
-  return values.slice(1).filter(function (row) {
+  var rows = values.slice(1).filter(function (row) {
     return row.some(function (value) { return value !== '' && value !== null; });
   }).map(function (row) {
     var item = {};
     headers.forEach(function (header, index) { item[header] = row[index] == null ? '' : String(row[index]); });
     return item;
   });
+  REQUEST_TABLE_CACHE_[name] = rows;
+  return rows.map(function (row) { return Object.assign({}, row); });
 }
 function appendRecord_(name, record) {
+  delete REQUEST_TABLE_CACHE_[name];
   var sheet = getSheet_(name);
   var lastColumn = Math.max(sheet.getLastColumn(), 1);
   var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
@@ -978,6 +995,7 @@ function findBy_(name, key, value) {
   return readTable_(name).filter(function (row) { return String(row[key]) === String(value); })[0] || null;
 }
 function updateRecord_(name, key, value, record) {
+  delete REQUEST_TABLE_CACHE_[name];
   var sheet = getSheet_(name);
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return false;
@@ -994,6 +1012,7 @@ function updateRecord_(name, key, value, record) {
   return false;
 }
 function deleteRecord_(name, key, value) {
+  delete REQUEST_TABLE_CACHE_[name];
   var sheet = getSheet_(name);
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return false;
