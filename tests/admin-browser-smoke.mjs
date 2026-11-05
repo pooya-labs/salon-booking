@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
-import { readFile, stat } from 'node:fs/promises'
+import { mkdir, readFile, stat } from 'node:fs/promises'
 import { extname, resolve, sep } from 'node:path'
 import { chromium } from 'playwright'
 
 const distRoot = resolve('dist')
+const visualArtifacts = resolve('test-artifacts')
+await mkdir(visualArtifacts, { recursive: true })
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -228,16 +230,25 @@ try {
   await page.getByRole('heading', { name: 'سلام، QA Owner.' }).waitFor({ state: 'visible' })
   await page.locator('.admin-date-navigation [role="status"]').waitFor({ state: 'visible' })
   await page.locator('.admin-manage-tabs').waitFor({ state: 'visible' })
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-desktop-dashboard.png'), fullPage: true })
 
   await assertNoAccessibilityViolations(page, 'owner dashboard')
 
   await page.getByRole('button', { name: 'خدمت جدید' }).click()
   await page.locator('.admin-manage-form').waitFor({ state: 'visible' })
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-service-editor-desktop.png'), fullPage: true })
   await assertNoAccessibilityViolations(page, 'owner service editor')
 
   await page.getByRole('button', { name: 'برنامه کاری' }).click()
   await page.locator('.admin-weekly-list').waitFor({ state: 'visible' })
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-schedule-desktop.png'), fullPage: true })
   await assertNoAccessibilityViolations(page, 'owner schedule management tab')
+  await page.getByRole('button', { name: 'رزرو تلفنی' }).click()
+  await page.locator('.admin-phone-booking-layout').waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner manual phone booking tab')
+  await page.getByRole('button', { name: 'اعلان‌ها' }).click()
+  await page.locator('.admin-notification-layout').waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner notification settings tab')
   await page.getByRole('button', { name: 'خدمات' }).click()
 
   assert.ok(apiCalls.some(call => call.from === '2026-11-03' && call.to === '2026-11-09' && call.status === 'all'),
@@ -342,6 +353,25 @@ try {
   await page.getByRole('heading', { name: 'خوش برگشتید.' }).waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'owner login page')
   forceLoginView = false
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  const mobileAdminMetrics = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth,
+    tabs: document.querySelector('.admin-manage-tabs')?.getBoundingClientRect().width ?? 0,
+    management: document.querySelector('.admin-management')?.getBoundingClientRect().width ?? 0,
+  }))
+  assert.ok(mobileAdminMetrics.document <= mobileAdminMetrics.viewport + 1, 'mobile owner dashboard must not overflow horizontally: ' + JSON.stringify(mobileAdminMetrics))
+  assert.ok(mobileAdminMetrics.body <= mobileAdminMetrics.viewport + 1, 'mobile owner dashboard body must not overflow: ' + JSON.stringify(mobileAdminMetrics))
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-dashboard.png'), fullPage: true })
+  await page.getByRole('button', { name: 'رزرو تلفنی' }).click()
+  await page.locator('.admin-phone-booking-layout').waitFor({ state: 'visible' })
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-phone-booking.png'), fullPage: true })
+  await page.getByRole('button', { name: 'اعلان‌ها' }).click()
+  await page.locator('.admin-notification-layout').waitFor({ state: 'visible' })
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-notifications.png'), fullPage: true })
 
   assert.deepEqual(diagnostics.externalRequests, [], 'owner dashboard should not load third-party resources')
   console.log('[admin-browser] seven-day range navigation forward/back/reset passed')
