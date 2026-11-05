@@ -157,7 +157,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
   }
 
   const availableCount = slots.filter(slot => slot.state === 'free' && availableBlockDurations(date, slot.time, DURATION_OPTIONS, intervals, bookings, blocks).length > 0).length
-  const bookedCount = bookings.length
+  const bookedCount = bookings.filter(booking => booking.status === 'pending' || booking.status === 'confirmed').length
   const dateTitle = formatJalaliDate(date)
 
   return (
@@ -176,7 +176,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
       <div className="admin-calendar-toolbar">
         <button type="button" aria-label="روز قبل" onClick={() => setDate(current => shiftDate(current, -1))}><ChevronRight size={17} /></button>
         <div className="admin-calendar-selected-date">
-          <JalaliDatePicker label="روز موردنظر" value={date} onChange={setDate} />
+          <JalaliDatePicker label="روز موردنظر" value={date} onChange={setDate} allowPast />
           <strong>{dateTitle}</strong>
         </div>
         <button type="button" aria-label="روز بعد" onClick={() => setDate(current => shiftDate(current, 1))}><ChevronLeft size={17} /></button>

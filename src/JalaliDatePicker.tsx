@@ -5,9 +5,9 @@ import { formatJalaliDate, getIranTodayDateKey, getJalaliMonthGrid, gregorianToJ
 const MONTH_NAMES = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 const WEEKDAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
 
-type Props = { label: string; value: string; onChange: (dateKey: string) => void; disabled?: boolean }
+type Props = { label: string; value: string; onChange: (dateKey: string) => void; disabled?: boolean; allowPast?: boolean }
 
-export function JalaliDatePicker({ label, value, onChange, disabled = false }: Props) {
+export function JalaliDatePicker({ label, value, onChange, disabled = false, allowPast = false }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const today = getIranTodayDateKey()
@@ -70,7 +70,7 @@ export function JalaliDatePicker({ label, value, onChange, disabled = false }: P
               const isPast = day.dateKey < today
               return <button type="button" key={day.dateKey}
                 className={['admin-jalali-calendar-day', selected ? 'is-selected' : '', isToday ? 'is-today' : ''].filter(Boolean).join(' ')}
-                disabled={disabled || isPast} aria-pressed={selected} aria-current={isToday ? 'date' : undefined}
+                disabled={disabled || (!allowPast && isPast)} aria-pressed={selected} aria-current={isToday ? 'date' : undefined}
                 aria-label={`${toPersianDigits(day.day)} ${MONTH_NAMES[visibleMonth.month - 1]} ${toPersianDigits(visibleMonth.year)}`}
                 onClick={() => { onChange(day.dateKey); setOpen(false) }}>
                 {toPersianDigits(day.day)}
