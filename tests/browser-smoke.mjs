@@ -270,7 +270,7 @@ try {
   const androidDialog = androidPage.getByRole('dialog')
   await androidDialog.waitFor({ state: 'visible' })
   const modalStack = await androidDialog.evaluate(element => ({
-    dialog: Number.parseInt(getComputedStyle(element).zIndex || '0', 10),
+    dialog: Number.parseInt(getComputedStyle(element.closest('.booking-flow-backdrop')).zIndex || '0', 10),
     bookingBar: Number.parseInt(getComputedStyle(document.querySelector('.mobile-book-bar')).zIndex || '0', 10),
   }))
   assert.ok(modalStack.dialog > modalStack.bookingBar, 'Android booking dialog must stack above the persistent booking bar: ' + JSON.stringify(modalStack))
