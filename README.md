@@ -29,7 +29,7 @@ The site uses the owner-supplied barber emblem as its primary mark, with an obsi
 
 The Pages build requires the GitHub Actions variable `SALON_RELAY_URL`. Without it, the site intentionally remains a demo and will not submit customer information.
 
-The live Apps Script relay was verified on backend 1.4.0. The next backend release (1.5.0) changes online reservations to immediate confirmation, simplifies the owner appointment list to read-only, fixes daily-calendar lookup for legacy rows, corrects the weekly closed-day toggle, and memoizes repeated Sheets reads within each request. Deploy the updated `relay/Code.gs` to activate these backend changes.
+The live Apps Script relay has been verified on backend 1.5.0. Backend 1.5.1 hardens owner-calendar booking lookup against Google Sheets converting date/time cells into Date values, preserves new records as text, and derives missing timestamp fields from the stored local date, time and duration. The owner calendar also refreshes automatically while visible. Deploy the updated `relay/Code.gs` as a new version of the existing Web App to activate the backend fix; GitHub Pages updates automatically.
 
 ## Main capabilities
 
