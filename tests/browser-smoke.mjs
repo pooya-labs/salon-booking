@@ -346,7 +346,7 @@ try {
   assert.ok(!(await page.locator('.main-nav').evaluate(element => element.classList.contains('is-open'))), 'mobile navigation should close after selection')
   console.log('[browser] mobile navigation interaction passed')
 
-  const trigger = page.getByRole('button', { name: /انتخاب زمان و رزرو/ })
+  const trigger = page.locator('.header-book')
   await trigger.click()
   let dialog = page.getByRole('dialog')
   await dialog.waitFor({ state: 'visible' })
