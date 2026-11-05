@@ -24,9 +24,70 @@ try {
   })
   const page = await context.newPage()
   page.on('pageerror', error => diagnostics.pageErrors.push(error.message))
+  await page.addInitScript(() => {
+    window.__salonRelayMessages = []
+    window.addEventListener('message', (event) => {
+      const type = event.data?.type
+      if (typeof type === 'string' && type.indexOf('SALON_RELAY_') === 0) {
+        window.__salonRelayMessages.push({ type, origin: event.origin })
+      }
+    })
+  })
 
   await page.goto(pagesUrl, { waitUntil: 'domcontentloaded', timeout: 45000 })
   await page.locator('iframe[title="Salon booking API relay"]').waitFor({ state: 'attached', timeout: 30000 })
+
+  const relayFrame = page.frames().find(frame => frame.parentFrame() === page.mainFrame())
+  assert.ok(relayFrame, 'Apps Script relay iframe must create a child browsing context')
+  const frameDiagnostics = await relayFrame.evaluate(() => {
+    const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\\n')
+    const expectedOrigin = /PARENT_ORIGIN\\s*=\\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
+    return {
+      readyState: document.readyState,
+      origin: location.origin,
+      expectedParentOrigin: expectedOrigin,
+      googleScriptRunAvailable: typeof google !== 'undefined' && Boolean(google.script && google.script.run),
+    }
+  })
+  const bridgeMessages = await page.evaluate(() => window.__salonRelayMessages)
+  console.log('[apps-script-live] iframe diagnostics: ' + JSON.stringify({
+    readyState: frameDiagnostics.readyState,
+    origin: frameDiagnostics.origin,
+    expectedParentOrigin: frameDiagnostics.expectedParentOrigin,
+    googleScriptRunAvailable: frameDiagnostics.googleScriptRunAvailable,
+    readyMessageReceived: bridgeMessages.some(message => message.type === 'SALON_RELAY_READY'),
+  }))
+
+  const directHealth = await relayFrame.evaluate(() => new Promise(resolve => {
+    let settled = false
+    const finish = value => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeoutId)
+      resolve(value)
+    }
+    const timeoutId = window.setTimeout(() => finish({ kind: 'timeout' }), 20000)
+    try {
+      google.script.run
+        .withSuccessHandler(result => finish({ kind: 'success', result }))
+        .withFailureHandler(error => finish({ kind: 'failure', message: String(error?.message || error) }))
+        .proxyRequest({
+          path: '/api/health',
+          method: 'GET',
+          headers: { accept: 'application/json' },
+          body: null,
+          sessionId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        })
+    } catch (error) {
+      finish({ kind: 'failure', message: String(error?.message || error) })
+    }
+  }))
+  console.log('[apps-script-live] direct Apps Script health diagnostic: ' + JSON.stringify(directHealth))
+  assert.equal(directHealth.kind, 'success', 'google.script.run must invoke proxyRequest: ' + JSON.stringify({ frameDiagnostics, bridgeMessages, directHealth }))
+  assert.equal(directHealth.result?.status, 200, 'direct Apps Script health must respond with HTTP 200: ' + JSON.stringify(directHealth))
+  assert.equal(directHealth.result?.payload?.service, 'salon-booking-apps-script', 'deployed Apps Script must expose the current backend health contract')
+  assert.equal(bridgeMessages.some(message => message.type === 'SALON_RELAY_READY' && message.origin === new URL(pagesUrl).origin), true,
+    'Bridge.html must announce readiness to the exact GitHub Pages origin: ' + JSON.stringify({ frameDiagnostics, bridgeMessages }))
 
   const result = await page.evaluate(async () => {
     const read = async (path) => {
@@ -48,9 +109,9 @@ try {
       read('/api/admin/me'),
     ])
 
-    const relayFrame = document.querySelector('iframe[title="Salon booking API relay"]')
+    const currentRelayFrame = document.querySelector('iframe[title="Salon booking API relay"]')
     return {
-      frameUrl: relayFrame?.src || '',
+      frameUrl: currentRelayFrame?.src || '',
       health,
       config,
       services,
