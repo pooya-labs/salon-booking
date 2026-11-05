@@ -309,3 +309,12 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - No schema migration or `setupSalonDatabase()` rerun is needed; the owner must import the updated `relay/Code.gs` and deploy a new Apps Script Web App version with the same `/exec` URL.
 - A still-valid legacy six-hour session is upgraded on its next authenticated request; an already-expired legacy session requires one fresh login.
 - Added a VM-backed contract test for cache expiry, persistent recovery, rolling renewal, inactivity expiry and explicit logout.
+
+
+## R10 addendum — confirmed bookings and faster owner calendar (2026-11-05)
+
+- Online reservations are confirmed at creation; the owner no longer approves or marks appointments completed.
+- Owner appointment list is read-only and focused on date, time, customer and service. The daily calendar includes bookings matched by their stored salon-local date, including legacy rows with incomplete timestamps.
+- Weekly closed-day checkbox now means exactly what it says: checked = closed.
+- Apps Script reuses the Spreadsheet handle and memoizes table reads within a single request; writes invalidate the affected table cache. Booking and time-block reads remain fresh for conflict safety.
+- Backend target: **1.5.0**; deploy `relay/Code.gs` as a new version of the existing Apps Script Web App.
