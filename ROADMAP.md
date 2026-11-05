@@ -189,7 +189,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Add owner-only setup guards and six-hour persistent sessions.
 - [x] Add editable service type/category, daily multi-interval hours, split first/last-name customer details and owner-entered phone reservations.
 - [x] Add Firebase Cloud Messaging Web Push sender and manager-device registration; email notifications now default off and are configurable in the owner panel.
-- [ ] Owner imports latest Apps Script source/manifest, reruns database setup for the added columns/table, reauthorizes Firebase/UrlFetch scopes and deploys a new Web App version.
+- [x] Owner confirmed importing the latest Apps Script source/manifest, rerunning additive `setupSalonDatabase()`, authorizing requested scopes and deploying a new Web App version (2026-11-05); live verification remains pending.
 - [ ] Owner configures a Firebase web app/VAPID key and links the Apps Script standard Google Cloud project to Firebase; add seven `FIREBASE_*` GitHub Actions variables and rebuild Pages.
 - [ ] Verify push delivery on manager Android in foreground/background; verify email remains off unless explicitly enabled.
 - [x] Replace the Apps Script proxy-to-Worker relay with direct in-script API handling; no Cloudflare forwarding is present in the active backend.
@@ -197,7 +197,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.
 - [x] Owner created the Apps Script project, imported the backend files, ran `setupSalonDatabase()`, authorized the required Google access and deployed the owner-executed anonymous Web App (owner-confirmed 2026-11-04).
 - [x] Owner added the deployed `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL` (owner-confirmed 2026-11-04).
-- [~] GitHub Pages artifact builds and deploys, but the read-only live relay smoke currently fails: the deployed Apps Script reports version 1.0.0 (repository source is 1.1.0) and its older Bridge does not deliver the readiness handshake to the Pages top window. The bridge fix is committed; owner must update/redeploy Apps Script before this gate can pass.
+- [~] Nested-frame bridge fix is committed and the owner confirmed the Apps Script update/redeployment (2026-11-05). The first retry was blocked before smoke testing because the previous workflow attempt left a duplicate `github-pages` artifact; a run-attempt-specific artifact name is now being added so a fresh deployment can reach the live relay smoke.
 - [ ] Complete first-owner bootstrap; configure actual timezone, services, prices and working hours.
 - [ ] Verify real booking, conflict rejection, owner session, customer lookup/cancellation and Gmail Android notification from an Iran-based network without VPN.
 - [ ] Export any required historical D1 data only after owner approval; retain the old database until cutover is accepted.
@@ -260,3 +260,13 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - The previous bridge sent messages to window.parent, which is Google's intermediate wrapper in this nested-frame deployment. The bridge now targets window.top; the Pages client discovers the descendant frame, verifies the Google Apps Script origin and exact MessageEvent.source, then posts requests to that frame with its exact origin.
 - The live smoke now checks the sender origin correctly. CI must pass after this patch. Full Pages live acceptance remains blocked until the owner imports current Code.gs, Bridge.html and manifest into the existing Apps Script project, reruns additive setupSalonDatabase(), and deploys a new Web App version. The /exec URL and existing spreadsheet are preserved.
 - No real booking, customer data, push registration or email was created during diagnostics. Do not use the public form for real appointments until live relay smoke and owner acceptance pass.
+
+
+## Latest Apps Script redeploy and Pages retry checkpoint (2026-11-05)
+
+- Owner confirmed the updated `relay/Code.gs`, `relay/Bridge.html` and Apps Script manifest were imported, additive `setupSalonDatabase()` was run, scopes authorized as prompted, and a new Web App version was deployed while retaining the existing `/exec` URL.
+- CI on commit `12fdf4c7414b5a247e741d2fdcd9fe835bfc5177` passed, including Windows desktop and Android-touch responsive browser checks.
+- The first Pages retry after the owner action did not reach the Apps Script smoke step: re-running a job within the same Actions run caused two artifacts named `github-pages`, and `actions/deploy-pages` rejected the ambiguous artifact set.
+- The workflow now names the Pages artifact `github-pages-${{ github.run_attempt }}` and passes the same name to `actions/deploy-pages`. This isolates retries from artifacts produced by earlier attempts.
+- Next verification: fresh Pages run must deploy successfully, then the read-only live smoke must report Apps Script version 1.1.0, receive the nested-frame READY handshake, and pass health/config/services/setup/owner checks. No booking or customer records are created by this smoke.
+- Firebase configuration variables were empty in the latest Pages build environment; Android push delivery remains unconfigured and must not be marked complete.

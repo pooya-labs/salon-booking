@@ -513,3 +513,14 @@ Production blockers and real salon details remain unchanged.
 - Updated files: src/relay.ts, relay/Bridge.html, tests/apps-script-contract.test.mjs, tests/apps-script-live-smoke.mjs, ROADMAP.md and this handoff file.
 - Next owner action after CI: import current relay/Code.gs, relay/Bridge.html and relay/appsscript.json into the existing Apps Script project; run setupSalonDatabase() again (additive only, preserving existing rows); reauthorize newly requested scopes if prompted; deploy a new Web App version while keeping the same /exec URL. Then rerun Pages and verify backend version 1.1.0, relay handshake, public config/services and anonymous admin rejection.
 - Firebase push registration/delivery and real reservation lifecycle are still not accepted. No customer data or live booking was created by smoke. Keep launch blocked until owner configuration and end-to-end acceptance are complete.
+
+
+## Latest Apps Script owner redeploy and GitHub Pages retry checkpoint (2026-11-05)
+
+- Owner confirmed in chat that the latest repository Apps Script files and manifest were imported into the existing project, `setupSalonDatabase()` was rerun additively, requested Google scopes were authorized, and a new Web App version was deployed. Keep the existing spreadsheet and `/exec` endpoint.
+- Current GitHub head before workflow hardening: `12fdf4c7414b5a247e741d2fdcd9fe835bfc5177`. CI run `42024406140` passed, including the Windows desktop / Android-touch visual QA job.
+- Pages run `42024406189` attempt 2 failed before its live smoke step. The log shows two artifacts with the same name `github-pages` in one workflow run: the first deployment attempt had already uploaded one artifact, then the rerun uploaded a second, so `actions/deploy-pages@v4` refused to select an ambiguous artifact.
+- Workflow fix: use `github-pages-${{ github.run_attempt }}` as the artifact name and pass that same value to the deploy action's `artifact_name` input. This keeps each rerun attempt's artifact isolated.
+- Next: verify a fresh Pages run deploys, then confirm the read-only Apps Script smoke sees version 1.1.0, receives READY from the nested HtmlService frame, and passes public health/config/services plus expected anonymous owner/setup checks.
+- The most recent Pages build logs showed all seven `FIREBASE_*` public build variables empty. FCM push delivery is not configured or accepted yet; email remains disabled by default.
+- No real customer booking was created during the workflow diagnostics. Do not announce live booking acceptance until owner bootstrap, salon timezone/services/hours, booking lifecycle, and manager Android push delivery are accepted.
