@@ -643,8 +643,9 @@ function getAdminDaySchedule_(query) {
     );
   }).map(function (row) {
     return {
-      id: row.id, date: row.date, time: row.time,
-      endTime: row.endsAt ? clockForInstant_(row.endsAt, settings.timezone) : clockFromMinutes_(row.time, Number(row.durationMinutes)),
+      id: row.id, date: row.date,
+      time: row.time || (row.startsAt ? clockForInstant_(row.startsAt, settings.timezone) : ''),
+      endTime: row.endsAt ? clockForInstant_(row.endsAt, settings.timezone) : clockFromMinutes_(row.time || (row.startsAt ? clockForInstant_(row.startsAt, settings.timezone) : ''), Number(row.durationMinutes)),
       serviceName: row.serviceName, durationMinutes: Number(row.durationMinutes),
       status: row.status
     };
