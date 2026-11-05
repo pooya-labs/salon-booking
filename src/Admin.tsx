@@ -3,8 +3,8 @@ import { AdminManagement } from './AdminManagement'
 import { addDateKeyDays } from './date-range'
 import type { FormEvent } from 'react'
 import {
-  ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, LogOut, RefreshCw,
-  ShieldCheck, UserRound, X,
+  ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock3, LogOut, RefreshCw,
+  ShieldCheck, UserRound,
 } from 'lucide-react'
 
 type AdminUser = { id: string; username: string }
@@ -90,21 +90,17 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   const [formBusy, setFormBusy] = useState(false)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [timezone, setTimezone] = useState('UTC')
-  const [filter, setFilter] = useState('all')
   const [bookingRange, setBookingRange] = useState<BookingRange | null>(null)
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [dashboardError, setDashboardError] = useState('')
-  const [updatingBooking, setUpdatingBooking] = useState<string | null>(null)
-  const [statusConfirmation, setStatusConfirmation] = useState<{ bookingId: string; status: BookingStatus } | null>(null)
 
   const loadBookings = async (
-    status = filter,
     range: BookingRange | null = bookingRange,
   ) => {
     setLoadingBookings(true)
     setDashboardError('')
     try {
-      const params = new URLSearchParams({ status })
+      const params = new URLSearchParams({ status: 'all' })
       if (range) {
         params.set('from', range.from)
         params.set('to', range.to)
@@ -142,13 +138,13 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     if (!from || !to) return
     const nextRange = { from, to }
     setBookingRange(nextRange)
-    void loadBookings(filter, nextRange)
+    void loadBookings(nextRange)
   }
 
   const resetBookingRange = () => {
     if (loadingBookings) return
     setBookingRange(null)
-    void loadBookings(filter, null)
+    void loadBookings(null)
   }
 
   useEffect(() => {
@@ -191,10 +187,10 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
   }, [demoMode])
 
   useEffect(() => {
-    if (user && view === 'dashboard') void loadBookings(filter)
+    if (user && view === 'dashboard') void loadBookings()
     // The filter and authenticated user define the visible booking list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, view, filter])
+  }, [user, view])
 
   const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -243,35 +239,6 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
       setUser(null)
       setBookings([])
       setView('login')
-    }
-  }
-
-  const requestStatusChange = (booking: Booking, nextStatus: BookingStatus) => {
-    if (['cancelled', 'completed', 'no_show'].includes(nextStatus)) {
-      setStatusConfirmation({ bookingId: booking.id, status: nextStatus })
-      return
-    }
-    void updateStatus(booking, nextStatus)
-  }
-
-  const updateStatus = async (booking: Booking, nextStatus: BookingStatus) => {
-    if (updatingBooking) return
-    setUpdatingBooking(booking.id)
-    setDashboardError('')
-    try {
-      const response = await fetch(`/api/admin/bookings/${booking.id}/status`, {
-        method: 'PATCH',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ status: nextStatus }),
-      })
-      if (!response.ok) throw new Error(await apiMessage(response, 'تغییر وضعیت انجام نشد.'))
-      setStatusConfirmation(null)
-      await loadBookings(filter)
-    } catch (error) {
-      setDashboardError(error instanceof Error ? error.message : 'تغییر وضعیت انجام نشد.')
-    } finally {
-      setUpdatingBooking(null)
     }
   }
 
@@ -333,10 +300,6 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
     )
   }
 
-  const pendingCount = bookings.filter((booking) => booking.status === 'pending').length
-  const confirmedCount = bookings.filter((booking) => booking.status === 'confirmed').length
-  const finishedCount = bookings.filter((booking) => booking.status === 'completed').length
-
   return (
     <main className="admin-page">
       <header className="admin-topbar">
@@ -350,19 +313,13 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
           <button className="admin-refresh" onClick={() => void loadBookings(filter)} disabled={loadingBookings}><RefreshCw size={15} className={loadingBookings ? 'is-spinning' : ''} /> به‌روزرسانی</button>
         </div>
 
-        <div className="admin-stat-grid">
-          <article><span>در انتظار تأیید</span><strong>{toPersianDigits(pendingCount)}</strong><small>درخواست‌های جدید</small></article>
-          <article><span>نوبت‌های تأییدشده</span><strong>{toPersianDigits(confirmedCount)}</strong><small>برنامه قطعی</small></article>
-          <article><span>انجام‌شده</span><strong>{toPersianDigits(finishedCount)}</strong><small>نوبت‌های تکمیل‌شده</small></article>
-        </div>
-
         <AdminManagement />
 
         <section className="admin-bookings-panel">
           <div className="admin-bookings-heading">
             <div>
               <h2>نوبت‌ها</h2>
-              <p>منطقه زمانی سالن: {timezone}</p>
+              <p>تاریخ و ساعت نوبت‌ها بر اساس وقت ایران نمایش داده می‌شود.</p>
               <div className="admin-date-navigation" aria-label="جابجایی بازه نوبت‌ها">
                 <button type="button" aria-label="هفت روز قبل" title="هفت روز قبل" disabled={!bookingRange || loadingBookings} onClick={() => shiftBookingRange(-7)}><ChevronRight size={15} /></button>
                 <span role="status" aria-live="polite">{bookingRange ? `${formatDateKey(bookingRange.from)} تا ${formatDateKey(bookingRange.to)}` : 'در حال دریافت بازه…'}</span>
@@ -370,7 +327,6 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                 <button type="button" className="admin-date-reset" disabled={loadingBookings || !bookingRange} onClick={resetBookingRange}>هفت روز آینده</button>
               </div>
             </div>
-            <label className="admin-filter"><span>فیلتر</span><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">همه وضعیت‌ها</option><option value="pending">در انتظار تأیید</option><option value="confirmed">تأییدشده</option><option value="cancelled">لغوشده</option><option value="completed">انجام‌شده</option><option value="no_show">عدم مراجعه</option></select></label>
           </div>
 
           {dashboardError && <p className="admin-error" role="alert">{dashboardError}</p>}
@@ -380,24 +336,9 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                 <article className="admin-booking-card" key={booking.id}>
                   <div className="admin-booking-time"><strong>{formatClock(booking.startsAt, timezone)}</strong><small>{formatDateTime(booking.startsAt, timezone).split('،').slice(0, 2).join('،')}</small></div>
                   <div className="admin-booking-main">
-                    <div className="admin-booking-title"><strong>{booking.name}</strong><span className={`admin-status ${statusClasses[booking.status]}`}>{statusLabels[booking.status]}</span></div>
+                    <div className="admin-booking-title"><strong>{booking.name}</strong></div>
                     <p>{booking.service} · {toPersianDigits(booking.durationMinutes)} دقیقه</p>
                     <small className="admin-booking-origin">{booking.source === 'phone' ? 'ثبت‌شده با تماس تلفنی' : 'رزرو آنلاین'}</small>
-                    <div className="admin-booking-meta"><a href={`tel:${booking.phone}`}>{booking.phone}</a><span>کد {booking.reference}</span></div>
-                    {booking.note && <small className="admin-booking-note">{booking.note}</small>}
-                  </div>
-                  <div className="admin-booking-actions">
-                    {booking.status === 'pending' && <><button disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'confirmed')}><Check size={14} /> تأیید</button><button className="is-danger" disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'cancelled')}><X size={14} /> لغو</button></>}
-                    {booking.status === 'confirmed' && <><button disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'completed')}><Check size={14} /> انجام شد</button><button className="is-danger" disabled={updatingBooking === booking.id} onClick={() => requestStatusChange(booking, 'no_show')}>عدم مراجعه</button></>}
-                    {statusConfirmation?.bookingId === booking.id && (
-                      <div className="admin-status-confirmation" role="group" aria-label="تأیید تغییر وضعیت">
-                        <p>{statusConfirmation.status === 'cancelled' ? 'آیا از لغو این نوبت مطمئن هستید؟' : statusConfirmation.status === 'completed' ? 'انجام این نوبت را تأیید می‌کنید؟' : 'عدم مراجعهٔ مشتری را ثبت می‌کنید؟'}</p>
-                        <div className="admin-status-confirmation-actions">
-                          <button type="button" className="is-danger" disabled={updatingBooking === booking.id} aria-label={statusConfirmation.status === 'cancelled' ? 'تأیید لغو نوبت' : statusConfirmation.status === 'completed' ? 'تأیید انجام نوبت' : 'تأیید عدم مراجعه'} onClick={() => void updateStatus(booking, statusConfirmation.status)}>تأیید نهایی</button>
-                          <button type="button" disabled={updatingBooking === booking.id} onClick={() => setStatusConfirmation(null)}>انصراف</button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </article>
               ))}
