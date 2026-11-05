@@ -25,9 +25,9 @@ test('Apps Script owns the API and Sheets storage without Cloudflare forwarding'
     '/api/public/config', '/api/public/services', '/api/public/availability',
     '/api/public/bookings', '/api/admin/setup-status', '/api/admin/bootstrap',
     '/api/admin/login', '/api/admin/bookings', '/api/admin/availability', '/api/admin/notifications',
-    '/api/admin/push-subscriptions', '/api/admin/services', '/api/admin/schedule'
+    '/api/admin/push-subscriptions', '/api/admin/services', '/api/admin/schedule', '/api/admin/day-schedule', '/api/admin/time-blocks'
   ]) assert.ok(backend.includes(route), `missing API route ${route}`)
-  for (const sheet of ['Settings', 'Services', 'WeeklyHours', 'Exceptions', 'Bookings', 'AdminUsers', 'AdminSessions', 'AuditLog', 'PushSubscriptions']) {
+  for (const sheet of ['Settings', 'Services', 'WeeklyHours', 'Exceptions', 'Bookings', 'AdminUsers', 'AdminSessions', 'AuditLog', 'PushSubscriptions', 'TimeBlocks']) {
     assert.ok(backend.includes(sheet), `missing Sheets table ${sheet}`)
   }
   assert.match(backend, /LockService\.getScriptLock\(\)/)
@@ -114,4 +114,14 @@ test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
   assert.ok(backend.includes("var APP_VERSION_ = '1.2.0'"))
+})
+
+
+test('manager time blocks are separate from bookings and participate in availability conflicts', () => {
+  assert.ok(backend.includes('function createTimeBlock_(input, owner)'))
+  assert.ok(backend.includes('function deleteTimeBlock_(id, owner)'))
+  assert.ok(backend.includes("readTable_('TimeBlocks')"))
+  assert.ok(backend.includes("audit_('time_block.created'"))
+  assert.ok(backend.includes('outside_working_hours'))
+  assert.ok(backend.includes('time_already_booked'))
 })

@@ -10,7 +10,7 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.2.0';
+var APP_VERSION_ = '1.3.0';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
@@ -25,6 +25,7 @@ var TABLES_ = {
   WeeklyHours: ['weekday', 'isClosed', 'intervalsJson', 'configured'],
   Exceptions: ['id', 'date', 'isClosed', 'intervalsJson', 'note', 'createdAt'],
   Bookings: ['id', 'reference', 'serviceId', 'serviceName', 'durationMinutes', 'name', 'phone', 'date', 'time', 'startsAt', 'endsAt', 'status', 'note', 'manageTokenHash', 'idempotencyKeyHash', 'requestHash', 'createdAt', 'updatedAt', 'source'],
+  TimeBlocks: ['id', 'date', 'time', 'startsAt', 'endsAt', 'durationMinutes', 'createdAt', 'createdBy'],
   PushSubscriptions: ['token', 'device', 'isActive', 'createdAt', 'updatedAt'],
   AdminUsers: ['id', 'username', 'salt', 'passwordHash', 'isActive', 'createdAt'],
   AdminSessions: ['sessionIdHash', 'userId', 'username', 'expiresAt', 'createdAt'],
@@ -285,6 +286,10 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
   }
   if (path === '/api/admin/bookings' && method === 'GET') return getAdminBookings_(query, owner);
   if (path === '/api/admin/availability' && method === 'GET') return getAdminAvailability_(query);
+  if (path === '/api/admin/day-schedule' && method === 'GET') return getAdminDaySchedule_(query);
+  if (path === '/api/admin/time-blocks' && method === 'POST') return createTimeBlock_(body, owner);
+  var timeBlockMatch = /^\/api\/admin\/time-blocks\/([A-Za-z0-9-]{36})$/.exec(path);
+  if (timeBlockMatch && method === 'DELETE') return deleteTimeBlock_(timeBlockMatch[1], owner);
   if (path === '/api/admin/bookings' && method === 'POST') return createManualBooking_(body, owner);
   if (path === '/api/admin/notifications' && method === 'GET') return getNotificationSettings_();
   if (path === '/api/admin/notifications' && method === 'PUT') return saveNotificationSettings_(body, owner);
@@ -615,6 +620,110 @@ function servicePayload_(row) {
   };
 }
 
+function getAdminDaySchedule_(query) {
+  var date = String(query.get('date') || '');
+  if (!parseDateKey_(date)) return error_(400, 'invalid_date', 'تاریخ انتخاب‌شده معتبر نیست.');
+  var settings = getSettings_();
+  var today = getLocalDateKey_(new Date(), settings.timezone);
+  if (date < addDays_(today, -365) || date > addDays_(today, 365)) return error_(400, 'date_out_of_range', 'نمایش تقویم فقط تا یک سال قبل و بعد امکان‌پذیر است.');
+  var dayStart = localDateTimeToUtc_(date, '00:00', settings.timezone);
+  var nextDay = localDateTimeToUtc_(addDays_(date, 1), '00:00', settings.timezone);
+  if (!dayStart || !nextDay) return error_(400, 'invalid_date', 'تاریخ انتخاب‌شده معتبر نیست.');
+
+  var bookings = readTable_('Bookings').filter(function (row) {
+    return row.status !== 'cancelled' &&
+      Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime();
+  }).map(function (row) {
+    return {
+      id: row.id, date: row.date, time: row.time,
+      endTime: clockForInstant_(row.endsAt, settings.timezone),
+      serviceName: row.serviceName, durationMinutes: Number(row.durationMinutes),
+      status: row.status
+    };
+  }).sort(function (a, b) { return a.time.localeCompare(b.time); });
+
+  var blocks = readTable_('TimeBlocks').filter(function (row) { return row.date === date; })
+    .map(function (row) {
+      return { id: row.id, time: row.time, endTime: clockForInstant_(row.endsAt, settings.timezone), durationMinutes: Number(row.durationMinutes) };
+    }).sort(function (a, b) { return a.time.localeCompare(b.time); });
+
+  return { status: 200, payload: {
+    ok: true, date: date, timezone: settings.timezone,
+    slotIntervalMinutes: settings.slotIntervalMinutes,
+    workingIntervals: scheduleWindows_(date), bookings: bookings, blocks: blocks
+  }};
+}
+
+function createTimeBlock_(input, owner) {
+  var date = String(input.date || '');
+  var time = String(input.time || '');
+  var duration = Number(input.durationMinutes);
+  if (!parseDateKey_(date) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) {
+    return error_(400, 'invalid_datetime', 'تاریخ یا ساعت انتخاب‌شده معتبر نیست.');
+  }
+  if (!Number.isInteger(duration) || duration < 5 || duration > 480) {
+    return error_(400, 'invalid_duration', 'مدت مسدودسازی باید بین ۵ تا ۴۸۰ دقیقه باشد.');
+  }
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return error_(503, 'schedule_busy', 'سامانه در حال به‌روزرسانی برنامه است؛ دوباره تلاش کن.');
+  try {
+    var settings = getSettings_();
+    var today = getLocalDateKey_(new Date(), settings.timezone);
+    if (date < today || date > addDays_(today, 365)) return error_(400, 'date_out_of_range', 'فقط زمان امروز یا روزهای آینده قابل مسدودسازی است.');
+    var start = localDateTimeToUtc_(date, time, settings.timezone);
+    if (!start || start.getTime() <= Date.now()) return error_(400, 'time_in_past', 'زمان گذشته قابل مسدودسازی نیست.');
+    var end = new Date(start.getTime() + duration * 60000);
+    var endParts = getZonedParts_(end, settings.timezone);
+    var endDate = endParts.year + '-' + pad2_(endParts.month) + '-' + pad2_(endParts.day);
+    var endTime = pad2_(endParts.hour) + ':' + pad2_(endParts.minute);
+    if (endDate !== date) return error_(400, 'invalid_duration', 'زمان مسدودسازی باید در همان روز پایان یابد.');
+
+    var windows = scheduleWindows_(date);
+    var fitsHours = windows.some(function (window) { return time >= window.startsAt && endTime <= window.endsAt; });
+    if (!fitsHours) return error_(409, 'outside_working_hours', 'این بازه باید کاملاً داخل یکی از ساعت‌های کاری باشد.');
+
+    var overlapsBooking = readTable_('Bookings').some(function (row) {
+      return ['pending', 'confirmed'].indexOf(row.status) !== -1 &&
+        Date.parse(row.startsAt) < end.getTime() && Date.parse(row.endsAt) > start.getTime();
+    });
+    if (overlapsBooking) return error_(409, 'time_already_booked', 'این زمان با نوبت مشتری تداخل دارد.');
+    var overlapsBlock = readTable_('TimeBlocks').some(function (row) {
+      return Date.parse(row.startsAt) < end.getTime() && Date.parse(row.endsAt) > start.getTime();
+    });
+    if (overlapsBlock) return error_(409, 'time_already_blocked', 'این زمان از قبل مسدود شده است.');
+
+    var record = {
+      id: uuid_(), date: date, time: time, startsAt: start.toISOString(), endsAt: end.toISOString(),
+      durationMinutes: String(duration), createdAt: nowIso_(), createdBy: owner.username
+    };
+    appendRecord_('TimeBlocks', record);
+    audit_('time_block.created', owner.id, 'time_block', record.id, { date: date, time: time, endTime: endTime, durationMinutes: duration });
+    return { status: 201, payload: { ok: true, block: { id: record.id, date: date, time: time, endTime: endTime, durationMinutes: duration } }};
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function deleteTimeBlock_(id, owner) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return error_(503, 'schedule_busy', 'سامانه در حال به‌روزرسانی برنامه است؛ دوباره تلاش کن.');
+  try {
+    var block = findBy_('TimeBlocks', 'id', id);
+    if (!block) return error_(404, 'time_block_not_found', 'زمان مسدودشده پیدا نشد.');
+    deleteRecord_('TimeBlocks', 'id', id);
+    audit_('time_block.deleted', owner.id, 'time_block', id, { date: block.date, time: block.time, durationMinutes: Number(block.durationMinutes) });
+    return { status: 200, payload: { ok: true }};
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function clockForInstant_(value, timezone) {
+  var parts = getZonedParts_(new Date(value), timezone);
+  return pad2_(parts.hour) + ':' + pad2_(parts.minute);
+}
+
 function getAdminSchedule_() {
   var settings = getSettings_();
   var weeklyRows = readTable_('WeeklyHours');
@@ -712,23 +821,34 @@ function deleteException_(id, owner) {
   if (!exception) return error_(404, 'exception_not_found', 'استثنای برنامه پیدا نشد.');
   var settings = getSettings_();
   if (settings.timezone === 'unset') return error_(409, 'schedule_not_configured', 'منطقه زمانی تنظیم نشده است.');
-  if (activeBookingsOnDate_(exception.date, settings.timezone).length) return error_(409, 'exception_has_bookings', 'تا زمانی که برای این تاریخ نوبت فعال وجود دارد، حذف استثنا مجاز نیست.');
+  if (activeBookingsOnDate_(exception.date, settings.timezone).length || readTable_('TimeBlocks').some(function (block) { return block.date === exception.date; })) return error_(409, 'exception_has_bookings', 'تا زمانی که برای این تاریخ نوبت یا زمان مسدودشده وجود دارد، حذف استثنا مجاز نیست.');
   deleteRecord_('Exceptions', 'id', id);
   audit_('schedule.exception_deleted', owner.id, 'schedule_exception', exception.date, {});
   return { status: 200, payload: { ok: true }};
 }
 
 function hasWeeklyConflict_(weekday, intervals, timezone) {
-  return readTable_('Bookings').some(function (booking) {
+  var bookingConflict = readTable_('Bookings').some(function (booking) {
     if (['pending', 'confirmed'].indexOf(booking.status) === -1 || Date.parse(booking.startsAt) < Date.now()) return false;
     var local = getZonedParts_(new Date(booking.startsAt), timezone);
     if (new Date(Date.UTC(local.year, local.month - 1, local.day)).getUTCDay() !== weekday) return false;
     return !fitsIntervals_(booking, intervals, timezone);
   });
+  if (bookingConflict) return true;
+  return readTable_('TimeBlocks').some(function (block) {
+    if (Date.parse(block.startsAt) < Date.now()) return false;
+    var parts = parseDateKey_(block.date);
+    if (!parts || new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay() !== weekday) return false;
+    return !fitsIntervals_(block, intervals, timezone);
+  });
 }
 function hasExceptionConflict_(date, intervals, timezone) {
-  return activeBookingsOnDate_(date, timezone).some(function (booking) {
+  var bookingConflict = activeBookingsOnDate_(date, timezone).some(function (booking) {
     return !fitsIntervals_(booking, intervals, timezone);
+  });
+  if (bookingConflict) return true;
+  return readTable_('TimeBlocks').filter(function (block) { return block.date === date; }).some(function (block) {
+    return !fitsIntervals_(block, intervals, timezone);
   });
 }
 function fitsIntervals_(booking, intervals, timezone) {
@@ -765,6 +885,9 @@ function getAvailability_(dateKey, service, settings, ignoreNotice) {
     return ['pending', 'confirmed'].indexOf(row.status) !== -1 &&
       Date.parse(row.startsAt) < nextDay.getTime() && Date.parse(row.endsAt) > dayStart.getTime();
   }).map(function (row) { return { start: Date.parse(row.startsAt), end: Date.parse(row.endsAt) }; });
+  readTable_('TimeBlocks').filter(function (row) { return row.date === dateKey; }).forEach(function (row) {
+    busy.push({ start: Date.parse(row.startsAt), end: Date.parse(row.endsAt) });
+  });
   var duration = Number(service.durationMinutes) + settings.bufferMinutes;
   var earliest = Date.now() + (ignoreNotice ? 0 : settings.minBookingNoticeMinutes * 60000);
   var slots = {};
