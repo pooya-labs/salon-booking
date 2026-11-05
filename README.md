@@ -12,6 +12,8 @@ A premium barber appointment platform for Shayan, with a Persian RTL customer jo
 
 Live site: https://pooya-labs.github.io/salon-booking/
 
+**Studio contact:** میدان نامجو، خیابان پازوکی، کوچه دهقانی، پلاک ۱۱۸ · [Instagram @shayan_tatsu](https://www.instagram.com/shayan_tatsu/) · [۰۹۱۰ ۶۸۴ ۱۵۵۰](tel:+989106841550)
+
 ## Brand and visual identity
 
 The site uses the owner-supplied barber emblem as its primary mark, with an obsidian-black canvas, warm antique-gold accents, ivory typography, rounded surfaces and layered Liquid Glass treatments. The public customer journey and owner workspace share the same visual system; the supplied logo assets remain separate brand elements. Reduced-motion preferences are respected across all interactive surfaces.

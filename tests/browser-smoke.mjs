@@ -126,6 +126,18 @@ try {
   await page.goto(homeUrl, { waitUntil: 'networkidle' })
   await page.locator('.site-header').waitFor({ state: 'visible' })
 
+  const contactStrip = page.locator('.contact-strip')
+  await contactStrip.waitFor({ state: 'visible' })
+  assert.ok((await contactStrip.innerText()).includes('میدان نامجو، خیابان پازوکی، کوچه دهقانی، پلاک ۱۱۸'),
+    'customer contact strip should show the full studio address')
+  const instagramLink = contactStrip.locator('a[href="https://www.instagram.com/shayan_tatsu/"]')
+  assert.equal(await instagramLink.count(), 1, 'Instagram contact must point to the supplied handle')
+  assert.equal(await instagramLink.getAttribute('target'), '_blank', 'Instagram should open separately')
+  const phoneLink = contactStrip.locator('a[href="tel:+989106841550"]')
+  assert.equal(await phoneLink.count(), 1, 'customer contact phone should use a native tel link')
+  assert.ok((await phoneLink.innerText()).includes('۰۹۱۰ ۶۸۴ ۱۵۵۰'), 'phone number should be readable in the contact strip')
+  console.log('[contact] studio address, Instagram deep link and one-tap phone link passed')
+
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const reducedMotion = await page.evaluate(() => ({
     scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
