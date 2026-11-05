@@ -277,7 +277,7 @@ try {
   await page.getByRole('button', { name: 'تقویم روز' }).click()
   await page.locator('.admin-calendar').waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'owner daily visual booking calendar')
-  await page.locator('.admin-day-slot.is-booked').waitFor({ state: 'visible' })
+  await page.locator('.admin-day-slot.is-booked').first().waitFor({ state: 'visible' })
   await page.locator('.admin-calendar-list-panel').filter({ hasText: 'نوبت‌های مشتری' }).getByText('کوتاهی مو').waitFor({ state: 'visible' })
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
   const nextDayResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200)
