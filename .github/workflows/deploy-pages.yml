@@ -55,3 +55,16 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Install pinned Chromium for live Apps Script smoke
+        if: vars.SALON_RELAY_URL != ''
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Verify the published Apps Script relay without writing data
+        if: vars.SALON_RELAY_URL != ''
+        env:
+          SALON_RELAY_URL: ${{ vars.SALON_RELAY_URL }}
+          SALON_BOOKING_PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: npm run test:apps-script:live
