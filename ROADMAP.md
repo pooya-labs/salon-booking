@@ -317,4 +317,4 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - Owner appointment list is read-only and focused on date, time, customer and service. The daily calendar includes bookings matched by their stored salon-local date, including legacy rows with incomplete timestamps.
 - Weekly closed-day checkbox now means exactly what it says: checked = closed.
 - Apps Script reuses the Spreadsheet handle and memoizes table reads within a single request; writes invalidate the affected table cache. Booking and time-block reads remain fresh for conflict safety.
-- Backend target: **1.5.3**; deploy `relay/Code.gs` as a new version of the existing Apps Script Web App. This hardens Sheets date/time normalization and daily-calendar refresh for customer bookings.
+- Backend target: **1.5.3**; deploy `relay/Code.gs` as a new version of the existing Apps Script Web App. This hardens Sheets date/time normalization, daily-calendar refresh, time-block clock validation and the locked/audited owner booking deletion endpoint. Desktop and Android owner views share a confirmed delete action; the homepage includes direct mobile owner access.
