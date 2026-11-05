@@ -275,6 +275,9 @@ try {
 
   await androidPage.locator('.menu-toggle').tap()
   assert.ok(await androidPage.locator('.main-nav').evaluate(element => element.classList.contains('is-open')), 'Android touch menu should open')
+  const androidOwnerLink = androidPage.locator('.main-nav .nav-owner-link')
+  assert.ok(await androidOwnerLink.isVisible(), 'Android menu must expose the owner panel entry')
+  assert.equal(await androidOwnerLink.getAttribute('href'), '?admin=1', 'Android owner entry must point to the Pages admin route')
   await androidPage.getByRole('link', { name: 'خدمات', exact: true }).tap()
   assert.ok(!(await androidPage.locator('.main-nav').evaluate(element => element.classList.contains('is-open'))), 'Android menu should close after navigation')
 
