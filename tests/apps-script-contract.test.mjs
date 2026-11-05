@@ -172,7 +172,7 @@ test('daily calendar normalizes date and time values returned as Google Sheets D
     var sheetTypedBooking = {
       id: 'sheet-typed-booking',
       date: new Date('2026-11-06T20:30:00.000Z'),
-      time: new Date('1899-12-30T05:35:00.000Z'),
+      time: new Date('1899-12-30T05:30:00.000Z'),
       startsAt: new Date('2026-11-07T05:30:00.000Z'),
       endsAt: new Date('2026-11-07T06:15:00.000Z'),
       durationMinutes: '45',
@@ -208,6 +208,54 @@ test('daily calendar normalizes date and time values returned as Google Sheets D
   );
 });
 
+test('booking timestamp overrides a Sheets time-only cell with a historical timezone offset', () => {
+  const result = runInNewContext(backend + String.fromCharCode(10) + `
+    var row = {
+      date: '2026-11-07',
+      time: new Date('1899-12-30T05:30:00.000Z'),
+      startsAt: new Date('2026-11-07T05:30:00.000Z'),
+      durationMinutes: '45'
+    };
+    rowClock_(row, 'Asia/Tehran');
+  `, {
+    Utilities: {
+      formatDate(date, timezone, pattern) {
+        return new Intl.DateTimeFormat('en-GB', {
+          timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+        }).format(date);
+      },
+    },
+  });
+  assert.equal(result, '09:00');
+});
+
+test('date and time Date cells are normalized in the spreadsheet timezone', () => {
+  const result = runInNewContext(backend + String.fromCharCode(10) + `
+    var calls = [];
+    REQUEST_SPREADSHEET_ = { getSpreadsheetTimeZone: function () { return 'Europe/Brussels'; } };
+    var value = new Date('2026-11-07T09:00:00.000Z');
+    ({
+      date: normalizeSheetCell_('date', value),
+      time: normalizeSheetCell_('time', value),
+      calls: calls
+    });
+  `, {
+    Utilities: {
+      formatDate(date, timezone, pattern) {
+        calls.push({ timezone: timezone, pattern: pattern });
+        return timezone + '|' + pattern;
+      },
+    },
+    calls: [],
+  });
+  assert.equal(result.date, 'Europe/Brussels|yyyy-MM-dd');
+  assert.equal(result.time, 'Europe/Brussels|HH:mm');
+  assert.deepEqual(result.calls, [
+    { timezone: 'Europe/Brussels', pattern: 'yyyy-MM-dd' },
+    { timezone: 'Europe/Brussels', pattern: 'HH:mm' },
+  ]);
+});
+
 test('legacy booking rows without timestamp columns still resolve their date and clock', () => {
   const result = runInNewContext(backend + String.fromCharCode(10) + `
     var legacy = { date: '2026-11-07', time: '09:00', durationMinutes: '45' };
@@ -229,7 +277,7 @@ test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
-  assert.ok(backend.includes("var APP_VERSION_ = '1.5.1'"))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.5.2'"))
   assert.match(backend, /status: 'confirmed'/)
   assert.match(backend, /REQUEST_TABLE_CACHE_/)
   assert.match(backend, /REQUEST_SPREADSHEET_/)
