@@ -230,14 +230,13 @@ test('booking timestamp overrides a Sheets time-only cell with a historical time
 });
 
 test('date and time Date cells are normalized in the spreadsheet timezone', () => {
+  const calls = [];
   const result = runInNewContext(backend + String.fromCharCode(10) + `
-    var calls = [];
     REQUEST_SPREADSHEET_ = { getSpreadsheetTimeZone: function () { return 'Europe/Brussels'; } };
     var value = new Date('2026-11-07T09:00:00.000Z');
     ({
       date: normalizeSheetCell_('date', value),
-      time: normalizeSheetCell_('time', value),
-      calls: calls
+      time: normalizeSheetCell_('time', value)
     });
   `, {
     Utilities: {
@@ -246,11 +245,10 @@ test('date and time Date cells are normalized in the spreadsheet timezone', () =
         return timezone + '|' + pattern;
       },
     },
-    calls: [],
   });
   assert.equal(result.date, 'Europe/Brussels|yyyy-MM-dd');
   assert.equal(result.time, 'Europe/Brussels|HH:mm');
-  assert.deepEqual(result.calls, [
+  assert.deepEqual(calls, [
     { timezone: 'Europe/Brussels', pattern: 'yyyy-MM-dd' },
     { timezone: 'Europe/Brussels', pattern: 'HH:mm' },
   ]);
