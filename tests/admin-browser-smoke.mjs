@@ -178,7 +178,7 @@ try {
       }) })
       return
     }
-    const bookingDeleteMatch = /^\\/api\\/admin\\/bookings\\/([^/]+)$/.exec(path)
+    const bookingDeleteMatch = /^\/api\/admin\/bookings\/([^/]+)$/.exec(path)
     if (bookingDeleteMatch && route.request().method() === 'DELETE') {
       const bookingId = bookingDeleteMatch[1]
       const index = qaBookings.findIndex(item => item.id === bookingId)
