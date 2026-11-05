@@ -26,22 +26,6 @@ type Booking = {
 type View = 'checking' | 'demo' | 'login' | 'bootstrap' | 'setup-blocked' | 'dashboard'
 type BookingRange = { from: string; to: string }
 
-const statusLabels: Record<BookingStatus, string> = {
-  pending: 'در انتظار تأیید',
-  confirmed: 'تأیید شده',
-  cancelled: 'لغو شده',
-  completed: 'انجام شده',
-  no_show: 'عدم مراجعه',
-}
-
-const statusClasses: Record<BookingStatus, string> = {
-  pending: 'admin-status-pending',
-  confirmed: 'admin-status-confirmed',
-  cancelled: 'admin-status-cancelled',
-  completed: 'admin-status-completed',
-  no_show: 'admin-status-noshow',
-}
-
 const toPersianDigits = (value: string | number) =>
   String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)])
 
@@ -188,7 +172,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
 
   useEffect(() => {
     if (user && view === 'dashboard') void loadBookings()
-    // The filter and authenticated user define the visible booking list.
+    // The authenticated user defines the visible booking list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, view])
 
@@ -310,7 +294,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
       <section className="admin-dashboard">
         <div className="admin-dashboard-heading">
           <div><div className="eyebrow"><span className="eyebrow-line" /> SALON MANAGEMENT</div><h1>سلام، {user?.username}.</h1><p>برنامه نوبت‌ها را از همین‌جا مدیریت کنید.</p></div>
-          <button className="admin-refresh" onClick={() => void loadBookings(filter)} disabled={loadingBookings}><RefreshCw size={15} className={loadingBookings ? 'is-spinning' : ''} /> به‌روزرسانی</button>
+          <button className="admin-refresh" onClick={() => void loadBookings()} disabled={loadingBookings}><RefreshCw size={15} className={loadingBookings ? 'is-spinning' : ''} /> به‌روزرسانی</button>
         </div>
 
         <AdminManagement />
