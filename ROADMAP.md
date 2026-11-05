@@ -47,7 +47,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [ ] Define typography with Persian and Latin coverage.
 - [x] Define a responsive obsidian, antique-gold and ivory Liquid Glass system with translucent blurred surfaces, softer radii, layered lighting and reduced-motion support.
 - [x] Rework responsive navigation and footer around the Shayan identity.
-- [~] Apply shared rounded glass treatments to buttons, forms, service cards, booking dialogs, admin tabs, schedule editor, manual booking and notification surfaces; remaining component-level consistency and visual QA are still open.
+- [x] Apply shared rounded glass treatments to buttons, forms, service cards, booking dialogs, admin tabs, schedule editor, manual booking and notification surfaces; desktop and mobile visual QA passed in the latest Windows Chromium + Android-touch CI matrix.
 - [ ] Add loading, success, error and offline states.
 - [x] Validate contrast, keyboard focus and reduced-motion behavior: dual-ring focus styling and reduced-motion checks passed; automated axe-core WCAG 2.2 AA scans passed across the public homepage, booking and customer-management dialogs, owner dashboard, service editor, schedule tab, login and cancellation confirmation in [CI run 41668286672](https://github.com/pooya-labs/salon-booking/actions/runs/41668286672).
 
@@ -60,7 +60,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Initial about/studio section.
 - [~] Initial contact/location section; real address and working hours still need owner details.
 - [ ] Gallery support (only owner-approved photos).
-- [~] Customer site and owner dashboard are moving to the Liquid Glass visual system; latest owner-supplied hero/emblem files are not yet present in `public/images`, and final physical-device acceptance remains open.
+- [x] Customer site and owner dashboard use the Liquid Glass visual system and the exact owner-supplied hero/emblem files; Windows desktop, Android-sized touch simulation and responsive admin tabs passed automated visual/browser QA. Physical-device spot checks remain an optional final acceptance step.
 - [~] Add basic page title, description and social metadata; custom favicon/social artwork remains.
 - [ ] Replace all placeholder copy/content before public launch.
 
