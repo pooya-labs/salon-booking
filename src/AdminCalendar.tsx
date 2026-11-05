@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarClock, Check, ChevronLeft, ChevronRight, Clock3, LockKeyhole, RefreshCw, Unlock, X } from 'lucide-react'
 import { JalaliDatePicker } from './JalaliDatePicker'
 import { formatJalaliDate, getIranTodayDateKey } from './jalali-date'
@@ -8,7 +8,7 @@ type DayBooking = {
   id: string
   time: string
   endTime: string
-  status: 'pending' | 'confirmed'
+  status: 'pending' | 'confirmed' | 'completed' | 'no_show'
   serviceName: string
   durationMinutes: number
 }
@@ -34,7 +34,7 @@ const shiftDate = (dateKey: string, amount: number) => {
   date.setUTCDate(date.getUTCDate() + amount)
   return date.toISOString().slice(0, 10)
 }
-const statusLabel = (status: DayBooking['status']) => status === 'pending' ? 'در انتظار تأیید' : 'تأییدشده'
+const statusLabel = (status: DayBooking['status']) => ({ pending: 'در انتظار تأیید', confirmed: 'تأییدشده', completed: 'انجام‌شده', no_show: 'عدم مراجعه' })[status]
 
 export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: number }) {
   const [date, setDate] = useState(getIranTodayDateKey)
@@ -49,7 +49,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
-  const loadDay = async (signal?: AbortSignal) => {
+  const loadDay = useCallback(async (signal?: AbortSignal) => {
     setRefreshing(true)
     setError('')
     try {
@@ -71,7 +71,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
         setRefreshing(false)
       }
     }
-  }
+  }, [date])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -79,7 +79,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
     setSelectedTime(null)
     void loadDay(controller.signal)
     return () => controller.abort()
-  }, [date])
+  }, [date, loadDay])
 
   const bookings = schedule?.bookings ?? []
   const blocks = schedule?.blocks ?? []
@@ -156,7 +156,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
     }
   }
 
-  const availableCount = slots.filter(slot => slot.state === 'free').length
+  const availableCount = slots.filter(slot => slot.state === 'free' && availableBlockDurations(date, slot.time, DURATION_OPTIONS, intervals, bookings, blocks).length > 0).length
   const bookedCount = bookings.length
   const dateTitle = formatJalaliDate(date)
 
@@ -212,10 +212,14 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
                   <div className="admin-day-slot-grid">
                     {windowSlots.map(slot => {
                       const isSelected = selectedTime === slot.time
-                      const isPast = date === getIranTodayDateKey() && slot.time <= new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())
+                      const today = getIranTodayDateKey()
+                      const currentParts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date())
+                      const currentClock = currentParts.filter(part => part.type === 'hour' || part.type === 'minute').map(part => part.value).join(':')
+                      const isPast = date < today || (date === today && slot.time <= currentClock)
+                      const canBlock = !isPast && slot.state === 'free' && availableBlockDurations(date, slot.time, DURATION_OPTIONS, intervals, bookings, blocks).length > 0
                       const label = slot.state === 'free' ? 'آزاد' : slot.state === 'booked' ? 'نوبت' : 'مسدود'
                       return (
-                        <button type="button" key={slot.time} disabled={slot.state !== 'free' || isPast}
+                        <button type="button" key={slot.time} disabled={!canBlock}
                           className={['admin-day-slot', `is-${slot.state}`, isSelected ? 'is-selected' : ''].filter(Boolean).join(' ')}
                           aria-label={`${toFa(slot.time)} · ${slot.title}`}
                           aria-pressed={isSelected}

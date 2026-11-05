@@ -82,6 +82,8 @@ if (!address || typeof address === 'string') throw new Error('Could not start ow
 const origin = 'http://127.0.0.1:' + address.port
 const apiCalls = []
 const statusUpdates = []
+const timeBlockRequests = []
+let mockTimeBlocks = [{ id: 'qa-time-block', time: '12:00', endTime: '12:15', durationMinutes: 15 }]
 let forceLoginView = false
 const qaBookings = [
   {
@@ -188,6 +190,35 @@ try {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, status: body.status }) })
       return
     }
+    if (path === '/api/admin/day-schedule' && request.method() === 'GET') {
+      const requestedDate = new URL(request.url()).searchParams.get('date')
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        ok: true, date: requestedDate, timezone: 'Asia/Tehran', slotIntervalMinutes: 15,
+        workingIntervals: [{ startsAt: '09:00', endsAt: '17:00' }],
+        bookings: [{
+          id: 'qa-day-booking', date: requestedDate, time: '10:00', endTime: '10:45',
+          serviceName: 'کوتاهی مو', durationMinutes: 45, status: 'confirmed',
+        }],
+        blocks: mockTimeBlocks,
+      }) })
+      return
+    }
+    if (path === '/api/admin/time-blocks' && request.method() === 'POST') {
+      const body = request.postDataJSON()
+      timeBlockRequests.push(body)
+      const [hour, minute] = body.time.split(':').map(Number)
+      const end = hour * 60 + minute + body.durationMinutes
+      const endTime = String(Math.floor(end / 60)).padStart(2, '0') + ':' + String(end % 60).padStart(2, '0')
+      mockTimeBlocks.push({ id: 'qa-created-block', time: body.time, endTime, durationMinutes: body.durationMinutes })
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+      return
+    }
+    const timeBlockMatch = /^\\/api\\/admin\\/time-blocks\\/([^/]+)$/.exec(path)
+    if (timeBlockMatch && request.method() === 'DELETE') {
+      mockTimeBlocks = mockTimeBlocks.filter(block => block.id !== timeBlockMatch[1])
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+      return
+    }
     if (path === '/api/admin/services') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         ok: true, services: [],
@@ -243,9 +274,23 @@ try {
   await page.locator('.admin-weekly-list').waitFor({ state: 'visible' })
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-schedule-desktop.png'), fullPage: true })
   await assertNoAccessibilityViolations(page, 'owner schedule management tab')
-  await page.getByRole('button', { name: 'رزرو تلفنی' }).click()
-  await page.locator('.admin-phone-booking-layout').waitFor({ state: 'visible' })
-  await assertNoAccessibilityViolations(page, 'owner manual phone booking tab')
+  await page.getByRole('button', { name: 'تقویم روز' }).click()
+  await page.locator('.admin-calendar').waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'owner daily visual booking calendar')
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
+  await page.getByRole('button', { name: 'روز بعد' }).click()
+  await page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200)
+  await page.locator('.admin-day-slot.is-free').filter({ hasText: '11:00' }).click()
+  await page.locator('.admin-block-confirm').waitFor({ state: 'visible' })
+  await assertNoAccessibilityViolations(page, 'manager one-touch time block confirmation')
+  await page.getByRole('button', { name: 'تأیید و مسدود کردن زمان' }).click()
+  await page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/time-blocks' && response.request().method() === 'POST' && response.status() === 201)
+  assert.deepEqual(timeBlockRequests[0], { date: timeBlockRequests[0].date, time: '11:00', durationMinutes: 60 })
+  assert.deepEqual(Object.keys(timeBlockRequests[0]).sort(), ['date', 'durationMinutes', 'time'])
+  await page.locator('.admin-calendar-list-panel').filter({ hasText: 'زمان‌های مسدودشده' }).getByRole('button', { name: 'رفع مسدودی 11:00' }).click()
+  await page.getByRole('button', { name: 'تأیید', exact: true }).click()
+  await page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/time-blocks/qa-created-block' && response.request().method() === 'DELETE' && response.status() === 200)
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-after-unblock.png'), fullPage: true })
   await page.getByRole('button', { name: 'اعلان‌ها' }).click()
   await page.locator('.admin-notification-layout').waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'owner notification settings tab')
@@ -392,9 +437,9 @@ try {
   assert.ok(mobileHeaderMetrics.subtitleFits, 'mobile owner subtitle must wrap inside its own width')
   assert.ok(mobileHeaderMetrics.subtitleBottom <= mobileHeaderMetrics.headerBottom + 1, 'mobile owner subtitle must remain inside header')
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-dashboard.png'), fullPage: true })
-  await page.getByRole('button', { name: 'رزرو تلفنی' }).click()
-  await page.locator('.admin-phone-booking-layout').waitFor({ state: 'visible' })
-  await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-phone-booking.png'), fullPage: true })
+  await page.getByRole('button', { name: 'تقویم روز' }).click()
+  await page.locator('.admin-calendar').waitFor({ state: 'visible' })
+  await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-daily-calendar.png'), fullPage: true })
   await page.getByRole('button', { name: 'اعلان‌ها' }).click()
   await page.locator('.admin-notification-layout').waitFor({ state: 'visible' })
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-mobile-notifications.png'), fullPage: true })

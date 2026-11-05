@@ -61,12 +61,11 @@ export function availableBlockDurations(
 ): number[] {
   const start = minuteOf(time)
   if (start === null) return []
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(now)
-  const currentClock = new Intl.DateTimeFormat('en-GB', {
+  const today = getIranTodayDateKey(now)
+  const timeParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).format(now)
+  }).formatToParts(now)
+  const currentClock = timeParts.filter(part => part.type === 'hour' || part.type === 'minute').map(part => part.value).join(':')
   if (date < today || (date === today && time <= currentClock)) return []
 
   return durations.filter((duration) => {
@@ -77,7 +76,6 @@ export function availableBlockDurations(
       return open !== null && close !== null && start >= open && end <= close
     })
     if (!fitsWorkingHours) return false
-    const candidate = { time, endTime: clockOf(end) }
     return !bookings.some((item) => overlaps(start, end, item))
       && !blocks.some((item) => overlaps(start, end, item))
   })

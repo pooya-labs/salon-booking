@@ -75,7 +75,7 @@ const requestError = async (response: Response, fallback: string) => {
   }
 }
 
-export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () => void }) {
+export function AdminManagement() {
   const [activeTab, setActiveTab] = useState<'services' | 'schedule' | 'calendar' | 'notifications'>('services')
   const [services, setServices] = useState<Service[]>([])
   const [serviceDraft, setServiceDraft] = useState<Omit<Service, 'id'> & { id?: string }>(emptyService())
