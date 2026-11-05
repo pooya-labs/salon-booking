@@ -27,11 +27,11 @@ Follow [GITHUB-PAGES-RELAY.md](./GITHUB-PAGES-RELAY.md):
 5. Set the deployed `/exec` URL as GitHub Actions variable `SALON_RELAY_URL`.
 6. Complete first-owner bootstrap on the Pages admin screen.
 
-Setup and notification-recipient functions are guarded against calls from the public web app; run them only from the owner's Apps Script editor.
+Setup and notification-recipient functions are guarded against calls from the public web app; run them only from the owner's Apps Script editor. If the Google OAuth consent screen is External / Testing, add the exact Apps Script deployer Google account under Google Auth Platform → Audience → Test users; otherwise the owner can receive OAuth 403 `access_denied` even when the Apps Script Web App is set to Anyone. Keep the existing Web App deployment and `/exec` URL when fixing OAuth audience access.
 
 ## Notifications
 
-Firebase Cloud Messaging (FCM) Web Push sends reservation notifications to registered manager browsers/PWAs on Android. The owner must configure the Firebase web app, VAPID key, matching Google Cloud project and GitHub Actions variables using the [deployment checklist](./GITHUB-PAGES-RELAY.md#6-phone-push-notifications-firebase-cloud-messaging), then activate the device from the پنل مدیریت → اعلان‌ها tab and send a test notification.
+Firebase Cloud Messaging (FCM) Web Push sends reservation notifications to registered manager browsers/PWAs on Android. The owner must configure the Firebase web app, VAPID key, matching Google Cloud project and GitHub Actions variables using the [deployment checklist](./GITHUB-PAGES-RELAY.md#6-phone-push-notifications-firebase-cloud-messaging), then activate the device from the پنل مدیریت → اعلان‌ها tab and send a test notification. The test-send button is intentionally enabled only after the backend has both a saved Firebase project ID and at least one active registered device; this readiness guard must not be bypassed.
 
 Email notifications are **disabled by default**. The manager can keep the email toggle off to receive push only, or enable email separately from the Notifications tab. A failed notification never rolls back a saved booking.
 
