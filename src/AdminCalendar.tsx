@@ -54,6 +54,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
       const response = await fetch(`/api/admin/day-schedule?date=${encodeURIComponent(date)}`, {
         credentials: 'same-origin',
         headers: { accept: 'application/json' },
+        cache: 'no-store',
         signal,
       })
       const payload = await response.json() as DaySchedule & { ok?: boolean; message?: string }
@@ -78,6 +79,21 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
     void loadDay(controller.signal)
     return () => controller.abort()
   }, [date, loadDay])
+
+  // Keep an already-open manager calendar in sync with customer bookings.
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void loadDay()
+    }
+    const intervalId = window.setInterval(refreshWhenVisible, 30000)
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [loadDay])
 
   const bookings = schedule?.bookings ?? []
   const blocks = schedule?.blocks ?? []
