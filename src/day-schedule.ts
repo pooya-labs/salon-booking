@@ -1,4 +1,4 @@
-import { getIranTodayDateKey } from './jalali-date'
+import { getIranTodayDateKey } from './jalali-date.ts'
 
 export type TimeRange = { startsAt: string; endsAt: string }
 export type DayOccupancy = { time: string; endTime: string }
