@@ -145,6 +145,9 @@ function setSalonNotificationEmail(email) {
 
 /** Called by the hidden iframe through google.script.run. */
 function proxyRequest(input) {
+  // Explicitly scope the memoized spreadsheet/table snapshots to this API call only.
+  REQUEST_SPREADSHEET_ = null;
+  REQUEST_TABLE_CACHE_ = {};
   var sessionId = '';
   try {
     if (!input || typeof input !== 'object') return result_(400, { ok: false, error: 'invalid_request', message: 'درخواست معتبر نیست.' });
