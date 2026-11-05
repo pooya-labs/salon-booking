@@ -10,7 +10,7 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.5.2';
+var APP_VERSION_ = '1.5.3';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
@@ -293,6 +293,8 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
     return { status: 200, payload: { ok: true, user: { id: owner.id, username: owner.username } }};
   }
   if (path === '/api/admin/bookings' && method === 'GET') return getAdminBookings_(query, owner);
+  var bookingDeleteMatch = /^\\/api\\/admin\\/bookings\\/([A-Za-z0-9-]{36})$/.exec(path);
+  if (bookingDeleteMatch && method === 'DELETE') return deleteBooking_(bookingDeleteMatch[1], owner);
   if (path === '/api/admin/availability' && method === 'GET') return getAdminAvailability_(query);
   if (path === '/api/admin/day-schedule' && method === 'GET') return getAdminDaySchedule_(query);
   if (path === '/api/admin/time-blocks' && method === 'POST') return createTimeBlock_(body, owner);
@@ -559,6 +561,25 @@ function getAdminBookings_(query, owner) {
   }) }};
 }
 
+function deleteBooking_(id, owner) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return error_(503, 'booking_busy', 'سامانه مشغول پردازش است؛ دوباره تلاش کنید.');
+  try {
+    var booking = findBy_('Bookings', 'id', id);
+    if (!booking) return error_(404, 'booking_not_found', 'نوبت موردنظر پیدا نشد یا قبلاً حذف شده است.');
+    if (!deleteRecord_('Bookings', 'id', id)) return error_(404, 'booking_not_found', 'حذف نوبت انجام نشد؛ دوباره فهرست را به‌روزرسانی کنید.');
+    audit_('booking.deleted', owner.id, 'booking', id, {
+      reference: booking.reference || '',
+      date: rowDateKey_(booking, getSettings_().timezone),
+      time: rowClock_(booking, getSettings_().timezone),
+      source: booking.source || 'online'
+    });
+    return { status: 200, payload: { ok: true, deleted: true, id: id } };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function updateBookingStatus_(id, input, owner) {
   var allowed = ['confirmed', 'cancelled', 'completed', 'no_show'];
   var next = String(input.status || '');
@@ -681,7 +702,7 @@ function createTimeBlock_(input, owner) {
   var date = String(input.date || '');
   var time = String(input.time || '');
   var duration = Number(input.durationMinutes);
-  if (!parseDateKey_(date) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) {
+  if (!parseDateKey_(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
     return error_(400, 'invalid_datetime', 'تاریخ یا ساعت انتخاب‌شده معتبر نیست.');
   }
   if (!Number.isInteger(duration) || duration < 5 || duration > 480) {
