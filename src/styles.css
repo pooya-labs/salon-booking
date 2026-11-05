@@ -1846,3 +1846,101 @@ hr { border-color:var(--line); }
   .mobile-book-bar { padding-inline:11px; gap:8px; }
   .mobile-book-bar .button { padding-inline:10px; }
 }
+
+
+/* Mobile owner header: separate brand row from account controls. */
+@media (max-width:680px) {
+  .admin-topbar {
+    display:flex;
+    flex-direction:row;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:9px 12px;
+    width:calc(100% - 16px);
+    min-height:0;
+    margin:8px 8px 0;
+    padding:11px 13px;
+  }
+  .admin-topbar > .admin-brand {
+    display:flex;
+    flex:1 1 100%;
+    min-width:0;
+    width:100%;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+  }
+  .admin-topbar .admin-brand-logo {
+    display:block;
+    width:42px;
+    height:42px;
+    min-width:42px;
+    flex:0 0 42px;
+    padding:3px;
+    object-fit:contain;
+  }
+  .admin-topbar .admin-brand-copy {
+    display:flex;
+    flex:1 1 auto;
+    min-width:0;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:3px;
+  }
+  .admin-topbar .admin-brand-copy strong {
+    display:block;
+    font-size:17px;
+    line-height:1.2;
+    white-space:nowrap;
+  }
+  .admin-topbar .admin-brand-copy small {
+    display:block;
+    max-width:100%;
+    margin:0;
+    font-size:7px;
+    line-height:1.35;
+    letter-spacing:.09em;
+    direction:ltr;
+    text-align:left;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .admin-topbar .admin-topbar-actions {
+    display:flex;
+    flex:1 1 100%;
+    width:100%;
+    min-width:0;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .admin-topbar .admin-user-chip {
+    display:flex;
+    flex:1 1 auto;
+    min-width:0;
+    max-width:72%;
+    align-items:center;
+    gap:7px;
+    overflow:hidden;
+    font-size:9px;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+  }
+  .admin-topbar .admin-logout {
+    display:inline-flex;
+    flex:0 0 auto;
+    min-height:34px;
+    align-items:center;
+    justify-content:center;
+    padding:6px 10px;
+    white-space:nowrap;
+  }
+}
+@media (max-width:360px) {
+  .admin-topbar { padding:10px 11px; }
+  .admin-topbar .admin-brand-logo { width:39px;height:39px;min-width:39px;flex-basis:39px; }
+  .admin-topbar .admin-brand-copy small { font-size:6.5px;letter-spacing:.07em; }
+  .admin-topbar .admin-user-chip { max-width:68%; }
+}
