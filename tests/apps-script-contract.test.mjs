@@ -284,26 +284,12 @@ test('Apps Script salon timezone is pinned to Iran', () => {
 
 test('manager can block a valid 24-hour clock time', () => {
   class FixedDate extends Date {
-    constructor(...args) { super(...(args.length ? args : [Date.UTC(2026, 10, 5, 5, 0, 0)]) }
+    constructor(...args) {
+      super(...(args.length ? args : [Date.UTC(2026, 10, 5, 5, 0, 0)]))
+    }
     static now() { return Date.UTC(2026, 10, 5, 5, 0, 0) }
   }
   const store = { records: [], audits: [] };
-  const context = runInNewContext(backend + String.fromCharCode(10) + `
-    getSettings_ = () => ({ timezone: 'Asia/Tehran' });
-    scheduleWindows_ = () => [{ startsAt: '09:00', endsAt: '17:00' }];
-    readTable_ = () => [];
-    appendRecord_ = (table, record) => store.records.push({ table, ...record });
-    audit_ = (...args) => store.audits.push(args);
-    uuid_ = () => '123e4567-e89b-12d3-a456-426614174000';
-    nowIso_ = () => '2026-11-05T05:00:00.000Z';
-    createTimeBlock_({ date: '2026-11-07', time: '09:00', durationMinutes: 15 }, { id: 'owner-1', username: 'owner' });
-  `, {
-    Date: FixedDate,
-    store,
-    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
-  });
-  assert.equal(context.status, undefined);
-  // Re-run with the result and stored row exposed from the isolated Apps Script context.
   const result = runInNewContext(backend + String.fromCharCode(10) + `
     getSettings_ = () => ({ timezone: 'Asia/Tehran' });
     scheduleWindows_ = () => [{ startsAt: '09:00', endsAt: '17:00' }];
@@ -319,6 +305,7 @@ test('manager can block a valid 24-hour clock time', () => {
     LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
   });
   assert.equal(result.status, 201);
+  assert.equal(result.payload.block.time, '09:00');
   assert.equal(store.records.at(-1).time, '09:00');
   assert.equal(store.records.at(-1).durationMinutes, '15');
 });
