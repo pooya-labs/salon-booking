@@ -15,3 +15,5 @@ private-backups/
 
 # Local-only Worker configuration; copy the example before use.
 wrangler.dev.toml
+
+test-artifacts/
