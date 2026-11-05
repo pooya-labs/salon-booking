@@ -197,7 +197,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Remove Wrangler/Workers from the active build and CI path; preserve former Worker/D1 source as temporary recovery material.
 - [x] Owner created the Apps Script project, imported the backend files, ran `setupSalonDatabase()`, authorized the required Google access and deployed the owner-executed anonymous Web App (owner-confirmed 2026-11-04).
 - [x] Owner added the deployed `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL` (owner-confirmed 2026-11-04).
-- [~] Nested-frame bridge fix is committed and the owner confirmed the Apps Script update/redeployment (2026-11-05). The first retry was blocked before smoke testing because the previous workflow attempt left a duplicate `github-pages` artifact; a run-attempt-specific artifact name is now being added so a fresh deployment can reach the live relay smoke.
+- [x] GitHub Pages → nested Apps Script iframe → Apps Script backend relay passed the read-only live smoke on 2026-11-05: backend version 1.1.0, nested-frame READY handshake, public health/config/services and private Sheets read routes succeeded; anonymous owner access was rejected as expected. Pages deployment and both CI jobs are green.
 - [ ] Complete first-owner bootstrap; configure actual timezone, services, prices and working hours.
 - [ ] Verify real booking, conflict rejection, owner session, customer lookup/cancellation and Gmail Android notification from an Iran-based network without VPN.
 - [ ] Export any required historical D1 data only after owner approval; retain the old database until cutover is accepted.
@@ -270,3 +270,13 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - The workflow now names the Pages artifact `github-pages-${{ github.run_attempt }}` and passes the same name to `actions/deploy-pages`. This isolates retries from artifacts produced by earlier attempts.
 - Next verification: fresh Pages run must deploy successfully, then the read-only live smoke must report Apps Script version 1.1.0, receive the nested-frame READY handshake, and pass health/config/services/setup/owner checks. No booking or customer records are created by this smoke.
 - Firebase configuration variables were empty in the latest Pages build environment; Android push delivery remains unconfigured and must not be marked complete.
+
+
+## Latest live relay acceptance checkpoint (2026-11-05)
+
+- Current main commit before this documentation update: `7149f55d2b49bd0105b80a1adb149cbbb0ffef26`.
+- CI run `42026780298` passed: Linux build/test/browser QA and Windows desktop + Android-touch visual QA both completed successfully.
+- Pages run `42026780070` passed end-to-end, including deployment and the read-only live Apps Script smoke.
+- Smoke evidence: the published Pages site loaded the configured Apps Script iframe; nested `script.googleusercontent.com` frame emitted READY to the Pages top window; direct health returned `ok=true`, service `salon-booking-apps-script`, version `1.1.0`; public config/services and private Sheets read routes passed; anonymous owner access was rejected.
+- Live data is still intentionally empty: public services count 0, salon timezone configured=false, owner account initialized=false. The smoke created no booking, customer PII, owner mutation or notification.
+- Remaining release work: first-owner bootstrap, timezone confirmation, service catalog/prices, opening hours and exceptions, Firebase Web App/VAPID setup and manager Android push acceptance. Email notifications remain off by default. Do not enable real booking until operational configuration and end-to-end acceptance are complete.

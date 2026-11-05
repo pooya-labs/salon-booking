@@ -524,3 +524,15 @@ Production blockers and real salon details remain unchanged.
 - Next: verify a fresh Pages run deploys, then confirm the read-only Apps Script smoke sees version 1.1.0, receives READY from the nested HtmlService frame, and passes public health/config/services plus expected anonymous owner/setup checks.
 - The most recent Pages build logs showed all seven `FIREBASE_*` public build variables empty. FCM push delivery is not configured or accepted yet; email remains disabled by default.
 - No real customer booking was created during the workflow diagnostics. Do not announce live booking acceptance until owner bootstrap, salon timezone/services/hours, booking lifecycle, and manager Android push delivery are accepted.
+
+
+## Latest verified GitHub Pages ↔ Apps Script relay acceptance (2026-11-05)
+
+- Current implementation commit under test: `7149f55d2b49bd0105b80a1adb149cbbb0ffef26`.
+- CI run `42026780298` completed successfully. Both Linux `build` and `windows-visual` jobs passed, including tests, typecheck/build, responsive browser QA, Windows desktop and Android-touch visual QA, and owner-dashboard QA.
+- Pages run `42026780070` completed successfully, including GitHub Pages deployment and the read-only Apps Script live smoke: https://github.com/pooya-labs/salon-booking/actions/runs/42026780070.
+- The published `https://pooya-labs.github.io/salon-booking/` page loaded its configured Apps Script iframe. The nested HtmlService `userCodeAppPanel` frame announced READY to the Pages top window; the direct health route returned `{"ok":true,"service":"salon-booking-apps-script","version":"1.1.0"}`.
+- `public config/services` and private Sheets read routes passed. The current spreadsheet has zero public services; salon timezone is not configured; the first owner account is not initialized. Anonymous owner access was correctly rejected.
+- Smoke was read-only: no booking, customer PII, owner mutation or notification was created. Passing relay smoke is not production booking acceptance.
+- Remaining owner setup: perform first-owner bootstrap; set the salon timezone; populate service names/categories/descriptions/prices/durations and working hours/breaks/closures; configure Firebase web app + VAPID and GitHub `FIREBASE_*` build variables; verify manager Android notification delivery in foreground/background. Email remains disabled by default.
+- CI, Pages deployment and live relay smoke are green. Next phase is operational configuration and end-to-end launch acceptance, not more bridge/relay refactoring.
