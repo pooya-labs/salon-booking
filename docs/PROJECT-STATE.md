@@ -536,3 +536,11 @@ Production blockers and real salon details remain unchanged.
 - Smoke was read-only: no booking, customer PII, owner mutation or notification was created. Passing relay smoke is not production booking acceptance.
 - Remaining owner setup: perform first-owner bootstrap; set the salon timezone; populate service names/categories/descriptions/prices/durations and working hours/breaks/closures; configure Firebase web app + VAPID and GitHub `FIREBASE_*` build variables; verify manager Android notification delivery in foreground/background. Email remains disabled by default.
 - CI, Pages deployment and live relay smoke are green. Next phase is operational configuration and end-to-end launch acceptance, not more bridge/relay refactoring.
+
+
+## GitHub Pages owner-panel URL correction (2026-11-05)
+
+- The app does not publish `/admin` as a standalone GitHub Pages path. In Pages mode the header owner link uses the query route `?admin=1`, which `src/App.tsx` explicitly recognizes.
+- Correct public owner panel URL: `https://pooya-labs.github.io/salon-booking/?admin=1`.
+- A direct request to `/salon-booking/admin` can return GitHub Pages 404 because it is not a physical route or SPA fallback file. Keep `/admin` only for local development / legacy Worker contexts; do not send it to Pages users.
+- Updated README and deployment/admin guides to use the confirmed Pages query route.

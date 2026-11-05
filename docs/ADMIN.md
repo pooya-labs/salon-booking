@@ -1,6 +1,6 @@
 # Owner workspace — Google Apps Script
 
-The owner workspace is served by the GitHub Pages frontend at `/salon-booking/admin`. Owner API calls are routed through the hidden Apps Script iframe bridge. Apps Script executes as the deploying owner and stores records in a private Google Spreadsheet.
+The owner workspace is served by the GitHub Pages frontend at `https://pooya-labs.github.io/salon-booking/?admin=1`. On GitHub Pages, use the `?admin=1` query route rather than `/admin`; direct `/admin` paths are not published by GitHub Pages. Owner API calls are routed through the hidden Apps Script iframe bridge. Apps Script executes as the deploying owner and stores records in a private Google Spreadsheet.
 
 ## Included features
 

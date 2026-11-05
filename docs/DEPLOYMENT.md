@@ -17,7 +17,7 @@ Follow the complete [GitHub Pages + Apps Script setup guide](./GITHUB-PAGES-RELA
 2. Run `setupSalonDatabase()` in the editor and approve Sheets access; approve Firebase Messaging/external-request scopes when the updated notification integration is installed.
 3. Deploy as a Web App executing as the owner, with anonymous access.
 4. Set the deployed `/exec` URL as GitHub Actions variable `SALON_RELAY_URL`.
-5. Complete first-owner bootstrap on Pages at `/admin`.
+5. Complete first-owner bootstrap on Pages at `https://pooya-labs.github.io/salon-booking/?admin=1`.
 
 The setup creates the private spreadsheet, application tabs, initial scheduling settings and a one-time bootstrap token in the execution log. Never commit that token or share it in chat.
 

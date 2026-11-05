@@ -61,7 +61,7 @@ Complete the owner-only steps in [docs/GITHUB-PAGES-RELAY.md](./docs/GITHUB-PAGE
 - Run `setupSalonDatabase()` to create the private spreadsheet and one-time bootstrap token.
 - Deploy as a Web App executing as the owner with anonymous access.
 - Add its `/exec` URL as the GitHub Actions variable `SALON_RELAY_URL`.
-- Complete first-owner bootstrap at `/admin`, then configure the salon's actual timezone, services and hours.
+- Complete first-owner bootstrap at `https://pooya-labs.github.io/salon-booking/?admin=1`, then configure the salon's actual timezone, services and hours.
 
 The Google account owner must authorize and deploy the Web App inside their own account. Repository code cannot publish a Web App into that account automatically.
 

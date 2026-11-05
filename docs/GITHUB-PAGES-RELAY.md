@@ -44,7 +44,7 @@ Live site: [https://pooya-labs.github.io/salon-booking/](https://pooya-labs.gith
 
 ## 5. First owner setup
 
-1. Open the live site and choose **مدیریت**, or visit `/salon-booking/admin`.
+1. Open the live site and choose **مدیریت**, or visit [the direct owner panel link](https://pooya-labs.github.io/salon-booking/?admin=1). Do not use `/admin` as a standalone path on GitHub Pages.
 2. Enter the one-time bootstrap token from the Apps Script execution log.
 3. Choose the manager username and a password of at least 12 characters.
 4. In **تنظیمات استودیو**, select the salon's actual timezone. For a salon in Iran, use `Asia/Tehran`.
@@ -85,7 +85,7 @@ Push is the recommended phone notification path. It can show a native Android no
 
 6. Update the existing Apps Script project's Code.gs and appsscript.json from this repository. Run setupSalonDatabase() again to add the new category, source and PushSubscriptions columns/table without clearing existing rows. Approve the new Firebase Messaging and external-request scopes.
 7. Deploy a new version of the Web App (Deploy → Manage deployments → Edit → New version → Deploy). Keep the deployed /exec URL unchanged when editing the existing deployment.
-8. Rebuild GitHub Pages from Actions. Then sign in to /admin, open اعلان‌ها, enter the Firebase project ID and save.
+8. Rebuild GitHub Pages from Actions. Then sign in through [the owner panel](https://pooya-labs.github.io/salon-booking/?admin=1), open اعلان‌ها, enter the Firebase project ID and save.
 9. On the manager's Android phone, open the live site in Chrome, sign in to the admin panel and tap فعال‌کردن اعلان این گوشی. Allow notifications, then use ارسال اعلان آزمایشی.
 
 The manager can add more than one device by repeating activation on each phone/browser. FCM sends to saved manager devices. The service worker displays background notifications; the open dashboard handles foreground messages. See [FCM web setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [receiving FCM messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages) and [Apps Script external APIs](https://developers.google.com/apps-script/guides/services/external).
