@@ -167,12 +167,69 @@ test('Pages relay authenticates the nested Apps Script frame and exact response 
 })
 
 
+test('daily calendar normalizes date and time values returned as Google Sheets Date cells', () => {
+  const result = runInNewContext(backend + String.fromCharCode(10) + `
+    var sheetTypedBooking = {
+      id: 'sheet-typed-booking',
+      date: new Date('2026-11-06T20:30:00.000Z'),
+      time: new Date('1899-12-30T05:30:00.000Z'),
+      startsAt: new Date('2026-11-07T05:30:00.000Z'),
+      endsAt: new Date('2026-11-07T06:15:00.000Z'),
+      durationMinutes: '45',
+      status: 'confirmed',
+      serviceName: 'کوتاهی مو'
+    };
+    getSettings_ = function () {
+      return { timezone: 'Asia/Tehran', slotIntervalMinutes: 15 };
+    };
+    readTable_ = function (name) {
+      return name === 'Bookings' ? [sheetTypedBooking] : [];
+    };
+    scheduleWindows_ = function () {
+      return [{ startsAt: '09:00', endsAt: '17:00' }];
+    };
+    getAdminDaySchedule_({ get: function () { return '2026-11-07'; } }).payload;
+  `, {
+    Utilities: {
+      formatDate(date, timezone, pattern) {
+        if (pattern !== 'HH:mm') throw new Error('Unexpected Apps Script date format: ' + pattern);
+        return new Intl.DateTimeFormat('en-GB', {
+          timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+        }).format(date);
+      },
+    },
+  });
+
+  assert.equal(result.date, '2026-11-07');
+  assert.equal(result.bookings.length, 1);
+  assert.deepEqual(
+    { time: result.bookings[0].time, endTime: result.bookings[0].endTime, serviceName: result.bookings[0].serviceName },
+    { time: '09:00', endTime: '09:45', serviceName: 'کوتاهی مو' },
+  );
+});
+
+test('legacy booking rows without timestamp columns still resolve their date and clock', () => {
+  const result = runInNewContext(backend + String.fromCharCode(10) + `
+    var legacy = { date: '2026-11-07', time: '09:00', durationMinutes: '45' };
+    ({
+      start: rowStartMs_(legacy, 'Asia/Tehran'),
+      end: rowEndMs_(legacy, 'Asia/Tehran'),
+      date: rowDateKey_(legacy, 'Asia/Tehran'),
+      time: rowClock_(legacy, 'Asia/Tehran')
+    });
+  `);
+  assert.equal(result.date, '2026-11-07');
+  assert.equal(result.time, '09:00');
+  assert.ok(Number.isFinite(result.start));
+  assert.equal(result.end - result.start, 45 * 60 * 1000);
+});
+
 test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes("var IRAN_TIMEZONE_ = 'Asia/Tehran'"))
   assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
-  assert.ok(backend.includes("var APP_VERSION_ = '1.5.0'"))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.5.1'"))
   assert.match(backend, /status: 'confirmed'/)
   assert.match(backend, /REQUEST_TABLE_CACHE_/)
   assert.match(backend, /REQUEST_SPREADSHEET_/)
