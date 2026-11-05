@@ -10,7 +10,7 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.4.0';
+var APP_VERSION_ = '1.5.0';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
@@ -732,7 +732,7 @@ function clockForInstant_(value, timezone) {
   return pad2_(parts.hour) + ':' + pad2_(parts.minute);
 }
 function clockFromMinutes_(time, duration) {
-  var match = /^(\\d{2}):(\\d{2})$/.exec(String(time || ''));
+  var match = /^(\d{2}):(\d{2})$/.exec(String(time || ''));
   if (!match || !Number.isFinite(duration)) return String(time || '');
   var total = Number(match[1]) * 60 + Number(match[2]) + duration;
   return pad2_(Math.floor(total / 60) % 24) + ':' + pad2_(total % 60);
@@ -1089,7 +1089,7 @@ function sendTestPush_(owner) {
   return { status: 200, payload: { ok: true, sent: result.sent, failed: result.failed }};
 }
 function sendPushNotifications_(booking) {
-  var title = booking.source === 'phone' ? 'نوبت تلفنی جدید فُرم' : 'درخواست رزرو آنلاین فُرم';
+  var title = booking.source === 'phone' ? 'نوبت تلفنی جدید فُرم' : 'نوبت آنلاین تأیید شد · فُرم';
   var body = [booking.name, booking.serviceName, booking.date + ' · ' + booking.time].filter(Boolean).join(' — ');
   var result = sendPushPayload_({ title: title, body: body || 'یک نوبت جدید ثبت شد.' });
   Logger.log('Push sent=' + result.sent + ', failed=' + result.failed);
@@ -1148,7 +1148,7 @@ function sendBookingEmail_(booking) {
     }
     var subject = 'رزرو جدید سالن · ' + booking.reference;
     var body = [
-      booking.source === 'phone' ? 'یک نوبت تلفنی جدید ثبت شد.' : 'یک درخواست رزرو آنلاین جدید ثبت شد.',
+      booking.source === 'phone' ? 'یک نوبت تلفنی جدید ثبت شد.' : 'یک نوبت آنلاین جدید ثبت و تأیید شد.',
       '',
       'کد پیگیری: ' + booking.reference,
       'نام مشتری: ' + booking.name,
