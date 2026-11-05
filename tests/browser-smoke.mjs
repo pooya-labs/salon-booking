@@ -192,7 +192,8 @@ try {
 
   await page.setViewportSize({ width: 390, height: 844 })
   const footerLayout = await page.evaluate(async () => {
-    window.scrollTo(0, document.documentElement.scrollHeight)
+    document.documentElement.style.scrollBehavior = 'auto'
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
     const footer = document.querySelector('.site-footer')
     const brandLogo = footer?.querySelector('.footer-brand > img')
@@ -213,6 +214,13 @@ try {
       footerAboveBookingBar: footerRect.bottom <= barRect.top - 6,
       footerVisible: footerRect.top < window.innerHeight,
       barVisible: barRect.top < window.innerHeight && barRect.bottom <= window.innerHeight + 1,
+      scrollY: Math.round(window.scrollY),
+      documentHeight: document.documentElement.scrollHeight,
+      footerTop: Math.round(footerRect.top),
+      footerBottom: Math.round(footerRect.bottom),
+      barTop: Math.round(barRect.top),
+      barBottom: Math.round(barRect.bottom),
+      siteShellPaddingBottom: getComputedStyle(document.querySelector('.site-shell')).paddingBottom,
     }
   })
   assert.ok(footerLayout, 'mobile footer and booking bar should render')
@@ -286,8 +294,11 @@ try {
   await androidPage.keyboard.press('Escape')
   await androidDialog.waitFor({ state: 'detached' })
 
-  await androidPage.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-  await androidPage.waitForTimeout(150)
+  await androidPage.evaluate(() => {
+    document.documentElement.style.scrollBehavior = 'auto'
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })
+  })
+  await androidPage.waitForTimeout(120)
   const androidFooterMetrics = await androidPage.evaluate(() => {
     const footer = document.querySelector('.site-footer')
     const logo = footer.querySelector('.footer-brand > img').getBoundingClientRect()
