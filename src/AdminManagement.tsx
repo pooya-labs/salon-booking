@@ -600,10 +600,10 @@ export function AdminManagement() {
                     <header className="admin-weekday-card-header">
                       <div className="admin-weekday-card-title"><strong>{day.name}</strong><span className={day.isClosed ? 'admin-day-status is-closed' : 'admin-day-status is-open'}>{day.isClosed ? 'تعطیل' : 'ساعات کاری فعال'}</span></div>
                       <div className="admin-weekday-card-actions">
-                        <label className="admin-day-toggle"><input type="checkbox" checked={!day.isClosed} onChange={(event) => changeWeekday(day.weekday, {
-                          isClosed: !event.target.checked,
+                        <label className="admin-day-toggle"><input type="checkbox" checked={day.isClosed} onChange={(event) => changeWeekday(day.weekday, {
+                          isClosed: event.target.checked,
                           intervals: !event.target.checked && day.intervals.length === 0 ? [{ startsAt: '09:00', endsAt: '17:00' }] : day.intervals,
-                        })} /><span>{day.isClosed ? 'باز کردن روز' : 'تعطیل کردن'}</span></label>
+                        })} /><span>تعطیل بودن روز</span></label>
                         <button type="button" className="admin-save-day" disabled={savingWeekday === day.weekday} onClick={() => void saveWeekday(day)}>{savingWeekday === day.weekday ? '…' : <Save size={14} />} ذخیره</button>
                       </div>
                     </header>
