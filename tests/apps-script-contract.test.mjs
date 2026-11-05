@@ -82,21 +82,19 @@ test('owner sessions persist for 30 days, renew on activity, and logout revokes 
     constructor(...args) { super(...(args.length ? args : [now])) }
     static now() { return now }
   }
-  const helpers = runInNewContext(backend + String.fromCharCode(10) +
-    '({ setSession_, getSession_, revokeSession_, SESSION_TTL_, SESSION_CACHE_TTL_ })', {
+  const helpers = runInNewContext(backend + String.fromCharCode(10) + `
+    // Replace Apps Script services after evaluating the real backend declarations.
+    sha256_ = value => 'digest:' + value;
+    findBy_ = (_table, column, value) => store.session?.[column] === value ? { ...store.session } : null;
+    appendRecord_ = (_table, record) => { store.session = { ...record } };
+    updateRecord_ = (_table, _column, _value, record) => { store.session = { ...record }; store.updates += 1 };
+    deleteRecord_ = () => { store.session = null; store.deletes += 1 };
+    nowIso_ = () => new Date().toISOString();
+    ({ setSession_, getSession_, revokeSession_, SESSION_TTL_, SESSION_CACHE_TTL_ })
+  `, {
     Date: FixedDate,
-    Utilities: {
-      DigestAlgorithm: { SHA_256: 'SHA_256' },
-      Charset: { UTF_8: 'UTF_8' },
-      computeDigest: () => new Array(32).fill(7),
-    },
+    store,
     CacheService: { getScriptCache: () => cache },
-    sha256_: value => 'digest:' + value,
-    findBy_: (_table, column, value) => store.session?.[column] === value ? { ...store.session } : null,
-    appendRecord_: (_table, record) => { store.session = { ...record } },
-    updateRecord_: (_table, _column, _value, record) => { store.session = { ...record }; store.updates += 1 },
-    deleteRecord_: () => { store.session = null; store.deletes += 1 },
-    nowIso_: () => new FixedDate().toISOString(),
   })
 
   const sessionId = 'A'.repeat(32)
