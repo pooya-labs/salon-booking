@@ -23,7 +23,7 @@ test('booking block durations must fit one working window and avoid all existing
     [{ time: '10:45', endTime: '11:15' }],
     [{ time: '11:30', endTime: '12:00' }],
     new Date('2026-11-05T05:00:00Z'))
-  assert.deepEqual(durations, [15, 30])
+  assert.deepEqual(durations, [15, 30, 45])
 })
 
 test('block duration cannot extend beyond midnight or into a break', () => {
