@@ -353,6 +353,9 @@ try {
   await page.getByRole('heading', { name: 'خوش برگشتید.' }).waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'owner login page')
   forceLoginView = false
+  await page.goto(origin + '/admin', { waitUntil: 'networkidle' })
+  await page.getByRole('heading', { name: 'سلام، QA Owner.' }).waitFor({ state: 'visible' })
+  await page.locator('.admin-manage-tabs').waitFor({ state: 'visible' })
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
