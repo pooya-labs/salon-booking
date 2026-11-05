@@ -87,10 +87,12 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
     }
     const intervalId = window.setInterval(refreshWhenVisible, 30000)
     window.addEventListener('focus', refreshWhenVisible)
+    window.addEventListener('salon-bookings-updated', refreshWhenVisible)
     document.addEventListener('visibilitychange', refreshWhenVisible)
     return () => {
       window.clearInterval(intervalId)
       window.removeEventListener('focus', refreshWhenVisible)
+      window.removeEventListener('salon-bookings-updated', refreshWhenVisible)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [loadDay])
