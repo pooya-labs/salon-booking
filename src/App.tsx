@@ -375,7 +375,7 @@ function BookingWizard({
                 <strong dir="ltr">{bookingManagementToken}</strong>
                 <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingManagementToken) }}>کپی کلید محرمانه</button>
               </div>}
-              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>کلید محرمانه را نگه دارید و به کسی ندهید.</strong><small>هر فردی که هم کد پیگیری و هم این کلید را داشته باشد می‌تواند جزئیات همین رزرو را ببیند یا آن را لغو کند. وضعیت اولیه: در انتظار تأیید.</small></span></div>
+              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>کلید محرمانه را نگه دارید و به کسی ندهید.</strong><small>هر فردی که هم کد پیگیری و هم این کلید را داشته باشد می‌تواند جزئیات همین رزرو را ببیند یا آن را لغو کند. نوبت شما بلافاصله پس از ثبت، قطعی و تأیید می‌شود.</small></span></div>
             </div>
           )}
 
