@@ -106,7 +106,7 @@ export function BookingManagement({ onClose, demoMode }: { onClose: () => void; 
         <header className="booking-flow-header">
           <div className="booking-flow-brand">
             <span className="brand-mark"><CalendarDays size={18} /></span>
-            <span><strong>پیگیری نوبت</strong><small>FORM STUDIO · BOOKING CARE</small></span>
+            <span><strong>پیگیری نوبت</strong><small>SHAYAN · BOOKING CARE</small></span>
           </div>
           <button type="button" className="icon-button" aria-label="بستن پنجره پیگیری" onClick={onClose}><X size={19} /></button>
         </header>
