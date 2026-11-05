@@ -10,7 +10,7 @@ export type DaySlot = {
 }
 
 const minuteOf = (value: string) => {
-  const match = /^(\\d{2}):(\\d{2})$/.exec(value)
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
   if (!match) return null
   const hour = Number(match[1]), minute = Number(match[2])
   if (hour > 23 || minute > 59) return null
