@@ -82,6 +82,7 @@ if (!address || typeof address === 'string') throw new Error('Could not start ow
 const origin = 'http://127.0.0.1:' + address.port
 const apiCalls = []
 const statusUpdates = []
+const deletedBookingIds = []
 const timeBlockRequests = []
 let mockTimeBlocks = [{ id: 'qa-time-block', time: '12:00', endTime: '12:15', durationMinutes: 15 }]
 let forceLoginView = false
@@ -175,6 +176,19 @@ try {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         ok: true, timezone: 'Asia/Tehran', from, to, bookings,
       }) })
+      return
+    }
+    const bookingDeleteMatch = /^\\/api\\/admin\\/bookings\\/([^/]+)$/.exec(path)
+    if (bookingDeleteMatch && route.request().method() === 'DELETE') {
+      const bookingId = bookingDeleteMatch[1]
+      const index = qaBookings.findIndex(item => item.id === bookingId)
+      if (index < 0) {
+        await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ ok: false, message: 'booking not found' }) })
+        return
+      }
+      qaBookings.splice(index, 1)
+      deletedBookingIds.push(bookingId)
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, deleted: true }) })
       return
     }
     if (path.startsWith('/api/admin/bookings/') && path.endsWith('/status') && route.request().method() === 'PATCH') {
@@ -331,6 +345,22 @@ try {
   await previous.click()
   await responsePromise
   await page.waitForFunction(() => !document.querySelector('button[aria-label="هفت روز قبل"]')?.disabled)
+
+  await page.getByRole('button', { name: 'حذف نوبت QA Client Pending' }).click()
+  const deleteDialog = page.getByRole('alertdialog', { name: 'حذف نوبت' })
+  await deleteDialog.waitFor({ state: 'visible' })
+  const deleteResponse = page.waitForResponse(response =>
+    new URL(response.url()).pathname === '/api/admin/bookings/qa-pending' &&
+    response.request().method() === 'DELETE' && response.status() === 200)
+  await deleteDialog.getByRole('button', { name: 'حذف قطعی نوبت' }).click()
+  await deleteResponse
+  assert.deepEqual(deletedBookingIds, ['qa-pending'])
+  assert.equal(await page.getByText('QA Client Pending', { exact: true }).count(), 0,
+    'deleted appointment should disappear from the owner list immediately')
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobileDelete = page.getByRole('button', { name: 'حذف نوبت QA Client No-show' })
+  assert.equal(await mobileDelete.count(), 1, 'booking deletion must remain available on mobile')
+  assert.ok(await mobileDelete.isVisible(), 'mobile booking deletion action must be visible')
 
   assert.equal(await page.locator('.admin-filter').count(), 0, 'appointment status filters are removed')
   assert.equal(await page.getByRole('button', { name: 'انجام شد', exact: true }).count(), 0, 'completion actions are removed')
