@@ -97,7 +97,7 @@ Email alerts are off by default. In the admin panel's اعلان‌ها tab, lea
 
 ## 8. Verify the deployed relay and upgrade an existing Web App
 
-The current source and live Pages check expect Apps Script backend version `1.5.1`. This release normalizes Google Sheets date/time cell values and derives start/end instants for legacy booking rows so the daily owner calendar can reliably mark occupied slots. A response below `1.5.1` means the existing Web App is still serving older code, even when GitHub Pages has already been rebuilt.
+The current source and live Pages check expect Apps Script backend version `1.5.2`. This release normalizes Google Sheets date/time cell values and derives start/end instants for legacy booking rows so the daily owner calendar can reliably mark occupied slots. A response below `1.5.2` means the existing Web App is still serving older code, even when GitHub Pages has already been rebuilt.
 
 To upgrade without creating a new spreadsheet or changing the public URL:
 
