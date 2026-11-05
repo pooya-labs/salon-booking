@@ -181,7 +181,7 @@ try {
   assert.equal(result.health.status, 200, 'Apps Script /api/health must return HTTP 200: ' + JSON.stringify(result.health))
   assert.equal(result.health.payload?.ok, true, 'Apps Script health response must be successful')
   assert.equal(result.health.payload?.service, 'salon-booking-apps-script', 'the endpoint must run the Apps Script backend, not an old relay')
-  assert.equal(result.health.payload?.version, '1.4.0', 'the deployed Apps Script source must be upgraded to the current backend version')
+  assert.equal(result.health.payload?.version, '1.5.0', 'the deployed Apps Script source must be upgraded to the current backend version')
 
   assert.equal(result.config.status, 200, 'private Sheets settings must be readable through the public config route: ' + JSON.stringify(result.config))
   assert.equal(result.config.payload?.ok, true, 'public config response must be successful')
@@ -200,7 +200,7 @@ try {
 
   assert.deepEqual(diagnostics.pageErrors, [], 'the published frontend must have no uncaught browser exceptions')
   console.log('[apps-script-live] published GitHub Pages site loaded the configured Apps Script iframe')
-  console.log('[apps-script-live] backend version 1.4.0 and private Sheets read routes passed')
+  console.log('[apps-script-live] backend version 1.5.0 and private Sheets read routes passed')
   console.log('[apps-script-live] public services: ' + result.services.payload.services.length)
   console.log('[apps-script-live] salon timezone configured: ' + result.config.payload.configured)
   console.log('[apps-script-live] owner account initialized: ' + result.setup.payload.initialized)
