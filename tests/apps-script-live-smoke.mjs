@@ -40,8 +40,8 @@ try {
   const relayFrame = page.frames().find(frame => frame.parentFrame() === page.mainFrame())
   assert.ok(relayFrame, 'Apps Script relay iframe must create a child browsing context')
   const frameDiagnostics = await relayFrame.evaluate(() => {
-    const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\\n')
-    const expectedOrigin = /PARENT_ORIGIN\\s*=\\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
+    const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\n')
+    const expectedOrigin = /PARENT_ORIGIN\s*=\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
     return {
       readyState: document.readyState,
       origin: location.origin,
@@ -85,7 +85,8 @@ try {
   console.log('[apps-script-live] direct Apps Script health diagnostic: ' + JSON.stringify(directHealth))
   assert.equal(directHealth.kind, 'success', 'google.script.run must invoke proxyRequest: ' + JSON.stringify({ frameDiagnostics, bridgeMessages, directHealth }))
   assert.equal(directHealth.result?.status, 200, 'direct Apps Script health must respond with HTTP 200: ' + JSON.stringify(directHealth))
-  assert.equal(directHealth.result?.payload?.service, 'salon-booking-apps-script', 'deployed Apps Script must expose the current backend health contract')
+  const directHealthPayload = JSON.parse(directHealth.result?.body || '{}')
+  assert.equal(directHealthPayload.service, 'salon-booking-apps-script', 'deployed Apps Script must expose the current backend health contract')
   assert.equal(bridgeMessages.some(message => message.type === 'SALON_RELAY_READY' && message.origin === new URL(pagesUrl).origin), true,
     'Bridge.html must announce readiness to the exact GitHub Pages origin: ' + JSON.stringify({ frameDiagnostics, bridgeMessages }))
 
