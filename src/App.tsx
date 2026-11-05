@@ -362,9 +362,9 @@ function BookingWizard({
           {step === 3 && bookingReference && (
             <div className="booking-step booking-success">
               <div className="booking-success-icon"><Check size={28} /></div>
-              <div className="eyebrow"><span className="eyebrow-line" /> BOOKING REQUESTED</div>
-              <h2 id="booking-flow-title">درخواست نوبت ثبت شد.</h2>
-              <p className="booking-step-intro">برای بررسی یا لغو رزرو در آینده، هر دو مورد زیر را نگه دارید.</p>
+              <div className="eyebrow"><span className="eyebrow-line" /> BOOKING CONFIRMED</div>
+              <h2 id="booking-flow-title">نوبت شما قطعی شد.</h2>
+              <p className="booking-step-intro">کد پیگیری و کلید محرمانه را برای مشاهده یا لغو احتمالی نوبت نگه دارید.</p>
               <div className="booking-reference-card">
                 <small>کد پیگیری رزرو</small>
                 <strong dir="ltr">{bookingReference}</strong>
