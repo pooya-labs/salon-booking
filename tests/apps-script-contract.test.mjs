@@ -31,6 +31,8 @@ test('Apps Script owns the API and Sheets storage without Cloudflare forwarding'
     assert.ok(backend.includes(sheet), `missing Sheets table ${sheet}`)
   }
   assert.match(backend, /LockService\.getScriptLock\(\)/)
+  assert.match(backend, /function deleteBooking_\(id, owner\)/)
+  assert.match(backend, /bookingDeleteMatch && method === 'DELETE'/)
   assert.match(backend, /function createManualBooking_\(input, owner\)/)
   assert.match(backend, /!\/\^\(\[01\]\\d\|2\[0-3\]\):\[0-5\]\\d\$\/\.test\(time\)/)
   assert.match(backend, /source: 'phone'/)
