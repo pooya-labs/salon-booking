@@ -155,7 +155,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
   }
 
   const availableCount = slots.filter(slot => slot.state === 'free' && availableBlockDurations(date, slot.time, DURATION_OPTIONS, intervals, bookings, blocks).length > 0).length
-  const bookedCount = bookings.filter(booking => booking.status === 'pending' || booking.status === 'confirmed').length
+  const bookedCount = bookings.length
   const dateTitle = formatJalaliDate(date)
 
   return (
