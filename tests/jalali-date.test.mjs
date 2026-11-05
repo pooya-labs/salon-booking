@@ -14,7 +14,8 @@ test('Jalali month grid starts on Saturday and contains all days once', () => {
   const days = cells.filter((day) => day !== null)
   assert.equal(days.length, 30)
   assert.deepEqual(days.map((day) => day.day), Array.from({ length: 30 }, (_, i) => i + 1))
-  assert.equal((new Date(days[0].dateKey + 'T12:00:00Z').getUTCDay() + 1) % 7, 0)
+  const firstCell = cells.findIndex((day) => day !== null)
+  assert.equal(firstCell, (new Date(days[0].dateKey + 'T12:00:00Z').getUTCDay() + 1) % 7)
 })
 test('Iran today key is a valid Gregorian ISO date', () => {
   assert.match(getIranTodayDateKey(), /^\d{4}-\d{2}-\d{2}$/)

@@ -156,7 +156,6 @@ export function AdminManagement({ onBookingCreated }: { onBookingCreated?: () =>
         exceptions?: ScheduleException[]
       }
       if (payload.settings) {
-        setSettings(payload.settings)
         setSettings({ ...payload.settings, timezone: 'Asia/Tehran' })
       }
       setWeeklyHours(Array.isArray(payload.weeklyHours) ? payload.weeklyHours : [])
