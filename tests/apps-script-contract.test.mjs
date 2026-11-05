@@ -275,12 +275,74 @@ test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
-  assert.ok(backend.includes("var APP_VERSION_ = '1.5.2'"))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.5.3'"))
   assert.match(backend, /status: 'confirmed'/)
   assert.match(backend, /REQUEST_TABLE_CACHE_/)
   assert.match(backend, /REQUEST_SPREADSHEET_/)
 })
 
+
+test('manager can block a valid 24-hour clock time', () => {
+  class FixedDate extends Date {
+    constructor(...args) { super(...(args.length ? args : [Date.UTC(2026, 10, 5, 5, 0, 0)]) }
+    static now() { return Date.UTC(2026, 10, 5, 5, 0, 0) }
+  }
+  const store = { records: [], audits: [] };
+  const context = runInNewContext(backend + String.fromCharCode(10) + `
+    getSettings_ = () => ({ timezone: 'Asia/Tehran' });
+    scheduleWindows_ = () => [{ startsAt: '09:00', endsAt: '17:00' }];
+    readTable_ = () => [];
+    appendRecord_ = (table, record) => store.records.push({ table, ...record });
+    audit_ = (...args) => store.audits.push(args);
+    uuid_ = () => '123e4567-e89b-12d3-a456-426614174000';
+    nowIso_ = () => '2026-11-05T05:00:00.000Z';
+    createTimeBlock_({ date: '2026-11-07', time: '09:00', durationMinutes: 15 }, { id: 'owner-1', username: 'owner' });
+  `, {
+    Date: FixedDate,
+    store,
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+  });
+  assert.equal(context.status, undefined);
+  // Re-run with the result and stored row exposed from the isolated Apps Script context.
+  const result = runInNewContext(backend + String.fromCharCode(10) + `
+    getSettings_ = () => ({ timezone: 'Asia/Tehran' });
+    scheduleWindows_ = () => [{ startsAt: '09:00', endsAt: '17:00' }];
+    readTable_ = () => [];
+    appendRecord_ = (table, record) => store.records.push({ table, ...record });
+    audit_ = (...args) => store.audits.push(args);
+    uuid_ = () => '123e4567-e89b-12d3-a456-426614174000';
+    nowIso_ = () => '2026-11-05T05:00:00.000Z';
+    createTimeBlock_({ date: '2026-11-07', time: '09:00', durationMinutes: 15 }, { id: 'owner-1', username: 'owner' });
+  `, {
+    Date: FixedDate,
+    store,
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+  });
+  assert.equal(result.status, 201);
+  assert.equal(store.records.at(-1).time, '09:00');
+  assert.equal(store.records.at(-1).durationMinutes, '15');
+});
+
+test('owner booking deletion removes the selected record under the booking lock and audits it', () => {
+  const store = { removed: [], audits: [] };
+  const result = runInNewContext(backend + String.fromCharCode(10) + `
+    findBy_ = (table, key, value) => table === 'Bookings' && key === 'id' && value === 'booking-1'
+      ? { id: value, reference: 'SB-ABCDEFG', date: '2026-11-07', time: '09:00', source: 'online' }
+      : null;
+    deleteRecord_ = (...args) => { store.removed.push(args); return true; };
+    getSettings_ = () => ({ timezone: 'Asia/Tehran' });
+    audit_ = (...args) => store.audits.push(args);
+    deleteBooking_('booking-1', { id: 'owner-1' });
+  `, {
+    store,
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.payload.deleted, true);
+  assert.deepEqual(store.removed[0], ['Bookings', 'id', 'booking-1']);
+  assert.equal(store.audits[0][0], 'booking.deleted');
+  assert.equal(store.audits[0][1], 'owner-1');
+});
 
 test('manager time blocks are separate from bookings and participate in availability conflicts', () => {
   assert.ok(backend.includes('function createTimeBlock_(input, owner)'))
