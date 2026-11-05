@@ -172,7 +172,10 @@ test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
-  assert.ok(backend.includes("var APP_VERSION_ = '1.4.0'"))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.5.0'"))
+  assert.match(backend, /status: 'confirmed'/)
+  assert.match(backend, /REQUEST_TABLE_CACHE_/)
+  assert.match(backend, /REQUEST_SPREADSHEET_/)
 })
 
 
