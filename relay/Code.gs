@@ -1020,8 +1020,11 @@ function normalizeSheetCell_(header, value) {
   var timezone = IRAN_TIMEZONE_;
   var dateTimeHeaders = ['startsAt', 'endsAt', 'createdAt', 'updatedAt', 'expiresAt'];
   if (value instanceof Date && isFinite(value.getTime())) {
-    if (header === 'date') return getLocalDateKey_(value, timezone);
-    if (header === 'time') return Utilities.formatDate(value, timezone, 'HH:mm');
+    if (header === 'date' || header === 'time') {
+      var spreadsheetTimezone = timezone;
+      try { spreadsheetTimezone = getDatabase_().getSpreadsheetTimeZone() || timezone; } catch (ignored) {}
+      return Utilities.formatDate(value, spreadsheetTimezone, header === 'date' ? 'yyyy-MM-dd' : 'HH:mm');
+    }
     if (dateTimeHeaders.indexOf(header) !== -1) return value.toISOString();
   }
 
@@ -1059,6 +1062,12 @@ function rowDateKey_(row, timezone) {
 }
 
 function rowClock_(row, timezone) {
+  // The persisted instant is the authoritative clock; a Sheets time-only cell
+  // is only a display field and can carry a different historical timezone offset.
+  var startsAt = row && row.startsAt;
+  var startMs = startsAt instanceof Date ? startsAt.getTime() : Date.parse(String(startsAt == null ? '' : startsAt));
+  if (isFinite(startMs)) return clockForInstant_(new Date(startMs), timezone);
+
   var value = row && row.time;
   if (value instanceof Date && isFinite(value.getTime())) return Utilities.formatDate(value, timezone, 'HH:mm');
   var raw = normalizeDigits_(String(value == null ? '' : value).trim());
