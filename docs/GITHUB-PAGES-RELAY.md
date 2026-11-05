@@ -54,9 +54,9 @@ The one-time bootstrap token is deleted after the first owner is created. Owner 
 
 ## 6. Booking notifications
 
-After a booking is saved to Sheets, Apps Script emails the manager. With Gmail notifications enabled on Android, the email can appear as a phone notification. If delivery fails or the daily quota is exhausted, the booking remains saved; check Apps Script **Executions** and the notification recipient setting.
+The primary notification path is Firebase Cloud Messaging (FCM) to manager devices that have been registered from the owner panel. Push delivery is not active until the Firebase project, VAPID key, Apps Script Cloud project permissions and GitHub `FIREBASE_*` build variables are configured and a manager device has granted notification permission.
 
-The published consumer-account MailApp allowance is currently 100 recipients/day and is subject to change. At about 20 bookings/day, one email recipient per booking is within that published quota. See [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas).
+Email notifications are optional and **off by default**. No booking email is sent unless the owner explicitly enables the email option in the admin notification settings. When enabled, Apps Script uses MailApp and the configured manager recipient. A notification delivery failure does not roll back a saved booking; check Apps Script **Executions**, the notification settings and the manager-device registration state.
 
 ## Deployment boundary
 

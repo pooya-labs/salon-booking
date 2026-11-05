@@ -27,6 +27,8 @@ The site uses the owner-supplied barber emblem as its primary mark, with an obsi
 
 The Pages build requires the GitHub Actions variable `SALON_RELAY_URL`. Without it, the site intentionally remains a demo and will not submit customer information.
 
+The GitHub Pages → Apps Script relay has passed a read-only live smoke test (backend 1.1.0 and iframe handshake verified). The spreadsheet is still empty of public services, the salon timezone is unset and no owner account has been initialized. The site is **not yet ready for real bookings**; complete first-owner setup and the remaining launch checks first.
+
 ## Main capabilities
 
 - Service catalog and duration-aware available slots.
