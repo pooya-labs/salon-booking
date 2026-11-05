@@ -601,10 +601,10 @@ Production blockers and real salon details remain unchanged.
 
 # Latest owner workflow checkpoint — immediate confirmation and calendar fixes (2026-11-05)
 
-- Backend target: Apps Script **1.5.2**.
+- Backend target: Apps Script **1.5.3**.
 - Online bookings are stored as `confirmed` immediately; customer success screen communicates that the appointment is confirmed.
 - Owner appointment list has no approval, completion, cancellation or status-filter controls; it is a read-only schedule.
 - Daily calendar matches appointments by their stored local `date` as well as timestamp overlap, and computes a fallback end time for legacy rows without `endsAt`.
 - Weekly-hours checkbox is explicit: checked means the day is closed.
 - Apps Script now reuses the spreadsheet object and caches each table read within a single execution; writes invalidate the affected in-memory table. Booking/time-block data is not cached across requests.
-- Owner must import the latest `relay/Code.gs` into the existing Apps Script project and deploy a new Web App version. Preserve the existing `/exec` URL; no database setup rerun is required. Release 1.5.2 normalizes Sheets date/time cells for the daily calendar and uses a 30-second visible-page refresh.
+- Owner must import the latest `relay/Code.gs` into the existing Apps Script project and deploy a new Web App version. Preserve the existing `/exec` URL; no database setup rerun is required. Release 1.5.3 normalizes Sheets date/time cells for the daily calendar and uses a 30-second visible-page refresh.
