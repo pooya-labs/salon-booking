@@ -293,7 +293,7 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
     return { status: 200, payload: { ok: true, user: { id: owner.id, username: owner.username } }};
   }
   if (path === '/api/admin/bookings' && method === 'GET') return getAdminBookings_(query, owner);
-  var bookingDeleteMatch = /^\\/api\\/admin\\/bookings\\/([A-Za-z0-9-]{36})$/.exec(path);
+  var bookingDeleteMatch = /^\/api\/admin\/bookings\/([A-Za-z0-9-]{36})$/.exec(path);
   if (bookingDeleteMatch && method === 'DELETE') return deleteBooking_(bookingDeleteMatch[1], owner);
   if (path === '/api/admin/availability' && method === 'GET') return getAdminAvailability_(query);
   if (path === '/api/admin/day-schedule' && method === 'GET') return getAdminDaySchedule_(query);
