@@ -172,7 +172,7 @@ test('daily calendar normalizes date and time values returned as Google Sheets D
     var sheetTypedBooking = {
       id: 'sheet-typed-booking',
       date: new Date('2026-11-06T20:30:00.000Z'),
-      time: new Date('1899-12-30T05:30:00.000Z'),
+      time: new Date('1899-12-30T05:35:00.000Z'),
       startsAt: new Date('2026-11-07T05:30:00.000Z'),
       endsAt: new Date('2026-11-07T06:15:00.000Z'),
       durationMinutes: '45',
