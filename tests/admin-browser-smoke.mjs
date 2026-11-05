@@ -213,7 +213,7 @@ try {
       await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
       return
     }
-    const timeBlockMatch = /^\\/api\\/admin\\/time-blocks\\/([^/]+)$/.exec(path)
+    const timeBlockMatch = /^\/api\/admin\/time-blocks\/([^/]+)$/.exec(path)
     if (timeBlockMatch && request.method() === 'DELETE') {
       mockTimeBlocks = mockTimeBlocks.filter(block => block.id !== timeBlockMatch[1])
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })

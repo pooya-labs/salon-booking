@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarClock, Check, ChevronLeft, ChevronRight, Clock3, LockKeyhole, RefreshCw, Unlock, X } from 'lucide-react'
+import { CalendarClock, Check, ChevronLeft, ChevronRight, LockKeyhole, RefreshCw, Unlock, X } from 'lucide-react'
 import { JalaliDatePicker } from './JalaliDatePicker'
 import { formatJalaliDate, getIranTodayDateKey } from './jalali-date'
 import { availableBlockDurations, buildDaySlots, type TimeRange } from './day-schedule'

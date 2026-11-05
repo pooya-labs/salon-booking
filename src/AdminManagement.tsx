@@ -125,9 +125,6 @@ export function AdminManagement() {
       const payload = await response.json() as { services?: Service[] }
       const loaded = Array.isArray(payload.services) ? payload.services : []
       setServices(loaded)
-      setManualDraft((current) => current.serviceId || !loaded.some((service) => service.isActive)
-        ? current
-        : { ...current, serviceId: loaded.find((service) => service.isActive)!.id })
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'ارتباط با سرور برقرار نشد.')
     } finally {
