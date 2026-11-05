@@ -325,7 +325,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                 </form>
               </>
             )}
-            <div className="admin-security-footnote"><ShieldCheck size={14} /> اتصال امن · نشست محدود به ۶ ساعت</div>
+            <div className="admin-security-footnote"><ShieldCheck size={14} /> اتصال امن · اعتبار ۳۰روزه با تمدید خودکار</div>
           </div>
         </section>
         <footer className="admin-footer">Crafted with care by <strong>Pooya</strong></footer>

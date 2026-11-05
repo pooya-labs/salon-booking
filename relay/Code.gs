@@ -10,13 +10,15 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.3.0';
+var APP_VERSION_ = '1.4.0';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
 var EMAIL_NOTIFICATIONS_PROPERTY_ = 'EMAIL_NOTIFICATIONS_ENABLED';
 var FIREBASE_PROJECT_PROPERTY_ = 'FIREBASE_PROJECT_ID';
-var SESSION_TTL_ = 21600; // Apps Script CacheService max TTL: 6 hours.
+var SESSION_TTL_ = 30 * 24 * 60 * 60; // Rolling owner-session lifetime: 30 days.
+var SESSION_CACHE_TTL_ = 6 * 60 * 60; // CacheService remains a six-hour accelerator.
+var SESSION_RENEWAL_WINDOW_ = SESSION_TTL_ - 24 * 60 * 60; // Renew on authenticated activity at least daily.
 var IRAN_TIMEZONE_ = 'Asia/Tehran';
 
 var TABLES_ = {
@@ -1158,24 +1160,39 @@ function setSession_(sessionId, user) {
   var existing = findBy_('AdminSessions', 'sessionIdHash', hash);
   if (existing) updateRecord_('AdminSessions', 'sessionIdHash', hash, record);
   else appendRecord_('AdminSessions', record);
-  CacheService.getScriptCache().put(sessionKey_(sessionId), JSON.stringify(session), SESSION_TTL_);
+  // CacheService is only a performance layer; the persistent Sheet expiry is authoritative.
+  CacheService.getScriptCache().put(sessionKey_(sessionId), JSON.stringify(session), SESSION_CACHE_TTL_);
 }
 function getSession_(sessionId) {
+  var now = Date.now();
   var cache = CacheService.getScriptCache();
   var raw = cache.get(sessionKey_(sessionId));
   if (raw) {
     var cached = parseJson_(raw);
-    if (cached && Number(cached.expiresAt) > Date.now()) return cached;
+    if (cached && Number(cached.expiresAt) > now) return cached;
     cache.remove(sessionKey_(sessionId));
   }
+
   var hash = sha256_('salon-owner-session:' + sessionId);
   var record = findBy_('AdminSessions', 'sessionIdHash', hash);
-  if (!record || Date.parse(record.expiresAt) <= Date.now()) {
-    if (record) deleteRecord_('AdminSessions', 'sessionIdHash', hash);
+  if (!record) return null;
+
+  var expiresAt = Date.parse(record.expiresAt);
+  if (!isFinite(expiresAt) || expiresAt <= now) {
+    deleteRecord_('AdminSessions', 'sessionIdHash', hash);
     return null;
   }
-  var session = { id: record.userId, username: record.username, expiresAt: Date.parse(record.expiresAt) };
-  cache.put(sessionKey_(sessionId), JSON.stringify(session), SESSION_TTL_);
+
+  // Refresh the persistent rolling expiry only when it enters the final day.
+  // This avoids a Sheets write for every admin API request.
+  if (expiresAt - now <= SESSION_RENEWAL_WINDOW_ * 1000) {
+    expiresAt = now + SESSION_TTL_ * 1000;
+    record.expiresAt = new Date(expiresAt).toISOString();
+    updateRecord_('AdminSessions', 'sessionIdHash', hash, record);
+  }
+
+  var session = { id: record.userId, username: record.username, expiresAt: expiresAt };
+  cache.put(sessionKey_(sessionId), JSON.stringify(session), SESSION_CACHE_TTL_);
   return session;
 }
 function revokeSession_(sessionId) {

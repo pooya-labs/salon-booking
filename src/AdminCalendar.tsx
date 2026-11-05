@@ -221,7 +221,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
                       return (
                         <button type="button" key={slot.time} disabled={!canBlock}
                           className={['admin-day-slot', `is-${slot.state}`, isSelected ? 'is-selected' : ''].filter(Boolean).join(' ')}
-                          aria-label={`${toFa(slot.time)} · ${slot.title}`}
+                          aria-label={`${slot.time} · ${label}`}
                           aria-pressed={isSelected}
                           onClick={() => selectTime(slot.time)}>
                           <strong dir="ltr">{slot.time}</strong><small>{label}</small>

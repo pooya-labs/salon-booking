@@ -5,7 +5,7 @@ The owner workspace is served by the GitHub Pages frontend at `https://pooya-lab
 ## Included features
 
 - One-time first-owner bootstrap and username/password login/logout.
-- Six-hour owner sessions, with hashed session identifiers persisted in the private `AdminSessions` sheet.
+- Rolling 30-day owner sessions, automatically renewed during regular use; hashed session identifiers and expiry are persisted in the private `AdminSessions` sheet.
 - Booking list, date-range navigation, status filtering and client contact details.
 - Allowed transitions: pending → confirmed/cancelled; confirmed → completed/cancelled/no-show.
 - Service create/edit/activate/deactivate, including category/type, description, price, currency, duration and public visibility; deactivation preserves historical reservations.
@@ -37,7 +37,7 @@ Email notifications are **disabled by default**. The manager can keep the email 
 
 ## Operational notes
 
-- Sessions expire after six hours. CacheService is only an accelerator; session hashes and expiry are persisted in Sheets.
+- Sessions remain valid for up to 30 days of inactivity and renew automatically during use. Explicit logout revokes the current browser session immediately. CacheService remains a six-hour accelerator; the hashed session record in Sheets is authoritative.
 - Google service quotas and availability can change. Monitor Apps Script **Executions** when requests fail.
 - The legacy Worker/D1 implementation is retained only for recovery; it is not part of the active Pages API path.
 - Do not accept real reservations until Apps Script is deployed, the salon's actual timezone/services/hours are configured, and a booking plus its notification have been tested.

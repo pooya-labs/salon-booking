@@ -98,7 +98,7 @@ Weekly and exception schedules accept an `intervals` array of up to eight non-ov
 
 ## Sessions and notifications
 
-Owner sessions expire after six hours. A SHA-256 hash of the browser's random relay session identifier is persisted in `AdminSessions`; CacheService is an acceleration layer, not the only session store.
+Owner sessions have a rolling 30-day inactivity lifetime and renew automatically during use. A SHA-256 hash of the browser's random relay session identifier is persisted in `AdminSessions`; CacheService remains a six-hour acceleration layer, not the source of truth. Explicit logout revokes the current browser session immediately.
 
 Email alerts are disabled by default and can be enabled or disabled in the owner panel. Push alerts use Firebase Cloud Messaging and can reach a registered Android browser/PWA while it is in the background. The owner must configure the Firebase project, enable the Firebase Cloud Messaging API, associate the Apps Script standard Google Cloud project with the Firebase project, and provide the public Firebase web config/VAPID key as GitHub Actions repository variables. Apps Script uses `ScriptApp.getOAuthToken()` and `UrlFetchApp` with the declared Firebase Messaging and external-request scopes; no Firebase private service-account key is stored in the repository. See [FCM web setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [receiving web messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages) and [Apps Script external APIs](https://developers.google.com/apps-script/guides/services/external).
 

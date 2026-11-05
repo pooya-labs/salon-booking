@@ -186,7 +186,7 @@ This document is the durable source of truth for scope, completion, test evidenc
 - [x] Implement a standalone Google Apps Script API for the existing public and owner endpoint contract.
 - [x] Add Google Sheets tables for settings, services, weekly hours, exceptions, bookings, admin users, persistent owner sessions and audit history.
 - [x] Add booking overlap protection with LockService, idempotent retries and customer lookup/cancellation.
-- [x] Add owner-only setup guards and six-hour persistent sessions.
+- [x] Add owner-only setup guards and rolling 30-day persistent owner sessions, renewed during regular use and revoked immediately on logout.
 - [x] Add editable service type/category, daily multi-interval hours, split first/last-name customer details and owner-entered phone reservations.
 - [x] Add Firebase Cloud Messaging Web Push sender and manager-device registration; email notifications now default off and are configurable in the owner panel.
 - [x] Owner confirmed importing the latest Apps Script source/manifest, rerunning additive `setupSalonDatabase()`, authorizing requested scopes and deploying a new Web App version (2026-11-05); live verification remains pending.
@@ -299,3 +299,13 @@ This addendum supersedes the earlier Pages-to-Cloudflare relay plan. The active 
 - Public availability treats manager blocks as busy ranges. Weekly-hour and date-exception changes cannot strand existing blocks.
 - The old manual phone-booking form is replaced in the owner workspace by the graphical time-block flow.
 - Backend target version: 1.3.0. Owner must import updated `Code.gs`, run additive setup to create the new tab, and deploy a new Web App version before live use.
+
+## R09 addendum — persistent owner login (2026-11-05)
+
+- Apps Script target backend version is **1.4.0**.
+- Owner sessions use the existing random browser relay ID and `AdminSessions` sheet; only a SHA-256 hash of the ID is stored server-side.
+- Session expiry is rolling: 30 days, renewed automatically during authenticated use. The six-hour CacheService limit is retained only for caching and does not end the persistent session.
+- Explicit logout immediately revokes the current browser session. A prolonged 30-day period without authenticated use requires signing in again.
+- No schema migration or `setupSalonDatabase()` rerun is needed; the owner must import the updated `relay/Code.gs` and deploy a new Apps Script Web App version with the same `/exec` URL.
+- A still-valid legacy six-hour session is upgraded on its next authenticated request; an already-expired legacy session requires one fresh login.
+- Added a VM-backed contract test for cache expiry, persistent recovery, rolling renewal, inactivity expiry and explicit logout.

@@ -1,10 +1,20 @@
-# Latest owner workspace checkpoint — visual daily calendar (2026-11-05)
+# Latest owner workspace checkpoint — persistent admin sessions (2026-11-05)
+
+- Implementation target: Apps Script backend **1.4.0** with rolling 30-day owner sessions.
+- The existing random relay session identifier remains in the same browser local storage; the server persists only its SHA-256 hash in the existing private `AdminSessions` sheet.
+- Authenticated activity automatically renews the session before it reaches expiry. CacheService remains capped at six hours as a performance accelerator; the persistent Sheets record is authoritative.
+- Pressing **خروج** removes both the current browser cache entry and persistent session record immediately. No new sheet, column, database, owner account or credential is required.
+- **Owner deployment action:** import the updated `relay/Code.gs` into the existing Apps Script project and deploy a new Web App version while preserving the existing `/exec` URL. No `setupSalonDatabase()` rerun is required for this session-only backend change. A still-valid six-hour session will be upgraded on its next authenticated request; if it already expired before redeployment, sign in once again.
+- Automated session lifecycle coverage verifies persistence after cache expiry, rolling renewal, inactivity expiry and immediate logout revocation. Latest workflow verification is pending.
+
+---
+# Historical checkpoint — visual daily calendar (2026-11-05)
 
 - Latest main commit at this checkpoint: `c7d6b93042d21bf54c3762ec644f6cb11a50cd0c`; the current implementation is on `main`.
 - The owner panel has a new **تقویم روز** tab. It shows working windows as a 24-hour visual grid, active/history customer reservations, free slots and manager-created blocked windows. Dates are selected in the Jalali calendar.
 - The old phone-booking form has been removed from the owner panel. For offline appointments, the manager taps a free slot, confirms, and the selected slot is blocked. The default duration equals one slot step (normally 15 minutes); longer presets are optional.
 - This flow stores only date, start/end, duration and audit metadata in a separate `TimeBlocks` sheet. It does not ask for or store customer name, surname, phone or note, and it does not create a synthetic customer booking.
-- Apps Script backend target is `1.3.0`. The new `TimeBlocks` tab is an additive schema migration: import updated `relay/Code.gs` and `relay/appsscript.json`, run `setupSalonDatabase()` once against the existing database, then deploy a new Web App version while keeping the same `/exec` URL.
+- The then-current Apps Script backend target was `1.3.0`. The new `TimeBlocks` tab is an additive schema migration: import updated `relay/Code.gs` and `relay/appsscript.json`, run `setupSalonDatabase()` once against the existing database, then deploy a new Web App version while keeping the same `/exec` URL.
 - Server-side block creation/deletion uses the shared Apps Script lock, verifies opening windows and overlaps, and participates in public availability calculations. Therefore a manager block removes the same interval from customer online booking.
 - Weekly opening hours now use responsive day cards, a 24-hour visual timeline, separate start/end fields for every interval, a clear open/closed toggle, add-range action and per-day save button.
 - The UI and backend changes are committed. Latest green CI/Pages verification is still pending at the time of this note; do not claim the new browser test or live Apps Script v1.3.0 smoke passed until a successful run for the current main head is recorded.
@@ -67,7 +77,7 @@
 - Sheets tabs: Settings, Services, WeeklyHours, Exceptions, Bookings, PushSubscriptions, AdminUsers, AdminSessions and AuditLog.
 - `LockService` protects the availability recheck and booking write. Idempotency hashes, customer management-token hashes and audit events are stored in Sheets.
 - Firebase Web Push is sent to registered manager devices after owner-side Firebase configuration. Optional email alerts use MailApp but are disabled by default and can be enabled from the owner panel.
-- `AdminSessions` persists hashed browser session IDs for six-hour sessions; CacheService is only an accelerator.
+- `AdminSessions` persists hashed browser session IDs for rolling 30-day sessions; authenticated use renews expiry automatically and CacheService remains a six-hour accelerator.
 - The Apps Script V8 implementation avoids unsupported browser/Node globals including `URLSearchParams`, `UrlFetchApp` and `crypto.subtle`.
 - Deployment files: `relay/appsscript.json`, `relay/Bridge.html` and `docs/GITHUB-PAGES-RELAY.md`.
 - **Completed by owner confirmation (2026-11-04):** created the Apps Script project, imported the source files, ran `setupSalonDatabase()` successfully, deployed the owner-executed anonymous Web App and added its `/exec` URL as the GitHub Actions repository variable `SALON_RELAY_URL`.

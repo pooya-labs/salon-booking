@@ -29,7 +29,7 @@ The site uses the owner-supplied barber emblem as its primary mark, with an obsi
 
 The Pages build requires the GitHub Actions variable `SALON_RELAY_URL`. Without it, the site intentionally remains a demo and will not submit customer information.
 
-The last confirmed live relay smoke verified the nested iframe bridge, but the live Apps Script deployment still needs the new 1.3.0 source and `TimeBlocks` sheet. The owner panel is implemented, but do not use time-blocking/live booking until the owner imports the updated `Code.gs`, runs the additive setup and deploys a new Web App version.
+The last confirmed live relay smoke verified the nested iframe bridge, but the live Apps Script deployment still needs backend version 1.4.0 and the `TimeBlocks` sheet. This update also adds rolling 30-day owner sessions with automatic renewal and immediate logout revocation. The owner panel is implemented, but do not use time-blocking/live booking until the owner imports the updated `Code.gs`, runs the additive setup and deploys a new Web App version.
 
 ## Main capabilities
 

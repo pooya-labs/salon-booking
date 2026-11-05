@@ -50,7 +50,7 @@ Live site: [https://pooya-labs.github.io/salon-booking/](https://pooya-labs.gith
 4. In **تنظیمات استودیو**, the timezone is fixed to `Asia/Tehran` (Iran); it is not editable. Save scheduling settings, then enter working intervals. Admin date pickers use the Jalali calendar and working-hour fields use 24-hour time.
 5. Add real services, prices, weekly opening intervals and date-specific closures.
 
-The one-time bootstrap token is deleted after the first owner is created. Owner sessions expire after six hours.
+The one-time bootstrap token is deleted after the first owner is created. Owner sessions remain valid for up to 30 days of inactivity and renew automatically during regular use. The explicit خروج action revokes the current browser session immediately.
 
 ## 6. Booking notifications
 
@@ -97,7 +97,7 @@ Email alerts are off by default. In the admin panel's اعلان‌ها tab, lea
 
 ## 8. Verify the deployed relay and upgrade an existing Web App
 
-The current source and live Pages check expect Apps Script backend version `1.3.0`. A response below `1.3.0` means the existing Google Web App deployment is still serving older code, even when GitHub Pages has already been rebuilt.
+The current source and live Pages check expect Apps Script backend version `1.4.0`. A response below `1.4.0` means the existing Google Web App deployment is still serving older code, even when GitHub Pages has already been rebuilt.
 
 To upgrade without creating a new spreadsheet or changing the public URL:
 

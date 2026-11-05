@@ -68,6 +68,62 @@ test('customer first and last names are normalized into one display name', () =>
   }), 'Pooya Ali Rezaei Nouri')
 })
 
+
+test('owner sessions persist for 30 days, renew on activity, and logout revokes immediately', () => {
+  let now = Date.now()
+  const store = { session: null, updates: 0, deletes: 0 }
+  const cacheEntries = new Map()
+  const cache = {
+    get(key) { return cacheEntries.get(key)?.value ?? null },
+    put(key, value, ttl) { cacheEntries.set(key, { value, ttl }) },
+    remove(key) { cacheEntries.delete(key) },
+  }
+  class FixedDate extends Date {
+    constructor(...args) { super(...(args.length ? args : [now])) }
+    static now() { return now }
+  }
+  const helpers = runInNewContext(backend + String.fromCharCode(10) +
+    '({ setSession_, getSession_, revokeSession_, SESSION_TTL_, SESSION_CACHE_TTL_ })', {
+    Date: FixedDate,
+    CacheService: { getScriptCache: () => cache },
+    sha256_: value => 'digest:' + value,
+    findBy_: (_table, column, value) => store.session?.[column] === value ? { ...store.session } : null,
+    appendRecord_: (_table, record) => { store.session = { ...record } },
+    updateRecord_: (_table, _column, _value, record) => { store.session = { ...record }; store.updates += 1 },
+    deleteRecord_: () => { store.session = null; store.deletes += 1 },
+    nowIso_: () => new FixedDate().toISOString(),
+  })
+
+  const sessionId = 'A'.repeat(32)
+  const month = 30 * 24 * 60 * 60 * 1000
+  helpers.setSession_(sessionId, { id: 'owner-1', username: 'owner' })
+  assert.equal(helpers.SESSION_TTL_, 30 * 24 * 60 * 60)
+  assert.equal(helpers.SESSION_CACHE_TTL_, 6 * 60 * 60)
+  assert.ok(Math.abs(Date.parse(store.session.expiresAt) - (now + month)) < 1000)
+  assert.equal([...cacheEntries.values()][0].ttl, 6 * 60 * 60)
+
+  const firstExpiry = Date.parse(store.session.expiresAt)
+  now += 7 * 24 * 60 * 60 * 1000
+  cacheEntries.clear() // Simulate CacheService expiry; the Sheet row remains.
+  const restored = helpers.getSession_(sessionId)
+  assert.equal(restored?.username, 'owner')
+  assert.equal(store.updates, 1)
+  assert.ok(Date.parse(store.session.expiresAt) > firstExpiry)
+  assert.ok(Math.abs(Date.parse(store.session.expiresAt) - (now + month)) < 1000)
+  assert.equal([...cacheEntries.values()][0].ttl, 6 * 60 * 60)
+
+  now += 31 * 24 * 60 * 60 * 1000
+  cacheEntries.clear()
+  assert.equal(helpers.getSession_(sessionId), null)
+  assert.equal(store.session, null)
+  assert.equal(store.deletes, 1)
+
+  helpers.setSession_(sessionId, { id: 'owner-1', username: 'owner' })
+  helpers.revokeSession_(sessionId)
+  assert.equal(store.session, null)
+  assert.equal(cacheEntries.size, 0)
+})
+
 test('phone booking email alerts show confirmed status and the booking source', () => {
   assert.ok(backend.includes("booking.source === 'phone' ? 'یک نوبت تلفنی جدید ثبت شد.'"))
   assert.ok(backend.includes("booking.status === 'confirmed' ? 'تأیید شده' : 'در انتظار تأیید'"))
@@ -113,7 +169,7 @@ test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
-  assert.ok(backend.includes("var APP_VERSION_ = '1.3.0'"))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.4.0'"))
 })
 
 
