@@ -602,6 +602,7 @@ Production blockers and real salon details remain unchanged.
 # Latest owner workflow checkpoint — immediate confirmation and calendar fixes (2026-11-05)
 
 - Backend target: Apps Script **1.5.3**.
+- Release 1.5.3 fixes the time-block validator so valid `HH:mm` values are accepted, and adds a locked/audited `DELETE /api/admin/bookings/{id}` owner endpoint. The owner UI includes a confirmation-protected delete action on desktop and mobile. The public homepage also shows the management entry directly in the mobile header and inside the mobile menu.
 - Online bookings are stored as `confirmed` immediately; customer success screen communicates that the appointment is confirmed.
 - Owner appointment list has no approval, completion, cancellation or status-filter controls; it is a read-only schedule.
 - Daily calendar matches appointments by their stored local `date` as well as timestamp overlap, and computes a fallback end time for legacy rows without `endsAt`.
