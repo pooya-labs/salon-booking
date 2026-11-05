@@ -731,6 +731,12 @@ function clockForInstant_(value, timezone) {
   var parts = getZonedParts_(new Date(value), timezone);
   return pad2_(parts.hour) + ':' + pad2_(parts.minute);
 }
+function clockFromMinutes_(time, duration) {
+  var match = /^(\\d{2}):(\\d{2})$/.exec(String(time || ''));
+  if (!match || !Number.isFinite(duration)) return String(time || '');
+  var total = Number(match[1]) * 60 + Number(match[2]) + duration;
+  return pad2_(Math.floor(total / 60) % 24) + ':' + pad2_(total % 60);
+}
 
 function getAdminSchedule_() {
   var settings = getSettings_();
