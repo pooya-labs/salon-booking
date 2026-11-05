@@ -497,7 +497,7 @@ function manageCustomerBooking_(input, cancel) {
   if (settings.timezone === 'unset') return error_(503, 'schedule_not_configured', 'منطقه زمانی استودیو هنوز تنظیم نشده است.');
   if (cancel) {
     if (row.status === 'cancelled') return { status: 200, payload: { ok: true, alreadyCancelled: true, booking: managedPayload_(row, settings.timezone) }};
-    if (['pending', 'confirmed'].indexOf(row.status) === -1 || Date.parse(row.startsAt) <= Date.now()) {
+    if (['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) === -1 || rowStartMs_(row, settings.timezone) <= Date.now()) {
       return error_(409, 'booking_not_cancellable', 'این نوبت دیگر از طریق سامانه قابل لغو نیست.');
     }
     var lock = LockService.getScriptLock();
@@ -514,7 +514,9 @@ function manageCustomerBooking_(input, cancel) {
 }
 
 function managedPayload_(row, timezone) {
-  var local = getZonedParts_(new Date(row.startsAt), timezone);
+  var startMs = rowStartMs_(row, timezone);
+  if (!isFinite(startMs)) return { reference: row.reference, status: row.status, serviceName: row.serviceName, date: rowDateKey_(row, timezone), time: rowClock_(row, timezone), durationMinutes: Number(row.durationMinutes), cancellable: false };
+  var local = getZonedParts_(new Date(startMs), timezone);
   return {
     reference: row.reference,
     status: row.status,
@@ -522,7 +524,7 @@ function managedPayload_(row, timezone) {
     date: local.year + '-' + pad2_(local.month) + '-' + pad2_(local.day),
     time: pad2_(local.hour) + ':' + pad2_(local.minute),
     durationMinutes: Number(row.durationMinutes),
-    cancellable: ['pending', 'confirmed'].indexOf(row.status) !== -1 && Date.parse(row.startsAt) > Date.now()
+    cancellable: ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1 && startMs > Date.now()
   };
 }
 
@@ -710,7 +712,7 @@ function createTimeBlock_(input, owner) {
     });
     if (overlapsBooking) return error_(409, 'time_already_booked', 'این زمان با نوبت مشتری تداخل دارد.');
     var overlapsBlock = readTable_('TimeBlocks').some(function (row) {
-      return Date.parse(row.startsAt) < end.getTime() && Date.parse(row.endsAt) > start.getTime();
+      return rowStartMs_(row, settings.timezone) < end.getTime() && rowEndMs_(row, settings.timezone) > start.getTime();
     });
     if (overlapsBlock) return error_(409, 'time_already_blocked', 'این زمان از قبل مسدود شده است.');
 
@@ -792,7 +794,7 @@ function saveSettings_(input, owner) {
   if (!Number.isInteger(horizon) || horizon < 1 || horizon > 365) return error_(400, 'invalid_horizon', 'بازه رزرو باید بین ۱ تا ۳۶۵ روز باشد.');
   if (!Number.isInteger(buffer) || buffer < 0 || buffer > 240) return error_(400, 'invalid_buffer', 'زمان فاصله بین نوبت‌ها باید بین صفر تا ۲۴۰ دقیقه باشد.');
   if (timezone !== current.timezone && readTable_('Bookings').some(function (row) {
-    return ['pending', 'confirmed'].indexOf(row.status) !== -1 && Date.parse(row.startsAt) >= Date.now();
+    return ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1 && rowStartMs_(row, current.timezone) >= Date.now();
   })) return error_(409, 'timezone_has_bookings', 'تا زمانی که نوبت فعال آینده وجود دارد، تغییر منطقه زمانی مجاز نیست.');
   var values = {
     local_timezone: timezone, slot_interval_minutes: String(interval),
@@ -923,7 +925,7 @@ function getAvailability_(dateKey, service, settings, ignoreNotice) {
       item.start < nextDay.getTime() && item.end > dayStart.getTime();
   }).map(function (item) { return { start: item.start, end: item.end }; });
   readTable_('TimeBlocks').filter(function (row) { return row.date === dateKey; }).forEach(function (row) {
-    busy.push({ start: Date.parse(row.startsAt), end: Date.parse(row.endsAt) });
+    busy.push({ start: rowStartMs_(row, settings.timezone), end: rowEndMs_(row, settings.timezone) });
   });
   var duration = Number(service.durationMinutes) + settings.bufferMinutes;
   var earliest = Date.now() + (ignoreNotice ? 0 : settings.minBookingNoticeMinutes * 60000);
@@ -1051,8 +1053,9 @@ function rowDateKey_(row, timezone) {
   if (match && parseDateKey_(match[1])) return match[1];
   var parsed = Date.parse(raw);
   if (isFinite(parsed)) return getLocalDateKey_(new Date(parsed), timezone);
-  var start = rowStartMs_(row, timezone);
-  return isFinite(start) ? getLocalDateKey_(new Date(start), timezone) : '';
+  var startValue = row && row.startsAt;
+  var startMs = startValue instanceof Date ? startValue.getTime() : Date.parse(String(startValue == null ? '' : startValue));
+  return isFinite(startMs) ? getLocalDateKey_(new Date(startMs), timezone) : '';
 }
 
 function rowClock_(row, timezone) {
