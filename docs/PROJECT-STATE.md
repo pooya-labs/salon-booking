@@ -1,16 +1,17 @@
 # Project State & Handoff
 
-## Current checkpoint — Shayan Liquid Glass + supplied image assets (2026-11-04)
+## Current checkpoint — Shayan responsive visual QA passed (2026-11-05)
 
-- Customer homepage and owner workspace now use the obsidian / antique-gold Liquid Glass treatment: blurred translucent cards, rounded forms, warmer lighting, and mobile-specific radii.
-- Owner-supplied image assets are now present in `public/images/`: `shayan-hero.webp` and `shayan-emblem.webp`. The hero image is used in the homepage hero; the full emblem is used in the site header, booking dialog, manifesto, footer, admin header, favicon and PWA icon.
-- Old `shayan-barber-logo.webp` references were removed from the app and shell files. The old file may remain in the repository as an unused legacy asset; do not wire it back in.
-- Updated `public/icons/salon-icon.svg` to reference the Shayan emblem and preserve its full composition with `xMidYMid meet`. Push-notification fallback title now says «شایان».
-- Refined compact logo presentation to rounded rectangular frames with `object-fit: contain`, so the full ornate crest is not clipped into circular crops.
-- Reduced-motion CSS is being corrected after repeated browser QA showed that a later, more-specific legacy scoped rule overrode the global zero-duration declaration. The latest selector-specific override is in commit `f7dcd8192cee4ef1fc03444321601ea504cf3c5f`; CI must confirm it before considering this check complete.
-- Relevant implementation commits include: hero/emblem wiring `116e7f2387a1e89c7e1490cd7f6b3906a062cfdd`; admin branding `3c418659b78ee2b10844bd698d3259fdca9a929c`; favicon `4b86646a7bcda300186159ba6cf15b2c74398140`; PWA manifest `959c4ebb138a19f1b3f72801651af5ffbbae6992`; app icon `946c8dfda6582cb9a82301bf6b1defd166630ff5`; push fallback `f6a20765d8f924a4d102df3b705de17e14094744`; full emblem framing `e419327c3cc288a19f4576a77840f01868ef6135`.
-- The latest design pass has not changed booking logic, customer records, Apps Script, Google Sheets or Firebase service configuration.
-- Pending: finish CI browser QA and the latest Pages deployment; then visually verify the hero and emblem in the live site at desktop and mobile sizes. Keep Apps Script unchanged during this visual pass.
+- Current design checkpoint: the public site and owner workspace use the obsidian / antique-gold Liquid Glass system. The exact owner-supplied assets `public/images/shayan-hero.webp` and `public/images/shayan-emblem.webp` are wired into the hero, site brand, booking dialog, admin header, favicon and PWA icon.
+- Footer repair: the Shayan emblem is compact (43px mobile / 46px desktop); the Pooya Labs mark is 18px mobile / 19px desktop; the credit wraps cleanly. The mobile site shell reserves 104px plus safe-area inset so the persistent booking bar cannot cover the footer.
+- Android booking repair: `.booking-flow-backdrop` now sits above the persistent mobile booking bar (z-index 60 vs 30), so touch taps on the dialog's step controls are not intercepted.
+- Mobile owner-header repair: brand/emblem and the account/logout actions use separate rows below 680px; the subtitle can wrap without colliding with the owner name.
+- Legacy provisional identity remnants were removed from the booking review, customer booking-management dialog and hero booking banner. The banner uses a Shayan `S` monogram rather than the old `F.`.
+- Visual QA coverage: Playwright Chromium on Windows and Linux; desktop widths 1280–1920px; responsive widths 320–1440px; Android-like Pixel 8 touch context (412×915, DPR 2.625, Android 15 user agent). Tests cover mobile nav taps, booking flow taps/form, footer overlap, owner dashboard, services, weekly schedule, phone booking and notifications.
+- Latest full verification: CI run `42013839983` **success** and GitHub Pages deploy run `42013839990` **success**, both on commit `f0c6a84969369ea6247977ec8eeaffc5f76e11e3`. CI included both Linux and Windows visual jobs and all owner-dashboard desktop/mobile QA checks.
+- Automated axe-core WCAG 2.2 AA checks passed for the public homepage, booking and customer-management dialogs, owner dashboard, service editor, schedule tab, phone-booking tab, notifications tab, cancellation confirmation and owner login page.
+- This visual pass did not change booking logic, customer records, Apps Script, Google Sheets or Firebase service configuration. Apps Script remains untouched.
+- Remaining visual acceptance: optional spot-check on a physical Android device; the current Android coverage is browser touch emulation rather than a physical handset. The next project phase can proceed after that optional check if desired.
 
 > Update this file at every meaningful checkpoint. It is the first file to read when resuming after a chat/session interruption.
 
