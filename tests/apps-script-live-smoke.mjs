@@ -41,6 +41,24 @@ try {
   assert.ok(relayFrame, 'Apps Script relay iframe must create a child browsing context')
   await relayFrame.waitForLoadState('load', { timeout: 30000 })
 
+  let bridgeFrame = null
+  const bridgeDeadline = Date.now() + 25000
+  while (!bridgeFrame && Date.now() < bridgeDeadline) {
+    for (const candidate of page.frames()) {
+      if (candidate === page.mainFrame()) continue
+      try {
+        const hasGoogleRun = await candidate.evaluate(() =>
+          typeof google !== 'undefined' && Boolean(google.script && google.script.run)
+        )
+        if (hasGoogleRun) {
+          bridgeFrame = candidate
+          break
+        }
+      } catch {}
+    }
+    if (!bridgeFrame) await page.waitForTimeout(500)
+  }
+
   const frameSnapshots = await Promise.all(page.frames().filter(frame => frame !== page.mainFrame()).map(async frame => {
     try {
       return await frame.evaluate(() => {
@@ -64,9 +82,6 @@ try {
   }))
   console.log('[apps-script-live] all frame snapshots: ' + JSON.stringify(frameSnapshots))
 
-  const bridgeFrame = page.frames().find(frame => frame !== page.mainFrame() && frameSnapshots.some(snapshot =>
-    snapshot.url === frame.url() && snapshot.googleScriptRunAvailable
-  ))
   const frameDiagnostics = bridgeFrame ? await bridgeFrame.evaluate(() => {
     const scriptText = Array.from(document.scripts).map(script => script.textContent || '').join('\n')
     const expectedOrigin = /PARENT_ORIGIN\s*=\s*['"]([^'"]+)['"]/.exec(scriptText)?.[1] || ''
