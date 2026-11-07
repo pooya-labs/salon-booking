@@ -12,7 +12,7 @@ This is the release record for the first production version. Active architecture
 - Apps Script source backend version: 1.5.3 (relay/Code.gs)
 - Product/package version: 1.0.0
 - Owner acceptance: owner confirmed the operational setup and end-to-end checks are correct.
-- Pre-release main head: 41f7af1bcb7e689061e4cf5321601514d610e02c.
+- Release main head: 56ff5cde573eccb3febd7efe2de270f9ded2b7e5.
 
 ## Version 1.0.0 scope and completion
 
@@ -60,8 +60,8 @@ This is the release record for the first production version. Active architecture
 - [x] Linux CI: lint, unit tests, SQLite migration regressions, TypeScript/build, public browser QA and owner-dashboard browser QA.
 - [x] Windows CI: desktop browser QA and Android-touch responsive simulation for public and owner flows.
 - [x] Responsive viewport coverage, RTL, Persian digits, Jalali date behavior, keyboard navigation and automated accessibility checks.
-- [x] Latest CI passed on the pre-release main head: [run 42085423627](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627).
-- [x] GitHub Pages deployment succeeded: [run 42085423471](https://github.com/pooya-labs/salon-booking/actions/runs/42085423471).
+- [x] Latest CI passed on the pre-release main head: [run 42086718663](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627).
+- [x] GitHub Pages deployment succeeded: [run 42086718821](https://github.com/pooya-labs/salon-booking/actions/runs/42085423471).
 - [x] Pages workflow live Apps Script relay smoke passed without writing customer or booking data.
 - [x] Owner confirmed the remaining real-world configuration and acceptance checks are correct.
 - [x] Owner acceptance for Version 1.0.0 recorded in this release.
@@ -101,9 +101,9 @@ No claim is made that an independent penetration test or a destructive productio
 - Email notifications are optional and disabled by default.
 - Cloudflare Worker/D1 files remain historical recovery material only. Do not re-enable them as part of routine operation.
 
-## Post-release roadmap
+## Post-release maintenance
 
-Version 1.0.0 is complete. Future changes should be scoped as a new minor/patch release and must update this file and docs/PROJECT-STATE.md. Do not reopen completed Version 1.0.0 work unless a reproducible regression is found.
+Version 1.0.0 is complete and the project is in maintenance mode. No feature roadmap is active. Only verified bug fixes, security updates and essential compatibility changes should be considered. Any such change must update this file and docs/PROJECT-STATE.md, pass the relevant checks and be released as a patch version. Do not reopen completed Version 1.0.0 work without a reproducible issue.
 
 ## Handoff protocol
 
