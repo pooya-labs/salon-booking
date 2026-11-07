@@ -48,4 +48,4 @@ npm run build:pages
 
 The old Worker source, Wrangler configurations and SQL migrations remain in the repository as temporary recovery material. They are not used by the active Pages build or Apps Script backend. Their D1 database is not automatically copied into Sheets; the existing Cloudflare resources are intentionally not deleted during this cutover.
 
-Do not remove the old Worker/D1 until Apps Script passes owner acceptance and the owner confirms that any historical information required from D1 has been exported.
+The Apps Script deployment has passed owner acceptance. Keep the old Worker/D1 only as historical recovery material; do not route production traffic back to it. Remove those resources only after the owner explicitly approves deletion and confirms that no historical data needs to be retained.
