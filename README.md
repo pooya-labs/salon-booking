@@ -5,6 +5,7 @@ A production-ready barber appointment platform for Shayan Barber Studio, with a 
 **Product:** Shayan Barber Studio (شایان)  
 **Engineering / creator:** Pooya  
 **Release:** **1.0.0** · 2026-11-05  
+**Status:** Stable · maintenance-only  
 **Default branch:** main  
 **Frontend:** React · TypeScript · Vite · Tailwind CSS  
 **Hosting:** GitHub Pages  
@@ -76,4 +77,4 @@ The production Apps Script project, private spreadsheet, OAuth authorization and
 
 ## Release policy
 
-Version 1.0.0 is complete. New features belong in a subsequent release. Preserve the active Pages + Apps Script + Sheets + Firebase architecture unless a deliberate, documented migration is approved.
+Version 1.0.0 is complete. The project is now in maintenance mode: no feature work is planned. Changes should be limited to verified bug fixes, security updates or essential compatibility work. Preserve the active Pages + Apps Script + Sheets + Firebase architecture unless a deliberate, documented migration is approved.
