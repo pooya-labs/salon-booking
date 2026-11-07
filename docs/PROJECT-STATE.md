@@ -13,7 +13,7 @@
 - **Engineering / creator:** Pooya
 - **Owner acceptance:** confirmed by the owner on 2026-11-05.
 
-Version 1.0.0 is complete and owner-accepted. Do not continue implementation or reopen completed tasks unless a reproducible defect is reported.
+Version 1.0.0 is complete and owner-accepted. The project is in maintenance mode; no feature work is planned. Reopen implementation only for a reproducible defect, a security update or an essential compatibility fix.
 
 ## Active production architecture
 
@@ -33,7 +33,7 @@ Cloudflare Workers and D1 are legacy recovery material only. They are not in the
 
 ## Latest automated verification
 
-Pre-release main head: 41f7af1bcb7e689061e4cf5321601514d610e02c.
+Release main head: 56ff5cde573eccb3febd7efe2de270f9ded2b7e5.
 
 - CI run [42085423627](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627): passed.
   - Linux build job: lint, unit tests, SQLite migration/conflict checks, TypeScript/build, responsive/RTL/keyboard/browser QA and owner-dashboard browser QA.
@@ -75,4 +75,4 @@ No independent penetration test or destructive production restore drill is claim
 - Read README.md for architecture, setup and operator links.
 - Preserve the current Apps Script project, private spreadsheet, Firebase project and /exec URL.
 - Do not use demo mode for real customer information.
-- Any future work must be a new scoped release with tests and an updated checkpoint.
+- Any future maintenance change must be narrowly scoped, pass the relevant tests and update the release record before publication.
