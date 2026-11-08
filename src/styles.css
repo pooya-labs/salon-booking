@@ -2261,3 +2261,9 @@ hr { border-color:var(--line); }
     align-self:center;
   }
 }
+
+
+/* Exact Pooya Labs Platform monogram used in Lumina Glass. */
+.site-footer .pooya-platform-logo{display:block;flex:0 0 auto;width:var(--platform-logo-size);height:var(--platform-logo-size);object-fit:contain;border:0;border-radius:0;background:transparent;box-shadow:none}
+.site-footer .pooya-platform-logo-small{--platform-logo-size:19px}
+.site-footer .pooya-platform-logo-owner{--platform-logo-size:29px}
