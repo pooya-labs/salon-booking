@@ -2222,3 +2222,23 @@ hr { border-color:var(--line); }
     margin-top:2px;
   }
 }
+
+
+/* Final footer alignment: center the salon tagline on its own row. */
+.site-footer .footer-note {
+  order:1;
+  flex:1 0 100%;
+  width:100%;
+  text-align:center;
+  align-self:center;
+  margin:0;
+}
+@media (max-width:760px) {
+  .site-footer .footer-note {
+    order:1;
+    flex:0 0 auto;
+    width:100%;
+    text-align:center;
+    align-self:center;
+  }
+}
