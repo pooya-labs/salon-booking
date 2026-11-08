@@ -1,51 +1,76 @@
-# Deployment Guide
+# Deployment
 
-## Active architecture
+## Current production setup
 
-- **Frontend:** GitHub Pages — React, TypeScript, Vite.
-- **API/runtime:** Google Apps Script Web App.
-- **Database:** private Google Sheets spreadsheet owned by the deploying account.
-- **Notifications:** Firebase Cloud Messaging Web Push to registered manager devices; optional MailApp email (off by default).
-- **Source of truth:** GitHub repository `pooya-labs/salon-booking`, branch `main`.
+The live booking site uses the following services:
 
-The Pages frontend forwards same-origin `/api/*` calls through a hidden Apps Script iframe bridge. Apps Script executes API logic and reads/writes Google Sheets. The browser does not call a Cloudflare Worker.
+| Part | Service |
+|---|---|
+| Website and owner workspace | GitHub Pages |
+| API and booking logic | Google Apps Script Web App |
+| Application database | Private Google Sheets spreadsheet |
+| Manager push notifications | Firebase Cloud Messaging |
+| Optional email alerts | Apps Script MailApp |
 
-## One-time setup
+The frontend sends API requests through the hidden Apps Script iframe bridge. The Apps Script project runs as the deploying owner and uses that account's spreadsheet. Cloudflare Workers and D1 are not used by the live version.
 
-Follow the complete [GitHub Pages + Apps Script setup guide](./GITHUB-PAGES-RELAY.md). The owner must:
-1. Create a standalone Apps Script project and paste `relay/Code.gs`, `relay/Bridge.html` and `relay/appsscript.json`.
-2. Run `setupSalonDatabase()` in the editor and approve Sheets access; approve Firebase Messaging/external-request scopes when the updated notification integration is installed.
-3. Deploy as a Web App executing as the owner, with anonymous access.
-4. Set the deployed `/exec` URL as GitHub Actions variable `SALON_RELAY_URL`.
-5. Complete first-owner bootstrap on Pages at `https://pooya-labs.github.io/salon-booking/?admin=1`.
+## GitHub Pages
 
-The setup creates the private spreadsheet, application tabs, initial scheduling settings and a one-time bootstrap token in the execution log. Never commit that token or share it in chat.
+The workflow in .github/workflows/deploy-pages.yml runs on pushes to main and can also be started manually.
 
-## GitHub Pages deployment
+It builds the frontend with these repository Actions variables:
 
-The existing `.github/workflows/deploy-pages.yml` runs `npm run build:pages` with `VITE_SALON_RELAY_URL` sourced from the repository variable `SALON_RELAY_URL`. If the variable is absent, Pages intentionally stays in demo mode. A push to `main` publishes the configured version.
+- SALON_RELAY_URL
+- FIREBASE_API_KEY
+- FIREBASE_AUTH_DOMAIN
+- FIREBASE_PROJECT_ID
+- FIREBASE_STORAGE_BUCKET
+- FIREBASE_MESSAGING_SENDER_ID
+- FIREBASE_APP_ID
+- FIREBASE_VAPID_KEY
 
-## Owner operation
+The relay URL is the deployed Apps Script web app address ending in /exec. Firebase web configuration and the VAPID public key are client-side configuration; do not place private service credentials in these variables or in the frontend.
 
-Open [the live Pages site](https://pooya-labs.github.io/salon-booking/) and use the management link. Configure the salon's actual timezone, services and weekly schedule before accepting bookings. For a salon in Iran, select `Asia/Tehran`.
+If SALON_RELAY_URL is missing, the Pages build runs in demo mode. Demo mode is for previews and testing only; it must not accept real customer data.
 
-Phone push notifications are sent through Firebase Cloud Messaging after the owner configures Firebase and registers the manager's Android browser/PWA from the اعلان‌ها tab. Email notifications are disabled by default and can be enabled there. Follow the [full push setup checklist](./GITHUB-PAGES-RELAY.md#6-phone-push-notifications-firebase-cloud-messaging).
+After deployment, the workflow runs a read-only relay smoke test when the relay variable is present. It checks the published page's connection to Apps Script without creating an appointment or changing the spreadsheet.
 
-## Local development and checks
+## Apps Script
 
-```bash
-npm install
-npm run lint
-npm run test:unit
-npm run test:migrations
-npm run build
-npm run build:pages
-```
+The active Apps Script project is a separate Google-account resource. Keep the project, spreadsheet and existing Web App deployment under the salon owner's account.
 
-`npm run dev` without `VITE_SALON_RELAY_URL` uses sample data only. Never enter real customer information in local/demo mode.
+When updating the backend:
 
-## Legacy Cloudflare recovery assets
+1. Review the change in relay/Code.gs and relay/appsscript.json.
+2. Copy the updated source into the existing Apps Script project.
+3. Run setupSalonDatabase() if the change adds or updates spreadsheet columns or tabs. The setup is designed to be additive; confirm the target is the existing salon spreadsheet.
+4. Approve only the scopes the project needs.
+5. In Deploy → Manage deployments, edit the current Web App deployment and publish a new version.
+6. Keep the same /exec address.
+7. Rebuild GitHub Pages and check the relay smoke result.
 
-The old Worker source, Wrangler configurations and SQL migrations remain in the repository as temporary recovery material. They are not used by the active Pages build or Apps Script backend. Their D1 database is not automatically copied into Sheets; the existing Cloudflare resources are intentionally not deleted during this cutover.
+Do not create a fresh spreadsheet or replace the current Apps Script deployment during routine maintenance.
 
-The Apps Script deployment has passed owner acceptance. Keep the old Worker/D1 only as historical recovery material; do not route production traffic back to it. Remove those resources only after the owner explicitly approves deletion and confirms that no historical data needs to be retained.
+## First-time installation
+
+For a new, separate installation, follow the steps in GITHUB-PAGES-RELAY.md. The owner must create the Apps Script project, run setup, deploy it as a Web App, add SALON_RELAY_URL and complete the owner bootstrap process.
+
+## Local development
+
+Use Node.js 22:
+
+    npm install
+    npm run dev
+    npm run lint
+    npm run test:unit
+    npm run test:migrations
+    npm run build
+    npm run build:pages
+
+Without VITE_SALON_RELAY_URL, local development uses sample data. Never enter real customer details in demo mode.
+
+## Legacy Cloudflare resources
+
+The Worker source, Wrangler files and D1 migrations remain in the repository as recovery material from an earlier deployment path. They are not part of the current production site. No automatic D1-to-Sheets migration exists.
+
+Do not delete the old Cloudflare database or exports until the salon owner has confirmed that the historical data is no longer required.

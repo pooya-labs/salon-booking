@@ -1,83 +1,87 @@
-# Privacy operations: Google Sheets data, export, retention and deletion
+# Privacy and data operations
 
-This is an operational engineering guide, not legal advice. The salon's exact legal jurisdiction, business entity and applicable retention duties still require owner confirmation. **Do not invent a retention period or run bulk deletion until the owner has approved the policy.**
+This guide describes the information the booking system handles and how the salon should look after it. It is an operational reference, not legal advice. The salon owner still needs to confirm the applicable privacy notice, contact details and data-retention rules.
 
-## Active data inventory
+## Where data is stored
 
-| Data | Stored location | Purpose | Access |
-|---|---|---|---|
-| Client name and phone | Private Google Sheet: Bookings | Identify and contact the person for the appointment | Owner workspace only |
-| Optional client note | Bookings | Appointment context | Owner workspace only; bounded length |
-| Booking reference and appointment data | Bookings | Scheduling, conflict prevention and customer lookup | Reference is useful only with the one-time management token |
-| Customer management credential | Bookings.manageTokenHash | Prove possession for lookup/cancellation | Hash only; plaintext is returned once at creation |
-| Idempotency metadata | Bookings.idempotencyKeyHash, requestHash | Make retries safe and prevent duplicate booking | Hashes only |
-| Owner account | AdminUsers | Authenticate the manager | Username, salt and salted password hash |
-| Owner sessions | AdminSessions | Maintain manager access | Hashed browser session identifier and expiry |
-| Owner audit trail | AuditLog | Record management actions and booking events | Actor, action, entity and limited details |
-| Booking notification | Gmail / MailApp | Notify manager after a successful booking | Sent to the configured manager mailbox |
-| Short-lived rate-limit metadata | Apps Script CacheService | Reduce repeated requests | Per-browser/session counters; cache entries are temporary |
+The live application uses a Google Spreadsheet owned by the account that deploys Apps Script. The spreadsheet should remain private.
 
-Google Sheets is owned by the deploying Google account and must remain private. GitHub Pages serves static frontend assets and does not store customer data. The Apps Script /exec endpoint is public so anonymous clients can book, but the backend executes as the deploying owner and controls access to private spreadsheet records. No booking payload is sent to GitHub Actions or Cloudflare in the active request flow.
+GitHub Pages serves the website files; it does not store customer bookings. The active application does not send booking records to GitHub Actions or Cloudflare. The old Cloudflare D1 files and database belong to an earlier deployment path and are not used by the current booking flow.
 
-## Data-minimization behavior
+## Information the application handles
 
-- A booking requires a name and phone number; the note is optional and size-limited.
-- Public booking responses do not return the client's phone, name or note.
-- Customer self-service returns only reference, service, local date/time, duration and status.
-- Customer management credentials, idempotency keys and request fingerprints are stored as hashes.
-- Audit events should contain operational context only, not client note content or plaintext credentials.
-- Public rate limiting uses the browser's relay session identifier; it does not store raw IP addresses.
-- A failed email notification does not undo the already-saved booking.
+| Information | Why it is needed | Where it is kept |
+|---|---|---|
+| Customer name and phone | Identify and contact the customer about the appointment | Bookings sheet |
+| Optional booking note | Give the salon context for the appointment | Bookings sheet |
+| Service, date, time, duration and status | Manage availability and the appointment | Bookings sheet |
+| Booking reference | Let the customer identify the appointment | Bookings sheet and customer confirmation |
+| Customer management credential | Allow the customer to look up or cancel a booking | Only its hash is stored by the backend; the value is shown once |
+| Owner account information | Let the manager sign in | AdminUsers sheet |
+| Owner session identifier | Keep the manager signed in | Hashed identifier and expiry in AdminSessions |
+| Manager push registration | Deliver notifications to a registered browser/PWA | PushSubscriptions sheet |
+| Management and booking events | Help the owner review changes | AuditLog sheet |
 
-Do not add marketing analytics, payment details, identity documents, health details or additional free-text fields without a separately reviewed business purpose and retention decision.
+The public website should show only the information needed to make a booking. Customer lookup does not return the customer's phone number or name.
 
-## Owner decisions required before production
+## Data minimisation
 
-Record these decisions outside source control in the salon's approved business records:
+- A customer provides a name and phone number; the note is optional.
+- The customer management credential is returned once and should be kept private.
+- Public responses do not expose customer contact details.
+- Audit entries should record the action and relevant operational context, not customer notes or plaintext credentials.
+- Do not add payment details, identity documents, health information or marketing fields without a separate business reason and an owner review.
 
-| Decision | Owner-approved value |
+## Decisions the owner still needs to make
+
+These items are not set by the application and must not be guessed in code or documentation:
+
+| Decision | Current status |
 |---|---|
-| Salon legal jurisdiction / country | **Not yet confirmed** |
-| Business/controller contact for privacy requests | **Not yet supplied** |
-| Applicable privacy notice and lawful processing basis | **Requires owner/legal review** |
-| Retention for completed/no-show bookings | **Not yet decided** |
-| Retention for cancelled bookings | **Not yet decided** |
-| Retention for abandoned/pending bookings | **Not yet decided** |
-| Retention for audit/security records | **Not yet decided** |
-| Google account owner and spreadsheet access list | **Must be confirmed before launch** |
-| Backup/export location and access list | **Not yet decided** |
-| Backup deletion/expiry schedule | **Not yet decided** |
+| Business jurisdiction | Needs owner confirmation |
+| Privacy contact for customer requests | Not yet supplied |
+| Privacy notice and applicable legal basis | Needs owner/legal review |
+| Retention of completed and no-show bookings | Not decided |
+| Retention of cancelled or abandoned bookings | Not decided |
+| Retention of audit and security records | Not decided |
+| Spreadsheet access list | Owner should review |
+| Backup location and access list | Not decided |
+| Backup expiry and deletion schedule | Not decided |
 
-The application deliberately has no automatic booking purge. This avoids silently choosing a legally incorrect retention period.
+There is no automatic booking-deletion job. Do not add one until the owner has approved the retention rules.
 
-## Google Sheets backup and export
+## Backups and exports
 
-1. Sign into the Google account that owns the Apps Script project and database spreadsheet.
-2. Open the spreadsheet from the Apps Script setupSalonDatabase execution log or the owner's private Drive.
-3. Use **File → Download** to export a private XLSX or CSV copy. For a full operational backup, export each application tab, not only Bookings.
-4. Store the export outside this repository, restrict access to the owner, encrypt it at rest and apply the owner-approved expiry policy.
-5. Keep an export log containing operator, timestamp, spreadsheet name, purpose and file checksum only. Do not put client details or the bootstrap token in the log.
-6. Verify that the backup opens and contains the expected tabs before any destructive change.
+A spreadsheet export contains customer information. Treat it as private business data.
 
-Never commit or attach spreadsheet exports to GitHub issues, commits, screenshots or chat.
+1. Sign in to the Google account that owns the Apps Script project.
+2. Open the salon spreadsheet from the owner's Drive.
+3. Use File → Download to export the required sheets.
+4. Store the file somewhere access-controlled and encrypted.
+5. Keep an export record with the operator, date, purpose and checksum. Do not include customer details in the record.
+6. Check that the export opens and contains the expected tabs.
 
-## Single-customer data request
+Do not commit spreadsheet exports, booking screenshots or customer records to GitHub. Do not attach them to support messages or chat.
 
-Use the authenticated owner workspace to identify the booking from a reference or a verified phone number supplied by the requester. Export only the necessary row or fields into an owner-controlled location. Do not paste client content into logs or support messages. Record the request and response according to the owner-approved policy.
+## Customer data requests
+
+Verify the requester's identity and the exact appointment before viewing or exporting any record. Share only the fields needed to answer the request, and use an owner-controlled location. Follow the salon's approved business process for recording the request.
 
 ## Retention and deletion
 
-Before deletion:
-1. Confirm the requester and the exact booking(s) or customer record.
-2. Check the owner's approved retention and any legal/business hold.
-3. Make a fresh private spreadsheet backup.
-4. Delete only the approved rows from the relevant tabs; preserve required audit/financial records according to the approved policy.
-5. Verify that customer lookup no longer finds the deleted booking and record the operator, timestamp and scope without retaining the deleted personal data in the audit details.
+Before deleting a booking or customer record:
 
-No automated deletion job is enabled. Do not schedule one until the owner approves retention rules.
+1. Confirm the request and the exact record.
+2. Check the approved retention rules and any business or legal hold.
+3. Make a private backup.
+4. Remove only the approved records.
+5. Check that customer lookup no longer returns the deleted appointment.
+6. Record the operator, date and scope without copying the deleted personal information into the audit note.
 
-## Legacy Cloudflare D1
+The application does not purge bookings automatically.
 
-The previous Cloudflare Worker/D1 code and SQL migrations are retained as a rollback/history path only; they are not part of the active booking architecture. The former D1 database may contain historical copies or platform metadata. Do not delete it during this cutover. If the owner needs historical rows, export the required data from D1 to a private location and review/map it before importing into Sheets. No automatic D1-to-Sheets migration is implemented.
+## Older Cloudflare data
 
-The former D1-specific export and SQL examples in Git history should not be used as instructions for the active Google Sheets database.
+Cloudflare Worker and D1 files are kept in this repository for historical reference and recovery. They are not connected to the live Apps Script system, and there is no automatic D1-to-Sheets import.
+
+Do not delete the old Cloudflare database or exports until the owner confirms that any historical records have been retained or are no longer needed.

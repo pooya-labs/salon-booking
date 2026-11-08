@@ -1,148 +1,146 @@
 # Shayan Barber Booking
 
-A production-ready barber appointment platform for Shayan Barber Studio, with a Persian RTL customer booking journey and a coordinated owner workspace.
+A booking website and owner dashboard built for Shayan Barber Studio. Customers can check services, choose an available time and manage an appointment. The owner handles the schedule and bookings from a separate workspace.
 
-**Product:** Shayan Barber Studio (شایان)  
-**Engineering / creator:** Pooya  
-**Release:** **1.0.0** · 2026-11-05  
-**Status:** Stable · maintenance-only  
-**Default branch:** main  
-**Frontend:** React · TypeScript · Vite · Tailwind CSS  
-**Hosting:** GitHub Pages  
-**API + database:** Google Apps Script · private Google Sheets  
-**Manager notifications:** Firebase Cloud Messaging
+**Version:** 1.0.0  
+**Released:** 5 November 2026  
+**Status:** Live · maintenance  
+**Built by:** Pooya Goodarzi  
+**Repository:** [pooya-labs/salon-booking](https://github.com/pooya-labs/salon-booking)
 
-**Live website:** https://pooya-labs.github.io/salon-booking/  
-**Owner panel:** https://pooya-labs.github.io/salon-booking/?admin=1
+| | |
+|---|---|
+| Website | [Open the booking site](https://pooya-labs.github.io/salon-booking/) |
+| Owner workspace | [Open management](https://pooya-labs.github.io/salon-booking/?admin=1) |
+| Release notes | [v1.0.0](https://github.com/pooya-labs/salon-booking/releases/tag/v1.0.0) |
 
-**Studio contact:** میدان نامجو، خیابان پازوکی، کوچه دهقانی، پلاک ۱۱۸ · [Instagram @shayan_tatsu](https://www.instagram.com/shayan_tatsu/) · [۰۹۱۰ ۶۸۴ ۱۵۵۰](tel:+989106841550)
+## What is included
 
-## Version 1.0.0
+### For customers
+- A Persian, right-to-left booking experience for phones and desktop.
+- Service details, prices and appointment durations.
+- Live availability based on the salon's working hours and existing reservations.
+- Booking confirmation with a reference code.
+- Appointment lookup and cancellation using the details provided when the booking was made.
 
-The first release is owner-accepted. The public site, live Apps Script connection, owner workspace, scheduling configuration and manager notifications have been tested by the owner. The latest automated CI and Pages deployment workflows also passed; see ROADMAP.md for release evidence and scope.
+### For the salon owner
+- A private sign-in area for managing the business.
+- A booking list with date and status filters, plus a daily calendar.
+- Service management: descriptions, prices, durations and visibility.
+- Weekly opening hours, breaks, holiday closures and one-off schedule changes.
+- Manual time blocks for appointments arranged by phone or in person.
+- Push notifications on registered manager devices. Email alerts are optional and off by default.
 
-### Included
+The calendar uses the **Asia/Tehran** timezone. Dates are shown in the Jalali calendar, while the API uses Gregorian dates and 24-hour local times.
 
-- Shayan brand identity and responsive obsidian / antique-gold Liquid Glass design.
-- Persian RTL customer experience with Jalali date presentation and Iran timezone (Asia/Tehran).
-- Service catalogue with owner-managed descriptions, duration and prices.
-- Live availability and conflict-safe online appointment booking.
-- Booking reference and customer self-service lookup/cancellation.
-- Owner sign-in with persistent rolling sessions.
-- Owner dashboard, daily calendar, appointment management and time blocking.
-- Weekly opening hours, breaks, closures and one-off schedule exceptions.
-- Firebase push notifications to the registered manager device.
-- Optional email notifications (off by default).
+## How the live site works
 
-## Active architecture
+The production version uses four services:
 
-1. GitHub Pages serves the public website and manager panel.
-2. A hidden iframe loads the owner's Google Apps Script Web App and bridges API requests.
-3. Apps Script executes the API and stores application records in a private Google Spreadsheet.
-4. Firebase Cloud Messaging sends push notifications to registered manager devices.
+1. **GitHub Pages** serves the website and owner workspace.
+2. A hidden iframe connects the frontend to the salon's **Google Apps Script** web app.
+3. Apps Script handles booking requests and stores records in a **private Google Spreadsheet** owned by the salon.
+4. **Firebase Cloud Messaging** delivers push notifications to the manager's registered browser or PWA.
 
-**Cloudflare Workers and D1 are not in the active request path.** Their files remain in the repository as legacy recovery material and must not be treated as the current production architecture.
+The Apps Script web app runs under the deploying owner's Google account. Its web app address and the private spreadsheet are part of the live setup; they should not be replaced casually.
 
-The Pages deployment uses the repository's SALON_RELAY_URL Actions variable and Firebase configuration variables. Without the Apps Script relay variable, a Pages build intentionally falls back to demo mode and must not be used for real customer bookings.
+Cloudflare Workers and D1 are not used by the current production site. Their source and migrations remain in the repository as older recovery material. There is no automatic transfer from D1 to Google Sheets.
 
-## Backend version
+## Running the project
 
-The Apps Script source in relay/Code.gs reports backend version **1.5.3**. This is separate from the product release version **1.0.0**. The active Apps Script Web App deployment and its existing /exec URL are owner-managed; do not replace the deployment or spreadsheet casually.
-
-## Local development and checks
-
-Requirements: Node.js 22 and npm.
+The project uses Node.js 22 and npm.
 
     npm install
     npm run dev
+
+The local app uses sample data unless VITE_SALON_RELAY_URL is configured. Sample mode is for development only. Do not enter real customer details there.
+
+Before opening a pull request, run the checks relevant to your change:
+
     npm run lint
     npm run test:unit
     npm run test:migrations
     npm run build
     npm run build:pages
 
-Without VITE_SALON_RELAY_URL, local development and preview use demo data. Never enter real customer information in demo mode.
+The browser checks used by CI are also available through npm run test:browser and npm run test:browser:admin. They require the Playwright browser tooling installed by the workflow.
 
-## Deployment and operations
+## Deployment
 
-The production Apps Script project, private spreadsheet, OAuth authorization and Web App deployment are owned and administered through the salon owner's Google account. The GitHub Pages workflow builds and deploys the public frontend. See:
+A push to main starts the GitHub Pages workflow. The build reads the repository Actions variable SALON_RELAY_URL and the public Firebase web configuration variables. If the relay URL is missing, the published build falls back to demo mode; it must not be used to accept real bookings.
 
-- [Delivery roadmap and release evidence](./ROADMAP.md)
-- [Project state and handoff](./docs/PROJECT-STATE.md)
-- [Apps Script relay guide](./docs/GITHUB-PAGES-RELAY.md)
-- [Deployment guide](./docs/DEPLOYMENT.md)
-- [API contract](./docs/API.md)
+The Apps Script project and spreadsheet belong to the salon owner and are managed separately from GitHub. See the deployment guide before creating a new instance or changing the existing one.
+
+## Project notes
+
+Version 1.0.0 was accepted by the salon owner on 5 November 2026. The project is now maintained rather than actively expanded. Future changes should address a reproducible bug, a security concern or a necessary compatibility update.
+
+The latest Pages workflow completed the deployment and its read-only Apps Script relay check successfully. That check does not create bookings or modify customer records.
+
+## Documentation
+
+- [Release scope and verification](./ROADMAP.md)
+- [Current project state and handoff](./docs/PROJECT-STATE.md)
 - [Owner workspace guide](./docs/ADMIN.md)
-- [Privacy operations](./docs/PRIVACY-OPERATIONS.md)
+- [API reference](./docs/API.md)
+- [Deployment guide](./docs/DEPLOYMENT.md)
+- [GitHub Pages and Apps Script setup](./docs/GITHUB-PAGES-RELAY.md)
+- [Privacy and data handling](./docs/PRIVACY-OPERATIONS.md)
+- [Security notes and remaining risks](./docs/SECURITY-THREAT-MODEL.md)
 
 ## راهنمای فارسی
 
-**سالون بوکینگ شایان** سامانه‌ای برای نمایش خدمات و رزرو آنلاین نوبت آرایشگاه شایان است. این پروژه با رابط کاربری فارسی و راست‌چین طراحی شده و در کنار بخش رزرو مشتریان، یک پنل اختصاصی برای مدیریت مجموعه دارد.
+**سامانه رزرو نوبت شایان** برای مجموعهٔ شایان باربر ساخته شده است. مشتری‌ها می‌توانند خدمات را ببینند، زمان‌های آزاد را بررسی کنند و نوبت خود را به‌صورت آنلاین ثبت یا پیگیری کنند. مدیریت برنامهٔ کاری و نوبت‌ها هم از پنل اختصاصی مجموعه انجام می‌شود.
 
-- **مجموعه:** شایان باربر (شایان)
-- **طراح و توسعه‌دهنده:** پویا
-- **نسخه محصول:** ۱.۰.۰
-- **وضعیت:** پایدار؛ در حالت نگهداری
-- **شاخه اصلی مخزن:** `main`
-- **وب‌سایت:** [مشاهده سامانه رزرو](https://pooya-labs.github.io/salon-booking/)
-- **پنل مدیریت:** [ورود به پنل](https://pooya-labs.github.io/salon-booking/?admin=1)
+- **نسخه:** ۱.۰.۰
+- **تاریخ انتشار:** ۱۴ آبان ۱۴۰۵
+- **وضعیت:** منتشرشده و فعال؛ در حال نگهداری
+- **طراحی و توسعه:** پویا گودرزی
+- **وب‌سایت:** [ورود به سامانه رزرو](https://pooya-labs.github.io/salon-booking/)
+- **پنل مدیریت:** [ورود به پنل مدیریت](https://pooya-labs.github.io/salon-booking/?admin=1)
+- **مخزن گیت‌هاب:** [pooya-labs/salon-booking](https://github.com/pooya-labs/salon-booking)
 
-### امکانات نسخه ۱.۰.۰
+### امکانات مشتریان
+- مشاهدهٔ خدمات، توضیحات، قیمت و مدت‌زمان هر خدمت
+- نمایش زمان‌های آزاد بر اساس برنامهٔ واقعی مجموعه
+- ثبت نوبت و دریافت کد پیگیری
+- مشاهده یا لغو نوبت با استفاده از اطلاعات پیگیری
 
-- نمایش خدمات، توضیحات، مدت‌زمان و قیمت‌ها
-- رابط کاربری فارسی و راست‌چین با نمایش تاریخ شمسی
-- محاسبه زمان‌های آزاد و ثبت آنلاین نوبت
-- جلوگیری از ثبت نوبت‌های هم‌زمان و دارای تداخل
-- نمایش کد پیگیری و امکان مشاهده یا لغو نوبت توسط مشتری
-- ورود مدیر و مدیریت نوبت‌ها از پنل اختصاصی
-- تقویم مدیریت، مسدودسازی زمان و تنظیم ساعات کاری
-- تعریف تعطیلی‌ها و تغییرات موردی برنامه کاری
-- ارسال اعلان برای مدیر از طریق Firebase
-- پشتیبانی اختیاری از اعلان ایمیلی که به‌صورت پیش‌فرض غیرفعال است
+### امکانات پنل مدیریت
+- مشاهده و مدیریت نوبت‌ها در فهرست و تقویم روزانه
+- تأیید، لغو و ثبت وضعیت نهایی نوبت‌ها
+- تعریف خدمات و ویرایش قیمت، مدت‌زمان و توضیحات
+- تنظیم ساعات کاری هفتگی، زمان استراحت و تعطیلی‌ها
+- مسدود کردن زمان‌های رزروشده از طریق تماس یا مراجعهٔ حضوری
+- دریافت اعلان روی دستگاه مدیر از طریق Firebase
 
-### ساختار فنی و نحوه کار
+تقویم با منطقهٔ زمانی تهران کار می‌کند و تاریخ‌ها را به شمسی نمایش می‌دهد. زمان‌ها در قالب ۲۴ ساعته هستند.
 
-نسخه فعال سامانه از این بخش‌ها تشکیل شده است:
+### ساختار فنی نسخهٔ فعال
 
-۱. وب‌سایت و پنل مدیریت از طریق GitHub Pages ارائه می‌شوند.  
-۲. ارتباط رابط کاربری با سرویس رزرو از طریق پل ارتباطی Google Apps Script برقرار می‌شود.  
-۳. اطلاعات سامانه در یک فایل Google Sheets خصوصی نگهداری می‌شوند.  
-۴. اعلان‌های مدیر از طریق Firebase Cloud Messaging ارسال می‌شوند.
+وب‌سایت و پنل مدیریت روی GitHub Pages قرار دارند. درخواست‌های رزرو از طریق یک پل ارتباطی به Google Apps Script فرستاده می‌شوند و اطلاعات در یک فایل خصوصی Google Sheets ذخیره می‌شوند. اعلان‌های مدیر هم با Firebase Cloud Messaging ارسال می‌شوند.
 
-**Cloudflare Workers و D1 در مسیر فعال سامانه استفاده نمی‌شوند.** فایل‌های مربوط به آن‌ها صرفاً به‌عنوان سوابق فنی و امکان بازیابی در مخزن باقی مانده‌اند.
+**Cloudflare Workers و D1 در نسخهٔ فعال استفاده نمی‌شوند.** فایل‌های مربوط به آن‌ها فقط برای نگهداری سوابق فنی و امکان بازیابی در مخزن باقی مانده‌اند.
 
-نسخه فعلی کد سمت سرور Google Apps Script برابر با **۱.۵.۳** است؛ این شماره با نسخه محصول، یعنی **۱.۰.۰**، تفاوت دارد. آدرس استقرار فعال Apps Script و فایل اطلاعاتی مجموعه باید با احتیاط نگهداری شوند و بدون هماهنگی تغییر نکنند.
+### اجرای نسخهٔ توسعه
 
-### اجرای پروژه و بررسی کد
+برای اجرای پروژه به Node.js نسخهٔ ۲۲ و npm نیاز دارید:
 
-برای اجرای نسخه توسعه به Node.js 22 و npm نیاز دارید:
+    npm install
+    npm run dev
 
-```bash
-npm install
-npm run dev
-npm run lint
-npm run test:unit
-npm run test:migrations
-npm run build
-npm run build:pages
-```
+در صورت تنظیم نبودن آدرس پل ارتباطی Apps Script، برنامه با داده‌های نمونه اجرا می‌شود. از این حالت فقط برای توسعه و بررسی ظاهر استفاده کنید و اطلاعات واقعی مشتریان را در آن وارد نکنید.
 
-اگر آدرس پل ارتباطی Apps Script در تنظیمات محیطی تعریف نشده باشد، نسخه محلی و پیش‌نمایش از اطلاعات آزمایشی استفاده می‌کنند. در این حالت اطلاعات واقعی مشتریان را وارد نکنید.
+برای بررسی تغییرات نیز می‌توانید فرمان‌های زیر را اجرا کنید:
 
-### راهنما و مستندات
+    npm run lint
+    npm run test:unit
+    npm run test:migrations
+    npm run build
+    npm run build:pages
 
-- [نقشه راه و سوابق انتشار](./ROADMAP.md)
-- [وضعیت پروژه و راهنمای تحویل](./docs/PROJECT-STATE.md)
-- [راهنمای اتصال Google Apps Script](./docs/GITHUB-PAGES-RELAY.md)
-- [راهنمای استقرار](./docs/DEPLOYMENT.md)
-- [مستندات رابط برنامه‌نویسی](./docs/API.md)
-- [راهنمای پنل مدیریت](./docs/ADMIN.md)
-- [حریم خصوصی و نگهداری اطلاعات](./docs/PRIVACY-OPERATIONS.md)
+### وضعیت پروژه
 
-### وضعیت انتشار و پشتیبانی
+نسخهٔ ۱.۰.۰ منتشر شده و تنظیمات عملیاتی آن به تأیید صاحب مجموعه رسیده است. پروژه در وضعیت نگهداری قرار دارد؛ بنابراین تغییرات بعدی به رفع ایرادهای قابل بازتولید، به‌روزرسانی‌های امنیتی و اصلاحات ضروری محدود می‌شوند.
 
-نسخه ۱.۰.۰ تکمیل و منتشر شده و پروژه در وضعیت نگهداری قرار دارد؛ در حال حاضر قابلیت جدیدی برای توسعه برنامه‌ریزی نشده است. تغییرات آینده فقط در صورت وجود ایراد قابل بازتولید، نیاز امنیتی یا ضرورت سازگاری انجام می‌شوند. هر اصلاح باید بررسی و آزمایش شود و در صورت نیاز، در قالب نسخه اصلاحی منتشر شود.
-
-## Release policy
-
-Version 1.0.0 is complete. The project is now in maintenance mode: no feature work is planned. Changes should be limited to verified bug fixes, security updates or essential compatibility work. Preserve the active Pages + Apps Script + Sheets + Firebase architecture unless a deliberate, documented migration is approved.
+برای جزئیات فنی، راهنمای پنل مدیریت، استقرار، API و حریم خصوصی، به فایل‌های مستندات در پوشهٔ docs مراجعه کنید.

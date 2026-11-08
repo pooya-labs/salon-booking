@@ -1,110 +1,116 @@
-# GitHub Pages + Google Apps Script setup
+# GitHub Pages and Google Apps Script
 
-This is the active deployment path. GitHub Pages serves the React site; an Apps Script Web App provides the API and creates a private Google Spreadsheet for the salon database. The customer browser does not call a Cloudflare Worker.
+This guide describes the connection between the public website and the salon's Apps Script backend. The current production site already uses this arrangement. The steps below are for reference, backend updates or a separate installation.
+
+## How requests are routed
+
+GitHub Pages serves the React frontend. A hidden iframe loads the Apps Script HTML service page and bridges frontend API calls to the Web App. Apps Script handles requests and reads or writes the private spreadsheet.
+
+The Apps Script project executes as its owner. The spreadsheet should remain private; customers interact with it only through the application API.
 
 ## 1. Create the Apps Script project
 
-1. Open [script.google.com](https://script.google.com/) using the Google account that should own the database and booking notifications.
-2. Create a standalone project, for example `Salon Booking Backend`.
-3. Replace `Code.gs` with the repository's [`relay/Code.gs`](../relay/Code.gs).
-4. Add an HTML file named `Bridge` and paste [`relay/Bridge.html`](../relay/Bridge.html).
-5. In Project Settings, enable **Show "appsscript.json" manifest file in editor**. Replace it with [`relay/appsscript.json`](../relay/appsscript.json), then save.
+For a new installation:
 
-The manifest selects V8, spreadsheet, optional email, Firebase Messaging and external-request scopes, `Asia/Tehran` as the script timezone, owner execution and anonymous Web App access. Application-level booking calculations are also pinned to `Asia/Tehran`. Google's [manifest reference](https://developers.google.com/apps-script/manifest/web-app-api-executable) documents these access and execution values.
+1. Sign in to Google Apps Script with the account that will own the salon database.
+2. Create a standalone project.
+3. Copy relay/Code.gs into Code.gs.
+4. Add an HTML file named Bridge and copy relay/Bridge.html.
+5. In Project Settings, enable the manifest file and use relay/appsscript.json.
 
-## 2. Create the private database and authorize email
+The manifest sets the Apps Script runtime, timezone and web app access. Review the requested scopes and approve only those needed for Sheets, external requests and the configured notification services.
 
-1. In the function picker, choose `setupSalonDatabase` and click **Run**.
-2. Approve the requested Google Sheets, Firebase Messaging and external-request permissions. Mail permission is available only for optional email alerts.
-3. Open the execution log. It prints the private spreadsheet URL and a one-time owner-bootstrap token. Keep that token private; do not paste it into GitHub or chat.
-4. Setup defaults the notification recipient to the deploying Google account when available. To choose a different mailbox, run `setSalonNotificationEmail("manager@example.com")` from the Apps Script editor.
+## 2. Create the private spreadsheet
 
-The setup and notification configuration functions are guarded so they only run from the signed-in owner's Apps Script editor, not from the public web app. The created spreadsheet is owned by that Google account and should remain private.
+1. Choose setupSalonDatabase in the Apps Script editor and run it.
+2. Approve the requested permissions.
+3. Copy the spreadsheet URL from the execution log and keep it private.
+4. Keep the one-time owner-bootstrap token from the same log in a safe place. It is needed only to create the first owner account.
 
-## 3. Deploy as a public Web App
+The setup function creates the application tabs and initial settings. Do not share the spreadsheet publicly or commit its URL or exported data to the repository.
 
-1. Click **Deploy → New deployment**.
-2. Select **Web app**.
-3. Set **Execute as** to **Me** (the account that owns the spreadsheet).
-4. Set access to **Anyone**, including people who are not signed in. The manifest uses `ANYONE_ANONYMOUS`.
-5. Deploy and copy the URL ending in `/exec`.
+## 3. Deploy the Web App
 
-Google documents the deployment choices in [Apps Script Web Apps](https://developers.google.com/apps-script/guides/web).
+In Apps Script, choose Deploy → New deployment → Web app.
 
-## 4. Connect the Pages build
+- **Execute as:** Me (the account that owns the spreadsheet).
+- **Who has access:** Anyone, including visitors who are not signed in.
 
-In the repository, open **Settings → Secrets and variables → Actions → Variables** and add:
+Deploy and copy the URL ending in /exec. Anonymous access is required for customers to check availability and place bookings. Private operations are protected by application-level owner/customer authorization.
 
-- Name: `SALON_RELAY_URL`
-- Value: the Apps Script `/exec` URL
+## 4. Connect GitHub Pages
 
-This is a public endpoint, not a secret. The Pages workflow injects it at build time. The next push to `main` rebuilds Pages; the deployment workflow can also be rerun manually. If the variable is missing, Pages stays in demo mode and does not submit customer data.
+In the repository, open Settings → Secrets and variables → Actions → Variables and add:
 
-Live site: [https://pooya-labs.github.io/salon-booking/](https://pooya-labs.github.io/salon-booking/)
+| Variable | Value |
+|---|---|
+| SALON_RELAY_URL | The Apps Script Web App address ending in /exec |
 
-## 5. First owner setup
+The Pages workflow injects this value when it builds the frontend. A push to main triggers a new build and deployment. When the variable is missing, the site falls back to demo mode and should not be used for real reservations.
 
-1. Open the live site and choose **مدیریت**, or visit [the direct owner panel link](https://pooya-labs.github.io/salon-booking/?admin=1). Do not use `/admin` as a standalone path on GitHub Pages.
+## 5. Create the first owner account
+
+1. Open the live [owner workspace](https://pooya-labs.github.io/salon-booking/?admin=1).
 2. Enter the one-time bootstrap token from the Apps Script execution log.
-3. Choose the manager username and a password of at least 12 characters.
-4. In **تنظیمات استودیو**, the timezone is fixed to `Asia/Tehran` (Iran); it is not editable. Save scheduling settings, then enter working intervals. Admin date pickers use the Jalali calendar and working-hour fields use 24-hour time.
-5. Add real services, prices, weekly opening intervals and date-specific closures.
+3. Choose the manager username and a strong password.
+4. Confirm that the timezone is Asia/Tehran.
+5. Add the salon's actual services, prices, durations and opening hours.
 
-The one-time bootstrap token is deleted after the first owner is created. Owner sessions remain valid for up to 30 days of inactivity and renew automatically during regular use. The explicit خروج action revokes the current browser session immediately.
+The bootstrap token is for initial setup only. Keep it private and do not reuse it after the owner account has been created.
 
-## 6. Booking notifications
+If the Google OAuth consent screen is in Testing mode, add the account deploying the Apps Script Web App to its test-user list. Do not replace the live Web App deployment or change its address to fix an OAuth audience setting.
 
-The primary notification path is Firebase Cloud Messaging (FCM) to manager devices that have been registered from the owner panel. Push delivery is not active until the Firebase project, VAPID key, Apps Script Cloud project permissions and GitHub `FIREBASE_*` build variables are configured and a manager device has granted notification permission.
+## 6. Configure manager push notifications
 
-Email notifications are optional and **off by default**. No booking email is sent unless the owner explicitly enables the email option in the admin notification settings. When enabled, Apps Script uses MailApp and the configured manager recipient. A notification delivery failure does not roll back a saved booking; check Apps Script **Executions**, the notification settings and the manager-device registration state.
+Push notifications use Firebase Cloud Messaging (FCM). The owner needs a Firebase web app, a Web Push VAPID public key and the matching Google Cloud project.
 
-## Deployment boundary
+Add these public web configuration values as GitHub Actions repository variables:
 
-The backend source is committed to GitHub, but Apps Script projects are separate Google-account resources. This repository integration cannot authorize or publish a Web App inside the owner's Google account. The owner must complete steps 1–4. Do not treat the migration as live until the `/exec` URL is deployed, the GitHub variable is set, and a booking plus Gmail notification are verified from an Iranian network.
+- FIREBASE_API_KEY
+- FIREBASE_AUTH_DOMAIN
+- FIREBASE_PROJECT_ID
+- FIREBASE_STORAGE_BUCKET
+- FIREBASE_MESSAGING_SENDER_ID
+- FIREBASE_APP_ID
+- FIREBASE_VAPID_KEY
 
-The previous Cloudflare Worker and D1 are intentionally left untouched as a temporary recovery source. No automatic D1-to-Sheets copy is performed. Do not delete Cloudflare resources until the Apps Script path passes owner acceptance.
+Then:
 
+1. Enable the Firebase Cloud Messaging API in the matching Google Cloud project.
+2. Make sure the Apps Script project is associated with that same standard Google Cloud project.
+3. Update the existing Apps Script project with the current relay/Code.gs and manifest.
+4. Run setupSalonDatabase() against the existing spreadsheet so any additive tabs or columns are created.
+5. In Deploy → Manage deployments, publish a new Web App version while keeping the same /exec address.
+6. Rebuild GitHub Pages.
+7. Sign in to the owner workspace, open اعلان‌ها, save the Firebase project ID and register the manager's browser/PWA.
+8. Send a test notification.
 
-## 6. Phone push notifications (Firebase Cloud Messaging)
+A manager can register more than one device. The browser must grant notification permission. Background notifications are shown by the service worker; messages received while the dashboard is open are handled by the page.
 
-Push is the recommended phone notification path. It can show a native Android notification while the manager's browser/PWA is in the background. The app uses Firebase Cloud Messaging (FCM); no Cloudflare Worker or Firebase private service-account key is used.
+Do not add a Firebase private service-account key to this repository. The frontend uses public Firebase web configuration and the Apps Script backend uses its own Google authorization.
 
-1. In [Firebase Console](https://console.firebase.google.com/), create or select a project and add a Web app.
-2. In Project settings → General, copy the Web app configuration values: apiKey, authDomain, projectId, storageBucket, messagingSenderId and appId.
-3. In Project settings → Cloud Messaging → Web configuration, generate a Web Push certificate (VAPID) key pair and copy the public key.
-4. In the matching Google Cloud project, enable the Firebase Cloud Messaging API. In Apps Script Project Settings, associate the Apps Script project with this same standard Google Cloud project. The script owner must have permission to send Firebase messages in the project.
-5. In GitHub Settings → Secrets and variables → Actions → Variables, add these repository variables (the Firebase web config and VAPID public key are public client configuration, not private credentials):
+## 7. Email notifications
 
-   - FIREBASE_API_KEY
-   - FIREBASE_AUTH_DOMAIN
-   - FIREBASE_PROJECT_ID
-   - FIREBASE_STORAGE_BUCKET
-   - FIREBASE_MESSAGING_SENDER_ID
-   - FIREBASE_APP_ID
-   - FIREBASE_VAPID_KEY
+Email notifications are optional and off by default. The owner can enable them from the Notifications tab after the Apps Script MailApp scope and recipient have been configured. Leaving the setting off means the system will not send booking emails.
 
-6. Update the existing Apps Script project's `Code.gs` and `appsscript.json` from this repository. Run `setupSalonDatabase()` again to create the new `TimeBlocks` tab and add any missing columns/tabs (including earlier `PushSubscriptions` changes) without clearing existing rows. This is additive; it must target the existing spreadsheet. Approve the Firebase Messaging and external-request scopes if prompted.
-7. Deploy a new version of the Web App (Deploy → Manage deployments → Edit → New version → Deploy). Keep the deployed /exec URL unchanged when editing the existing deployment.
-8. Rebuild GitHub Pages from Actions. Then sign in through [the owner panel](https://pooya-labs.github.io/salon-booking/?admin=1), open اعلان‌ها, enter the Firebase project ID and save.
-9. On the manager's Android phone, open the live site in Chrome, sign in to the admin panel and tap فعال‌کردن اعلان این گوشی. Allow notifications, then use ارسال اعلان آزمایشی.
+A notification failure does not remove an appointment that has already been saved.
 
-The manager can add more than one device by repeating activation on each phone/browser. FCM sends to saved manager devices. The service worker displays background notifications; the open dashboard handles foreground messages. See [FCM web setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [receiving FCM messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages) and [Apps Script external APIs](https://developers.google.com/apps-script/guides/services/external).
+## Updating the existing live installation
 
-## 7. Email alert preference
+The current deployment has already been accepted. For routine updates:
 
-Email alerts are off by default. In the admin panel's اعلان‌ها tab, leave the email checkbox off to receive phone push only. Enabling it sends a parallel MailApp email to the configured manager address. If email is disabled, no booking email is sent.
+- Keep the existing Apps Script project and spreadsheet.
+- Preserve the deployed /exec address.
+- Apply source updates to the existing project instead of creating a replacement.
+- Run the additive setup only when the backend change requires it.
+- Publish a new Web App version and redeploy Pages.
+- Check the Pages workflow's read-only relay smoke result.
 
+The source backend version is recorded in relay/Code.gs. It is separate from the Apps Script deployment number shown in Google's interface.
 
-## 8. Verify the deployed relay and upgrade an existing Web App
+## Related references
 
-The current source and live Pages check expect Apps Script backend version `1.5.3`. This release normalizes Google Sheets date/time cell values, derives timestamps for legacy booking rows, fixes the 24-hour time validation used when blocking a slot, and adds the authenticated owner booking-delete endpoint. A response below `1.5.3` means the existing Web App is still serving older code, even when GitHub Pages has already been rebuilt.
-
-To upgrade without creating a new spreadsheet or changing the public URL:
-
-1. In the existing Apps Script project, replace `Code.gs` and update `appsscript.json` from this repository. `Bridge.html` has no change for this release; keep the existing bridge and `/exec` URL.
-2. Save all files and run `setupSalonDatabase()` once from the Apps Script editor. Its additive migration creates the `TimeBlocks` tab and any missing columns while preserving all existing records and the current owner account.
-3. Review and approve any newly requested Apps Script scopes.
-4. Open Deploy → Manage deployments → Edit → New version → Deploy. Keep the existing deployment and /exec URL.
-5. Push or rerun the GitHub Pages workflow, then confirm its read-only smoke check passes. It verifies iframe handshake, backend version, public config/services, setup status and anonymous admin rejection; it does not create a booking.
-
-The Apps Script HTML Service may render its page in a nested iframe. The current bridge communicates with the Pages top window using postMessage while validating the exact Pages origin and sender frame. Do not replace this with wildcard target origins.
+- [Apps Script Web Apps](https://developers.google.com/apps-script/guides/web)
+- [Apps Script manifest](https://developers.google.com/apps-script/manifest)
+- [Firebase Cloud Messaging for web](https://firebase.google.com/docs/cloud-messaging/web/get-started)
+- [Receiving web messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages)
