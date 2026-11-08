@@ -88,6 +88,16 @@ The latest Pages workflow completed the deployment and its read-only Apps Script
 - [Privacy and data handling](./docs/PRIVACY-OPERATIONS.md)
 - [Security notes and remaining risks](./docs/SECURITY-THREAT-MODEL.md)
 
+## Latest project update — 8 November 2026
+
+The owner attribution was refined: the Pooya Labs Platform monogram is now vendored in the repository and loaded from local assets, while the original gold GitHub credit mark styling was restored. The v1.0.0 booking system remains live and in maintenance. Its active backend is Google Apps Script + private Google Sheets, with Firebase Cloud Messaging for manager notifications; Cloudflare Workers and D1 are not part of the live runtime.
+
+## Project ownership
+
+<p align="center"><a href="https://pooya-labs.github.io/pooya-labs-platform/"><img src="https://raw.githubusercontent.com/pooya-labs/pooya-labs-platform/main/apps/platform/public/brand/pooya-monogram.webp" alt="Pooya Labs Platform monogram" width="64" /></a></p>
+
+**Owned and maintained by [Pooya Labs Platform](https://pooya-labs.github.io/pooya-labs-platform/).** Product engineering and implementation: **Pooya Goodarzi**.
+
 ## راهنمای فارسی
 
 **سامانه رزرو نوبت شایان** برای مجموعهٔ شایان باربر ساخته شده است. مشتری‌ها می‌توانند خدمات را ببینند، زمان‌های آزاد را بررسی کنند و نوبت خود را به‌صورت آنلاین ثبت یا پیگیری کنند. مدیریت برنامهٔ کاری و نوبت‌ها هم از پنل اختصاصی مجموعه انجام می‌شود.
@@ -144,3 +154,13 @@ The latest Pages workflow completed the deployment and its read-only Apps Script
 نسخهٔ ۱.۰.۰ منتشر شده و تنظیمات عملیاتی آن به تأیید صاحب مجموعه رسیده است. پروژه در وضعیت نگهداری قرار دارد؛ بنابراین تغییرات بعدی به رفع ایرادهای قابل بازتولید، به‌روزرسانی‌های امنیتی و اصلاحات ضروری محدود می‌شوند.
 
 برای جزئیات فنی، راهنمای پنل مدیریت، استقرار، API و حریم خصوصی، به فایل‌های مستندات در پوشهٔ docs مراجعه کنید.
+
+### آخرین تغییرات — ۸ نوامبر ۲۰۲۶
+
+نمایش مالکیت پروژه اصلاح شد: مونوگرام پلتفرم پویا لبز به‌صورت محلی داخل مخزن قرار گرفته و از فایل‌های خود پروژه بارگذاری می‌شود؛ در عین حال ظاهر طلایی نشان GitHub نیز به حالت اصلی بازگردانده شد. سامانهٔ رزرو نسخهٔ ۱.۰.۰ همچنان فعال و در وضعیت نگه‌داری است. backend فعال آن Google Apps Script و Google Sheets خصوصی است و اعلان مدیر از Firebase Cloud Messaging استفاده می‌کند؛ Cloudflare Workers و D1 در runtime فعلی نقشی ندارند.
+
+### مالکیت و نگه‌داری
+
+<p align="center"><a href="https://pooya-labs.github.io/pooya-labs-platform/"><img src="https://raw.githubusercontent.com/pooya-labs/pooya-labs-platform/main/apps/platform/public/brand/pooya-monogram.webp" alt="نشان مونوگرام پویا لبز" width="64" /></a></p>
+
+**مالک و نگه‌دارنده: [پلتفرم پویا لبز](https://pooya-labs.github.io/pooya-labs-platform/)** · طراحی محصول و توسعه: **پویا گودرزی**.
