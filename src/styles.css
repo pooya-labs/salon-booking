@@ -2170,3 +2170,55 @@ hr { border-color:var(--line); }
   .admin-delete-confirm-actions button { width:100%; }
 }
 
+
+
+/* Pooya Labs Platform ownership signature */
+.site-footer .footer-platform-owner {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:9px;
+  padding:7px 12px 7px 9px;
+  border:1px solid rgba(112,224,192,.24);
+  border-radius:12px;
+  background:linear-gradient(135deg,rgba(49,167,135,.12),rgba(19,91,79,.08));
+  color:#e5f7ef;
+  text-decoration:none;
+  transition:border-color .2s ease,background .2s ease,transform .2s ease;
+}
+.site-footer .footer-platform-owner:hover {
+  border-color:rgba(112,224,192,.55);
+  background:rgba(49,167,135,.18);
+  transform:translateY(-1px);
+}
+.site-footer .footer-platform-owner img {
+  display:block;
+  width:29px;
+  height:29px;
+  flex:0 0 29px;
+  object-fit:contain;
+}
+.site-footer .footer-platform-owner span {
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  text-align:left;
+  line-height:1.2;
+}
+.site-footer .footer-platform-owner small {
+  color:#8ed9bf;
+  font-size:7px;
+  letter-spacing:.16em;
+}
+.site-footer .footer-platform-owner strong {
+  color:#f0eadf;
+  font-size:10px;
+  font-weight:600;
+  white-space:nowrap;
+}
+@media (max-width:760px) {
+  .site-footer .footer-platform-owner {
+    align-self:center;
+    margin-top:2px;
+  }
+}
