@@ -11,10 +11,16 @@
   "theme_color": "#0d0c0b",
   "icons": [
     {
-      "src": "images/shayan-emblem.webp",
-      "sizes": "2048x2048",
+      "src": "icons/shayan-192.webp",
+      "sizes": "192x192",
       "type": "image/webp",
       "purpose": "any"
+    },
+    {
+      "src": "icons/shayan-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/salon-icon.svg",
