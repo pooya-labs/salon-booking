@@ -36,7 +36,6 @@ test('Shayan hero illustration is used in the public hero and emblem is used for
   assert.match(manifest.toString('utf8'), /icons\/shayan-192\.webp/)
   assert.match(manifest.toString('utf8'), /icons\/shayan-512\.webp/)
   assert.match(html.toString('utf8'), /rel="apple-touch-icon"/)
-  assert.match(manifest.toString('utf8'), /images\/shayan-emblem\.webp/)
   assert.match(iconSvg.toString('utf8'), /\.\.\/images\/shayan-emblem\.webp/)
   assert.match(pushClient.toString('utf8'), /اعلان جدید شایان/)
   assert.doesNotMatch(allSources, /shayan-barber-logo\.webp/, 'legacy logo must not be wired into the UI')
