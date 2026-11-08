@@ -32,6 +32,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate optimized browser icons
+        run: |
+          npm install --no-save --package-lock=false sharp
+          node scripts/generate-favicons.mjs
+
       - name: Build preview
         env:
           VITE_SALON_RELAY_URL: ${{ vars.SALON_RELAY_URL }}
