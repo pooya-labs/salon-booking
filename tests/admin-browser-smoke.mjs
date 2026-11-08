@@ -84,6 +84,7 @@ const apiCalls = []
 const statusUpdates = []
 const deletedBookingIds = []
 const timeBlockRequests = []
+const dayScheduleDates = []
 let mockTimeBlocks = [{ id: 'qa-time-block', time: '12:00', endTime: '12:15', durationMinutes: 15 }]
 let forceLoginView = false
 const qaBookings = [
@@ -206,6 +207,7 @@ try {
     }
     if (path === '/api/admin/day-schedule' && route.request().method() === 'GET') {
       const requestedDate = new URL(route.request().url()).searchParams.get('date')
+      dayScheduleDates.push(requestedDate)
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         ok: true, date: requestedDate, timezone: 'Asia/Tehran', slotIntervalMinutes: 15,
         workingIntervals: [{ startsAt: '09:00', endsAt: '17:00' }],
@@ -294,17 +296,21 @@ try {
   await page.locator('.admin-day-slot.is-booked').first().waitFor({ state: 'visible' })
   await page.locator('.admin-calendar-list-panel').filter({ hasText: 'نوبت‌های مشتری' }).getByText('کوتاهی مو').waitFor({ state: 'visible' })
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
+  const previousCalendarDate = dayScheduleDates.at(-1)
   await Promise.all([
     page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/day-schedule' && response.status() === 200),
     page.getByRole('button', { name: 'روز بعد', exact: true }).click(),
   ])
+  const selectedCalendarDate = dayScheduleDates.at(-1)
+  assert.ok(selectedCalendarDate && selectedCalendarDate !== previousCalendarDate,
+    'the next-day control should load a different calendar date')
   await page.locator('.admin-day-slot.is-free').filter({ hasText: '11:00' }).click()
   await page.locator('.admin-block-confirm').waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'manager one-touch time block confirmation')
   const blockResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/time-blocks' && response.request().method() === 'POST' && response.status() === 201)
   await page.getByRole('button', { name: 'تأیید و مسدود کردن زمان' }).click()
   await blockResponse
-  assert.deepEqual(timeBlockRequests[0], { date: '2026-11-06', time: '11:00', durationMinutes: 15 })
+  assert.deepEqual(timeBlockRequests[0], { date: selectedCalendarDate, time: '11:00', durationMinutes: 15 })
   assert.deepEqual(Object.keys(timeBlockRequests[0]).sort(), ['date', 'durationMinutes', 'time'])
   await page.locator('.admin-calendar-list-panel').filter({ hasText: 'زمان‌های مسدودشده' }).getByRole('button', { name: 'رفع مسدودی 11:00' }).click()
   const unblockResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/time-blocks/qa-created-block' && response.request().method() === 'DELETE' && response.status() === 200)

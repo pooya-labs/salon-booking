@@ -1,101 +1,82 @@
-# Security & Privacy Threat Model
+# Security and privacy notes
 
-**Review date:** 2026-11-04  
-**Application version:** 0.6.0  
-**Scope:** repository-level review of the Cloudflare Worker, D1 schema/migrations, browser application and current CI tests.
+**Application:** Shayan Barber Booking 1.0.0  
+**Last reviewed:** 8 November 2026  
+**Scope:** repository and documented production design
 
-> This is an internal engineering review, not a penetration test, independent security audit, legal privacy assessment, or proof of production security. No production Cloudflare account, Worker, D1 database or customer data is connected at this checkpoint.
+This document records the main trust boundaries, safeguards and remaining operational risks in the current implementation. It is not a penetration test, an independent security audit, legal advice or a guarantee that every deployment is configured safely.
 
-## Assets to protect
+## Production boundaries
 
-| Asset | Sensitivity | Primary protection |
-|---|---|---|
-| Customer names, phone numbers and appointment notes | Personal data | D1 access only through scoped API queries; owner session required for the owner booking list |
-| Appointment references and management credentials | Bearer credentials | 256-bit management token; only SHA-256 digest stored; generic lookup failures |
-| Owner password | Credential | Salted PBKDF2-HMAC-SHA-256 password hash (600,000 iterations) |
-| Owner session | Credential | 256-bit random token; SHA-256 digest in D1; 12-hour expiry and server-side revocation |
-| Bootstrap token and SESSION_SECRET | High-impact secrets | Cloudflare Worker secret bindings; never Vite/browser variables or source control |
-| Schedule, services and booking state | Business-critical data | Authenticated owner mutations, SQL constraints/triggers, audit rows and D1 backups |
+The live system has four main parts:
 
-## Trust boundaries
+1. The customer's browser loads the static frontend from GitHub Pages.
+2. A hidden iframe connects the frontend to the salon's Google Apps Script Web App.
+3. Apps Script executes as the deploying owner and accesses the private Google Spreadsheet.
+4. Firebase Cloud Messaging sends push notifications to registered manager devices. Email alerts use Apps Script MailApp only when enabled.
 
-1. **Public browser → Worker:** anonymous visitors submit booking requests and can query active services/availability. Customer lookup/cancellation and owner mutations must prove same-origin.
-2. **Worker → D1:** parameterized SQL statements and server-side validation govern writes and reads. D1 is the authoritative availability and overlap guard.
-3. **Owner browser → admin API:** session cookie and same-origin checks gate private reads and state-changing requests.
-4. **Cloudflare account → runtime configuration:** account access controls D1, Worker deployments and secrets. This control plane is outside this repository and has not been independently inspected.
-5. **Repository/CI → static Pages preview:** GitHub Pages is a static demonstration only. It has no production database, must not collect real client information and is not the production application runtime.
+The Apps Script web app address is publicly reachable so customers can book without signing in. The script runs with the deploying owner's permissions, so the backend must keep private spreadsheet operations behind the correct owner and customer authorization checks.
 
-## Threat review and existing controls
+GitHub Pages does not store booking records. Cloudflare Worker and D1 files in this repository are legacy material and are not in the active request path.
 
-### Account takeover and session theft
+## Information handled by the system
 
-- Passwords use a fresh 16-byte random salt and PBKDF2-HMAC-SHA-256 with 600,000 iterations. Verification compares derived bytes without an early exit over the digest.
-- Login uses a dummy password hash for unknown usernames, a generic invalid-credentials response, and an IP-HMAC limit of 8 attempts per 15 minutes.
-- Sessions use 256-bit random values. Only SHA-256 token hashes are stored; sessions expire after 12 hours and logout deletes the session record. Expired rows are rejected by the session query and pruned when a new session is issued; unauthenticated session checks do not trigger D1 cleanup writes.
-- The cookie is `__Host-salon_session` with `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, and no Domain attribute.
-- **Residual:** there is no MFA, owner recovery flow or account alerting. Protect the Cloudflare account and owner email with MFA and strong unique credentials; plan a recovery procedure before launch.
+The application needs a limited amount of information to operate appointments:
 
-### Bootstrap abuse
+- Customer name and phone number, plus an optional booking note.
+- Service, date, time, duration, reference and booking status.
+- A one-time customer management credential. The backend stores its hash rather than the plaintext value.
+- Owner account data and hashed session identifiers.
+- Registered manager push-device details.
+- Audit entries for owner actions and booking changes.
 
-- First-owner creation requires a configured bootstrap token, a same-origin POST, a minimum 32-character SESSION_SECRET, and a separate IP-HMAC limit of 3 attempts per hour.
-- The D1 insert succeeds only while no owner exists; subsequent bootstrap attempts cannot create another first owner.
-- **Operational requirement:** remove `ADMIN_BOOTSTRAP_TOKEN` immediately after the owner is created. It is not needed for normal operation.
+The private spreadsheet belongs to the Google account that runs the Apps Script project. Keep its sharing permissions restricted to the people who operate the salon.
 
-### CSRF and cross-origin actions
+## Safeguards in the current design
 
-- Login, bootstrap, logout, customer booking lookup/cancellation, and every owner mutation validate the request Origin against the request URL and reject `Sec-Fetch-Site: cross-site`.
-- The owner cookie is SameSite Strict. API responses do not enable permissive cross-origin access.
-- The public booking endpoint accepts JSON and has no account requirement; abuse prevention therefore relies on validation, idempotency, database conflict controls and rate limits rather than a signed-in user.
+- The public API returns only the service and availability information needed for booking.
+- Customer lookup and cancellation require both the booking reference and the one-time management credential.
+- The customer-facing lookup response does not expose the customer's phone number or name.
+- Owner routes require a valid owner session, apart from the limited first-owner setup flow.
+- Owner sessions have a rolling 30-day lifetime. The stored session identifier is hashed, and signing out revokes the current session.
+- First-owner setup and notification-recipient configuration are intended to be run from the owner's Apps Script editor, not through the public site.
+- Booking availability is checked again when a request is submitted. The script lock protects the final availability check and write from overlapping requests.
+- Booking requests include an idempotency key so a retry of the same attempt does not create a second reservation.
+- Notification delivery is separate from saving the booking. A failed notification does not undo an appointment that has already been stored.
+- The application does not automatically delete old bookings. This avoids silently applying a retention period that the salon owner has not approved.
 
-### Booking enumeration, token theft and replay
+## Operational requirements
 
-- New bookings require a 256-bit idempotency key. Key/request hashes are domain-separated; raw idempotency keys and duplicate request bodies are not written to the idempotency ledger.
-- Customer-management tokens are derived with domain separation from the high-entropy booking key. D1 stores only a SHA-256 digest of the management token.
-- Lookup requires both a validated reference and a 64-hex-character bearer token. Missing references and invalid tokens share a generic 404 response; lookup/cancellation is IP-limited to 20 requests per 15 minutes.
-- The client booking row retains the name, phone and note needed to operate the appointment; the idempotency ledger does not duplicate those fields.
-- D1 overlap triggers and the transactional idempotency record protect against concurrent booking conflicts and uncertain retry outcomes.
+The security of the live service also depends on the Google and Firebase accounts used to run it.
 
-### Injection, malicious input and browser execution
+- Keep the Apps Script project and its spreadsheet under an account controlled by the salon owner.
+- Use a strong, unique Google account password and enable the account's available multi-factor protection.
+- Do not share the spreadsheet publicly.
+- Keep the one-time owner-bootstrap token private and use it only for the initial owner setup.
+- Store the Apps Script web app address and public Firebase web configuration in the correct GitHub Actions variables. Never put private credentials or customer data in source code.
+- Review Apps Script executions when the backend reports errors.
+- Limit access to GitHub repository settings and Firebase project administration.
+- Do not paste customer records, spreadsheet exports, session tokens or push credentials into issues, commits or screenshots.
 
-- Dynamic SQL values use D1 prepared statements and bound parameters. User-controlled service/schedule values are validated before writes.
-- JSON request bodies are limited to 8,192 characters and parsed as objects; route-specific schemas constrain accepted fields.
-- HTML CSP now restricts scripts and connections to self, images/fonts to self or data URLs, blocks objects and framing, and does not allow `unsafe-eval` or arbitrary external HTTPS resources. Inline styles remain permitted for the current UI.
-- API JSON responses receive a restrictive `default-src 'none'` CSP. Responses also set anti-framing, no-sniff, no-referrer, and permissions/cross-origin isolation headers; HSTS is applied on HTTPS requests.
-- **Residual:** the HTML policy still permits inline styles. Keep React-rendered text escaped, avoid `dangerouslySetInnerHTML`, and review any future rich-text/third-party widget before relaxing CSP.
+## Remaining risks
 
-### Request flooding and service exhaustion
+The following work has not been completed or formally approved:
 
-- Public availability is limited to 180 requests/15 minutes/IP; booking creation to 10/15 minutes/IP; customer management to 20/15 minutes/IP.
-- Login and bootstrap have their own limits. IP buckets are HMAC-derived using SESSION_SECRET rather than storing raw IP addresses.
-- Rate limiting fails closed if the secret or Cloudflare client IP is unavailable.
-- **Residual:** per-IP limits do not stop distributed traffic and shared networks can affect legitimate users. Add Cloudflare WAF/bot controls and monitor abuse before public launch if traffic requires them.
+| Area | Current position |
+|---|---|
+| Independent penetration test | Not performed |
+| Production backup restore and rollback exercise | Not recorded |
+| Booking-data retention periods | Awaiting the salon owner's decision |
+| Privacy contact and applicable legal notice | Require owner review |
+| Google account recovery and access review | Managed outside this repository |
+| Physical-device and screen-reader certification | Not claimed; automated browser checks are narrower |
 
-### Data loss, leakage and operator mistakes
+The public Apps Script endpoint is necessary for anonymous booking, but it also means the backend is an important security boundary. Changes to authorization, validation, spreadsheet access or Apps Script scopes deserve careful review.
 
-- D1 export/restore smoke coverage runs against an isolated local database with synthetic data. It does not verify production backups or restoration.
-- Migration 0008 cascades the idempotency ledger when a booking is erased. Other PII retention periods are not yet owner-approved.
-- Backup exports contain customer data and must be access-controlled, encrypted and deleted under the approved retention policy.
-- **Residual:** D1 production provisioning, production backup/restore, retention periods, privacy contact, incident response and Cloudflare account permissions remain unverified.
+## Verification
 
-## Risk register and release gates
+The repository includes unit tests, Apps Script contract tests, local migration checks and browser tests for the customer and owner flows. GitHub Actions runs linting, builds, migration checks, responsive browser checks and automated accessibility scans.
 
-| Risk | Current status | Required before real bookings |
-|---|---|---|
-| Owner credential theft | Mitigated in application; MFA absent | Owner and Cloudflare account MFA; unique credentials; confirm secure bootstrap and remove token |
-| Public spam / distributed abuse | Partially mitigated | Review Cloudflare WAF/bot controls and monitor rate-limit behavior |
-| Exposure of customer PII | Application access is scoped; retention undefined | Approve retention, privacy contact, D1 access list, backup storage and deletion process |
-| D1 corruption or destructive migration | Local smoke test only | Verified production export and restore exercise; forward-compatible migration plan |
-| Session/token compromise | High-entropy tokens and server-side revocation | Operational incident/rotation playbook; no secret values in logs/support channels |
-| Browser/accessibility defects | Chromium tests pass | Physical-device and real screen-reader acceptance |
-| Production misconfiguration | Production not provisioned | Verify Worker routes, D1 binding, secrets, TLS/security headers, logs and smoke tests |
+These tests are useful regression checks. They do not replace a production security assessment, a review of Google account permissions or a verified backup-restore exercise.
 
-## Evidence and verification
-
-- Unit tests, SQLite migration/privacy tests, local Wrangler Worker+D1 HTTP integration, and autonomous Chromium tests passed in [CI run 41647018808](https://github.com/pooya-labs/salon-booking/actions/runs/41647018808).
-- The CI integration test asserts the HTML CSP does not allow arbitrary `https:` resources or `unsafe-eval`, and the Pages browser test verifies no third-party/API requests from the static demo.
-- Browser QA covers viewport emulation and keyboard/focus behavior; it is not an assistive-technology certification or penetration test.
-- No production endpoints, customer records, Cloudflare secrets or remote D1 resources were accessed by this review.
-
-## Decision
-
-The code-level controls and automated checks are materially stronger, but this document does not authorize launch. Keep R06 at **in progress** until the production account/configuration review, owner privacy decisions, independent/targeted security checks and operational recovery evidence are complete.
+For operational data handling, see docs/PRIVACY-OPERATIONS.md. For the active runtime and its API, see docs/API.md.

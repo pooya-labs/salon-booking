@@ -1,107 +1,126 @@
-# API reference — Google Apps Script
+# API reference
 
-The active API lives in `relay/Code.gs`. GitHub Pages serves the React frontend; its hidden Apps Script iframe forwards same-origin `/api/*` calls through `google.script.run`. Apps Script executes as the deploying owner and stores application records in a private Google Spreadsheet.
+The active API is implemented in relay/Code.gs. The React frontend is served by GitHub Pages and forwards requests through the hidden Apps Script iframe bridge in relay/Bridge.html.
 
-The Apps Script V8 runtime is not a browser or Node.js environment. It does not provide browser APIs such as `URL`, `URLSearchParams`, `fetch` or `crypto.subtle`; this backend uses a small query parser and native Apps Script services instead. See [V8 runtime limitations](https://developers.google.com/apps-script/guides/v8-runtime).
+Apps Script runs in Google's V8 runtime, not in a browser or Node.js. Backend code must use Apps Script services rather than relying on browser APIs or Node built-ins.
 
-## Spreadsheet tables
+## Data storage
 
-`setupSalonDatabase()` creates a private spreadsheet with these tabs:
+setupSalonDatabase() creates or updates the private spreadsheet used by the application. Its main tabs are:
 
-- `Settings`: salon timezone, booking horizon, minimum notice, interval and buffer.
-- `Services`: service catalog, category/type, description, price, duration and activation state.
-- `WeeklyHours`: up to eight non-overlapping opening intervals per weekday.
-- `Exceptions`: date-specific closures and alternate hours.
-- `Bookings`: customer details, source (`online` or `phone`), booking state, UTC instants, service snapshots and one-way credential hashes.
-- `PushSubscriptions`: active manager browser/PWA push tokens and device labels.
-- `AdminUsers`: owner identity and salted password hash.
-- `AdminSessions`: hashed browser session identifiers and expiry.
-- `AuditLog`: owner-attributed changes and booking events.
+| Sheet | Purpose |
+|---|---|
+| Settings | Timezone, booking window, notice, slot interval and buffer |
+| Services | Service names, categories, prices, durations and visibility |
+| WeeklyHours | Opening intervals for each weekday |
+| Exceptions | Date-specific closures and alternate hours |
+| Bookings | Customer details, appointment data and booking status |
+| PushSubscriptions | Registered manager browser/PWA devices |
+| AdminUsers | Owner account information |
+| AdminSessions | Hashed owner session identifiers and expiry |
+| AuditLog | Owner actions and booking events |
+| TimeBlocks | Periods reserved manually by the owner |
 
-The timezone starts as `unset`; public availability and booking stay disabled until the owner saves the salon's actual IANA timezone and working hours. For a salon in Iran, choose `Asia/Tehran`.
+The timezone starts unset on a new installation. Public availability and booking should remain unavailable until the owner saves the salon's real timezone and schedule. For Shayan Barber Studio, the configured timezone is Asia/Tehran.
+
+## Date and time format
+
+- API dates use Gregorian YYYY-MM-DD.
+- Times use the salon's local 24-hour HH:mm format.
+- The website displays dates in the Jalali calendar.
+- Availability and booking calculations use the salon timezone, not the visitor's device timezone.
 
 ## Public endpoints
 
-### `GET /api/health`
+### GET /api/health
 
-Returns the API service name and version.
+Returns the service name and backend version.
 
-### `GET /api/public/config`
+### GET /api/public/config
 
-Returns non-sensitive scheduling settings and whether the schedule is configured.
+Returns public scheduling settings and whether the salon's schedule has been configured.
 
-### `GET /api/public/services`
+### GET /api/public/services
 
-Returns active services only. An empty service list is valid until the owner configures the real catalog.
+Returns active services that are visible to customers.
 
-### `GET /api/public/availability?date=YYYY-MM-DD&serviceId=...`
+### GET /api/public/availability?date=YYYY-MM-DD&serviceId=...
 
-The date is Gregorian; the frontend may display the Jalali equivalent. Slots are calculated from service duration, weekly/date-specific intervals, timezone, booking notice, booking horizon, buffer and existing pending/confirmed bookings. Returned times are salon-local `HH:mm`.
+Returns available start times for the selected service and date. Availability is calculated from service duration, weekly hours, date exceptions, timezone, booking notice, booking horizon, buffer and existing active bookings.
 
-### `POST /api/public/bookings`
+### POST /api/public/bookings
 
-JSON body:
+Creates an appointment. Example body:
 
-```json
-{
-  "serviceId": "service-id",
-  "date": "2026-11-04",
-  "time": "09:00",
-  "name": "Client Name",
-  "phone": "+989123456789",
-  "note": ""
-}
-```
+    {
+      "serviceId": "service-id",
+      "date": "2026-11-04",
+      "time": "09:00",
+      "name": "Client Name",
+      "phone": "+989123456789",
+      "note": ""
+    }
 
-Requires `Idempotency-Key` with 64 hexadecimal characters. Reuse the same key only for a retry of the exact same attempt. A success returns a booking reference and a one-time 64-character customer management token. Sheets stores only the token hash and idempotency/request hashes.
+The request must include an Idempotency-Key header containing 64 hexadecimal characters. Reuse the key only when retrying the same booking attempt.
 
-The availability recheck and booking write run under `LockService.getScriptLock()` so simultaneous customers cannot reserve overlapping time. A booking is committed before its notification email is attempted; email failure does not undo the reservation.
+A successful response includes a booking reference and a one-time customer management token. The backend stores hashes for the management token and idempotency data; the customer must keep the token to look up or cancel the appointment later.
 
-### `POST /api/public/bookings/lookup`
+Availability is checked again during submission. The final check and write run under the Apps Script script lock so two customers cannot claim overlapping time slots. A notification failure does not undo a booking that has already been saved.
 
-Body: `{ "reference": "SB-ABCDEFG", "managementToken": "64-character-token" }`. Returns service, local date/time, duration and status; it never returns the customer's contact details.
+### POST /api/public/bookings/lookup
 
-### `POST /api/public/bookings/cancel`
+Body:
 
-Uses the same body and proof of possession. A pending or confirmed future booking can be cancelled. A repeated cancellation returns its already-cancelled state.
+    {
+      "reference": "SB-ABCDEFG",
+      "managementToken": "one-time-token"
+    }
+
+Returns the appointment's service, local date and time, duration and status. It does not return the customer's contact details.
+
+### POST /api/public/bookings/cancel
+
+Uses the same reference and management token. A future pending or confirmed appointment can be cancelled. Repeating a successful cancellation returns the cancelled state.
 
 ## Owner endpoints
 
-All routes below require a live owner session except `GET /api/admin/setup-status` and first-owner bootstrap.
+All owner routes require a valid owner session, except the setup-status check and the one-time first-owner bootstrap.
 
-- `GET /api/admin/setup-status`
-- `POST /api/admin/bootstrap` — requires `x-admin-bootstrap-token`, username and password.
-- `POST /api/admin/login`
-- `POST /api/admin/logout`
-- `GET /api/admin/me`
-- `GET /api/admin/bookings?from=YYYY-MM-DD&to=YYYY-MM-DD&status=all`
-- `GET /api/admin/day-schedule?date=YYYY-MM-DD` — returns opening intervals, non-cancelled customer appointments and manager time blocks for a day without exposing customer name or phone.
-- `POST /api/admin/time-blocks` — blocks a time without creating a customer booking. Body: `{ "date": "YYYY-MM-DD", "time": "HH:mm", "durationMinutes": 60 }`. The server verifies working hours and conflicts under the shared script lock.
-- `DELETE /api/admin/time-blocks/{block-uuid}` — lifts a manager-created time block.
-- `GET /api/admin/availability?date=YYYY-MM-DD&serviceId=...` — owner-only service availability; skips only public minimum notice and respects manager blocks.
-- `GET /api/admin/notifications` / `PUT /api/admin/notifications` — read/update Firebase project ID and email-notification preference.
-- `POST /api/admin/push-subscriptions` / `DELETE /api/admin/push-subscriptions` — add/deactivate the signed-in owner's browser push token.
-- `POST /api/admin/notifications/test` — send a test push to registered manager devices.
-- `PATCH /api/admin/bookings/{booking-uuid}/status` — `confirmed`, `cancelled`, `completed` or `no_show`.
-- `GET /api/admin/services`
-- `POST /api/admin/services`
-- `PATCH /api/admin/services/{service-uuid}`
-- `GET /api/admin/schedule`
-- `PUT /api/admin/settings`
-- `PUT /api/admin/schedule/weekly/{weekday}` — Sunday=0 through Saturday=6.
-- `POST /api/admin/schedule/exceptions`
-- `DELETE /api/admin/schedule/exceptions/{exception-uuid}`
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | /api/admin/setup-status | Check first-time setup state |
+| POST | /api/admin/bootstrap | Create the first owner account |
+| POST | /api/admin/login | Sign in |
+| POST | /api/admin/logout | Revoke the current session |
+| GET | /api/admin/me | Check the current session |
+| GET | /api/admin/bookings | List appointments by date range and status |
+| GET | /api/admin/day-schedule | Read a day's bookings and time blocks |
+| POST | /api/admin/time-blocks | Block a period in the calendar |
+| DELETE | /api/admin/time-blocks/{id} | Remove a time block |
+| GET | /api/admin/availability | Read owner-side service availability |
+| GET / PUT | /api/admin/notifications | Read or save notification settings |
+| POST / DELETE | /api/admin/push-subscriptions | Register or remove a manager device |
+| POST | /api/admin/notifications/test | Send a test push notification |
+| PATCH | /api/admin/bookings/{id}/status | Change appointment status |
+| DELETE | /api/admin/bookings/{id} | Delete an appointment |
+| GET / POST | /api/admin/services | List or create services |
+| PATCH | /api/admin/services/{id} | Edit a service |
+| GET | /api/admin/schedule | Read schedule settings |
+| PUT | /api/admin/settings | Save general schedule settings |
+| PUT | /api/admin/schedule/weekly/{weekday} | Save weekly opening intervals |
+| POST | /api/admin/schedule/exceptions | Add a date-specific schedule change |
+| DELETE | /api/admin/schedule/exceptions/{id} | Remove a schedule exception |
 
-Service category is editable (1–40 characters). On an existing spreadsheet, rerunning `setupSalonDatabase()` appends missing columns and creates the `PushSubscriptions` and `TimeBlocks` tabs without moving or clearing existing rows.
-
-Weekly and exception schedules accept an `intervals` array of up to eight non-overlapping `{ "startsAt": "09:00", "endsAt": "13:00" }` ranges. Changes that conflict with active reservations are rejected. Booking status transitions are validated and audited.
+Weekly schedules and date exceptions support multiple non-overlapping intervals. Changes that would conflict with active bookings are rejected.
 
 ## Sessions and notifications
 
-Owner sessions have a rolling 30-day inactivity lifetime and renew automatically during use. A SHA-256 hash of the browser's random relay session identifier is persisted in `AdminSessions`; CacheService remains a six-hour acceleration layer, not the source of truth. Explicit logout revokes the current browser session immediately.
+Owner sessions have a rolling 30-day inactivity lifetime. The session identifier stored in the spreadsheet is hashed; the cache is an accelerator and is not the only record of an active session. Signing out revokes the current session.
 
-Email alerts are disabled by default and can be enabled or disabled in the owner panel. Push alerts use Firebase Cloud Messaging and can reach a registered Android browser/PWA while it is in the background. The owner must configure the Firebase project, enable the Firebase Cloud Messaging API, associate the Apps Script standard Google Cloud project with the Firebase project, and provide the public Firebase web config/VAPID key as GitHub Actions repository variables. Apps Script uses `ScriptApp.getOAuthToken()` and `UrlFetchApp` with the declared Firebase Messaging and external-request scopes; no Firebase private service-account key is stored in the repository. See [FCM web setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [receiving web messages](https://firebase.google.com/docs/cloud-messaging/web/receive-messages) and [Apps Script external APIs](https://developers.google.com/apps-script/guides/services/external).
+Push notifications use Firebase Cloud Messaging. The Firebase web app, VAPID public key, matching Google Cloud project and required Apps Script permissions must be configured before a manager device can receive alerts. Email notifications are separate, optional and disabled by default.
 
-## Legacy Cloudflare data
+For setup steps, see GITHUB-PAGES-RELAY.md. For the owner-facing workflows, see ADMIN.md.
 
-The former Worker source, Wrangler files and D1 SQL migrations remain only as historical recovery material. They are not called by the active GitHub Pages + Apps Script flow. No D1 data is automatically copied into Sheets; retain the old Cloudflare database until the owner confirms the new deployment and any required export/import.
+## Legacy Cloudflare files
+
+The Worker source, Wrangler configuration and D1 migrations are kept for historical reference and recovery only. They are not part of the active API. No D1 records are copied into Google Sheets automatically. Keep any old Cloudflare data until the owner has confirmed that it is no longer needed.

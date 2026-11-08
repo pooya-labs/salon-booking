@@ -1,110 +1,123 @@
-# Salon Booking — Version 1.0.0
+# Salon Booking — Release 1.0.0
 
-This is the release record for the first production version. Active architecture: **GitHub Pages + Google Apps Script + private Google Sheets + Firebase Cloud Messaging**. Cloudflare Workers and D1 are legacy recovery material only.
+Version 1.0.0 is the first completed release of the booking system for Shayan Barber Studio. The salon owner reviewed the live setup and confirmed the main customer and management flows on 5 November 2026.
+
+**Release:** [v1.0.0](https://github.com/pooya-labs/salon-booking/releases/tag/v1.0.0)  
+**Release date:** 5 November 2026  
+**Default branch:** main  
+**Live site:** https://pooya-labs.github.io/salon-booking/  
+**Owner workspace:** https://pooya-labs.github.io/salon-booking/?admin=1  
+**Apps Script source version:** 1.5.3 (relay/Code.gs)  
+**Product version:** 1.0.0
 
 ## Release status
 
-**Version 1.0.0 — owner accepted**
+**Released**
 
-- Release date: 2026-11-05
-- Default branch: main
-- Public site: https://pooya-labs.github.io/salon-booking/
-- Apps Script source backend version: 1.5.3 (relay/Code.gs)
-- Product/package version: 1.0.0
-- Owner acceptance: owner confirmed the operational setup and end-to-end checks are correct.
-- Release main head: 56ff5cde573eccb3febd7efe2de270f9ded2b7e5.
+The first release is complete and in use. The project is in maintenance mode; there is no active feature roadmap for the 1.0 line. Work should be limited to verified defects, security fixes and compatibility updates.
 
-## Version 1.0.0 scope and completion
+## What shipped
 
-### R1 — Brand and public experience
+### Customer website
+- [x] Shayan Barber Studio identity and owner-provided brand assets.
+- [x] Responsive Persian RTL layout for desktop and mobile.
+- [x] Service catalogue with descriptions, prices and durations.
+- [x] Jalali date display with the salon timezone set to Asia/Tehran.
+- [x] Availability based on working hours, breaks, existing bookings and schedule exceptions.
+- [x] Booking review, customer details and a confirmation reference.
+- [x] Customer lookup and cancellation using a one-time management credential.
+- [x] Loading, validation, success and error states across the booking flow.
 
-- [x] Shayan Barber Studio identity, owner-supplied logo assets and obsidian / antique-gold visual system.
-- [x] Persian RTL customer experience, responsive navigation, mobile booking entry and salon information.
-- [x] Service catalogue, service details, duration and owner-managed prices.
-- [x] Jalali date presentation and salon timezone pinned to Asia/Tehran.
-- [x] Booking review, customer details, reference code and customer self-service lookup/cancellation.
-- [x] Loading, validation, success and error feedback across customer and owner flows.
-- [x] Final customer-facing content and salon details reviewed by the owner.
+### Booking and schedule
+- [x] Server-side availability calculation.
+- [x] Conflict checks when a booking is submitted, including concurrent requests.
+- [x] Safe retries for booking requests.
+- [x] Owner-managed services, duration, price and public visibility.
+- [x] Weekly opening intervals, breaks and date-specific schedule changes.
+- [x] Daily calendar for bookings, free slots and manually blocked periods.
+- [x] Time blocks for bookings made outside the website, without creating dummy customer records.
 
-### R2 — Booking and scheduling engine
+### Owner workspace
+- [x] First-owner setup, sign-in and sign-out.
+- [x] Persistent owner sessions with a rolling 30-day lifetime.
+- [x] Booking list, date navigation and status filters.
+- [x] Booking status management and deletion with confirmation.
+- [x] Service editor and schedule settings.
+- [x] Audit history for management actions.
+- [x] Notification settings and registered manager devices.
 
-- [x] Live availability calculated by Apps Script from active services, working hours, exceptions, reservations and manager time blocks.
-- [x] Reservation creation with conflict protection, locking and safe retry behavior.
-- [x] Customer booking lookup and cancellation using a one-time management credential.
-- [x] Owner-configurable service catalogue, duration, prices, weekly hours, breaks and date-specific exceptions.
-- [x] Visual daily calendar showing bookings, available periods and manager-created blocked intervals.
-- [x] Manager time blocking without creating fake customer records or collecting unnecessary customer details.
-- [x] Iran timezone and 24-hour time presentation.
+### Notifications and operations
+- [x] Firebase Cloud Messaging for registered manager browsers and PWAs.
+- [x] Optional email alerts, disabled by default.
+- [x] Private Google Sheets storage under the deploying owner's account.
+- [x] Deployment and owner-operation guides.
+- [x] Privacy, data-retention and security notes.
 
-### R3 — Owner workspace and notifications
+## Production architecture
 
-- [x] Owner bootstrap, sign-in, sign-out and persistent rolling 30-day sessions.
-- [x] Responsive owner dashboard, appointment list and daily calendar.
-- [x] Owner appointment deletion with confirmation and audit history.
-- [x] Firebase project, web push configuration and manager-device registration.
-- [x] Owner-confirmed manager push notifications.
-- [x] Optional email notifications remain off by default and can be enabled separately.
+The live version uses:
 
-### R4 — Privacy, security and operations
+- **GitHub Pages** for the public website and owner workspace.
+- **Google Apps Script** for the API and booking logic.
+- **Google Sheets** for the private application database.
+- **Firebase Cloud Messaging** for manager push notifications.
+- **MailApp** only when the owner turns on email alerts.
 
-- [x] Private Google Sheets database and owner-only management routes.
-- [x] Owner authorization checks and session revocation.
-- [x] Input validation, conflict checks, audit events and operational error handling.
-- [x] Privacy and data-retention procedures documented.
-- [x] No customer records or secrets included in automated test fixtures.
-- [x] OAuth test-user access and active Apps Script Web App access verified by the owner.
-- [x] Production deployment uses the existing Apps Script /exec endpoint and private spreadsheet.
+The frontend reaches Apps Script through a hidden iframe bridge. Apps Script runs as the deploying owner and accesses the spreadsheet owned by that account.
 
-### R5 — Quality and release acceptance
+Cloudflare Workers and D1 are not part of the live request path. Their source and migration files remain in the repository as legacy recovery material. The project does not copy D1 data into Sheets automatically.
 
-- [x] Linux CI: lint, unit tests, SQLite migration regressions, TypeScript/build, public browser QA and owner-dashboard browser QA.
-- [x] Windows CI: desktop browser QA and Android-touch responsive simulation for public and owner flows.
-- [x] Responsive viewport coverage, RTL, Persian digits, Jalali date behavior, keyboard navigation and automated accessibility checks.
-- [x] Latest CI passed on the pre-release main head: [run 42086718663](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627).
-- [x] GitHub Pages deployment succeeded: [run 42086718821](https://github.com/pooya-labs/salon-booking/actions/runs/42085423471).
-- [x] Pages workflow live Apps Script relay smoke passed without writing customer or booking data.
-- [x] Owner confirmed the remaining real-world configuration and acceptance checks are correct.
-- [x] Owner acceptance for Version 1.0.0 recorded in this release.
+## Release checks
 
-## Verification evidence
+The release was built and verified through GitHub Actions:
 
-| Check | Result | Evidence |
+| Check | Result | Run |
 |---|---|---|
-| Linux CI | Passed | [42085423627](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627) |
-| Windows desktop + Android-touch browser QA | Passed | [42085423627](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627) |
-| GitHub Pages build and deployment | Passed | [42085423471](https://github.com/pooya-labs/salon-booking/actions/runs/42085423471) |
-| Live Apps Script relay smoke (read-only) | Passed | [42085423471](https://github.com/pooya-labs/salon-booking/actions/runs/42085423471) |
-| Owner operational and end-to-end acceptance | Owner-confirmed | 2026-11-05 |
+| Linux CI: lint, unit tests, migrations, build and browser checks | Passed | [42086718663](https://github.com/pooya-labs/salon-booking/actions/runs/42086718663) |
+| Windows browser and responsive checks | Passed | [42086718663](https://github.com/pooya-labs/salon-booking/actions/runs/42086718663) |
+| GitHub Pages deployment | Passed | [42086718821](https://github.com/pooya-labs/salon-booking/actions/runs/42086718821) |
+| Read-only Apps Script relay smoke check | Passed | [42086718821](https://github.com/pooya-labs/salon-booking/actions/runs/42086718821) |
+| Owner's operational acceptance | Confirmed | 5 November 2026 |
 
-The live relay smoke is deliberately read-only. It verifies that the published site reaches the configured Apps Script bridge and backend without creating bookings or changing customer data. Real booking and notification acceptance is recorded separately as owner-confirmed, not misrepresented as an automated CI test.
+The read-only relay check verifies that the published site can reach the configured Apps Script bridge and read the expected public configuration. It does not create bookings or change customer records.
 
-## Explicitly outside Version 1.0.0
+The latest Pages run on the current main line also completed its build, deployment and read-only relay check successfully: [run 42395770865](https://github.com/pooya-labs/salon-booking/actions/runs/42395770865).
 
-These are optional future enhancements, not launch blockers:
+Automated mobile coverage uses browser viewport and touch-context simulation. It is not a certification on every physical phone. The salon owner separately checked the live customer and management flows.
 
-- SMS reminders or paid messaging-provider integrations.
+## Not part of version 1.0.0
+
+These ideas can be considered later, but they were not needed to deliver the first release:
+
+- SMS reminders or paid messaging services.
 - WhatsApp automation beyond ordinary user-initiated links.
-- Multiple staff members, chairs or branches.
-- Advanced analytics and additional languages.
-- Optional PWA refinements.
-- Independent third-party penetration test.
-- Periodic production backup-restore and rollback drills.
+- Multiple barbers, chairs or branches.
+- Business analytics and additional languages.
+- Further PWA improvements.
+- An independent security assessment.
+- A scheduled production backup-restore and rollback exercise.
 
-No claim is made that an independent penetration test or a destructive production restore drill has been performed. These remain sensible operational follow-ups.
+No independent penetration test or destructive production restore drill is claimed as completed.
 
-## Architecture and release policy
+## Maintenance policy
 
-- GitHub Pages hosts the public customer site and owner workspace.
-- A nested Apps Script iframe bridges browser API requests to the owner's Google Apps Script Web App.
-- Apps Script contains the API and persists records in the owner's private Google Spreadsheet.
-- Firebase Cloud Messaging delivers manager push notifications to registered devices.
-- Email notifications are optional and disabled by default.
-- Cloudflare Worker/D1 files remain historical recovery material only. Do not re-enable them as part of routine operation.
+Keep the existing Pages site, Apps Script deployment, private spreadsheet, Firebase project and web app address in place.
 
-## Post-release maintenance
+A maintenance change should:
+1. Start from a reproducible issue or a clearly identified security/compatibility need.
+2. Avoid changing the live data model or deployment settings unless required.
+3. Pass the relevant automated checks.
+4. Update the related guide and this release record.
+5. Be published only after the Pages workflow and the read-only relay check succeed.
 
-Version 1.0.0 is complete and the project is in maintenance mode. No feature roadmap is active. Only verified bug fixes, security updates and essential compatibility changes should be considered. Any such change must update this file and docs/PROJECT-STATE.md, pass the relevant checks and be released as a patch version. Do not reopen completed Version 1.0.0 work without a reproducible issue.
+Do not re-enable the old Worker/D1 path during routine maintenance.
 
-## Handoff protocol
+## Handoff
 
-For every future release, record the current commit, files changed, tests actually run, deployment result, known limitations and any owner action. Never infer a successful production action from source code alone.
+For the next person working on the repository:
+
+- Read README.md for the project overview and local commands.
+- Read docs/PROJECT-STATE.md before changing deployment or production configuration.
+- Read docs/ADMIN.md for owner operations.
+- Read docs/GITHUB-PAGES-RELAY.md before touching Apps Script.
+- Keep customer records, bootstrap tokens, private spreadsheet exports and service credentials out of GitHub.

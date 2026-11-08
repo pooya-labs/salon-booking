@@ -1,78 +1,74 @@
-# Project State — Version 1.0.0 released
+# Project state
 
-## Current status
+## At a glance
 
 - **Product:** Shayan Barber Booking
-- **Release:** 1.0.0
-- **Release date:** 2026-11-05
-- **Repository:** https://github.com/pooya-labs/salon-booking
+- **Version:** 1.0.0
+- **Release:** [v1.0.0](https://github.com/pooya-labs/salon-booking/releases/tag/v1.0.0)
+- **Release date:** 5 November 2026
+- **Repository:** [pooya-labs/salon-booking](https://github.com/pooya-labs/salon-booking)
 - **Default branch:** main
-- **Live site:** https://pooya-labs.github.io/salon-booking/
+- **Website:** https://pooya-labs.github.io/salon-booking/
 - **Owner panel:** https://pooya-labs.github.io/salon-booking/?admin=1
-- **Product owner:** salon owner
-- **Engineering / creator:** Pooya
-- **Owner acceptance:** confirmed by the owner on 2026-11-05.
+- **Project creator:** Pooya Goodarzi
+- **Product owner:** Shayan Barber Studio
 
-Version 1.0.0 is complete and owner-accepted. The project is in maintenance mode; no feature work is planned. Reopen implementation only for a reproducible defect, a security update or an essential compatibility fix.
+The salon owner accepted the live booking and management setup on 5 November 2026. Version 1.0.0 is released and the project is in maintenance mode.
 
-## Active production architecture
+## Live architecture
 
-1. GitHub Pages hosts the public customer experience and manager panel.
-2. A nested Apps Script iframe bridges frontend API requests to the owner's Google Apps Script Web App.
-3. Apps Script contains the backend logic and stores data in the owner's private Google Spreadsheet.
-4. Firebase Cloud Messaging sends push notifications to the registered manager device.
-5. Optional email notifications are disabled by default.
+The production request path is:
 
-Cloudflare Workers and D1 are legacy recovery material only. They are not in the active request path and must not be redeployed as part of normal operation.
+1. GitHub Pages serves the customer website and owner workspace.
+2. A hidden iframe passes API requests to the salon's Google Apps Script Web App.
+3. Apps Script runs the backend and reads or writes the owner's private Google Spreadsheet.
+4. Firebase Cloud Messaging sends push notifications to registered manager devices.
+5. Email notifications are optional and remain off by default.
 
-## Version identifiers
+Cloudflare Workers and D1 are not used by this version. Their files remain in the repository as legacy recovery material. There is no automatic data transfer between D1 and Google Sheets.
 
-- Product/package version: 1.0.0.
-- Apps Script source backend version: 1.5.3 in relay/Code.gs.
-- The Apps Script deployment's numeric deployment version is a separate Google-managed identifier; preserve the owner's active deployment and existing /exec URL.
+## Version numbers
 
-## Latest automated verification
+- Product and npm package: 1.0.0.
+- Apps Script source: 1.5.3 in relay/Code.gs.
+- The Google Apps Script deployment number is managed separately by Google. Keep the existing Web App deployment and its address ending in /exec when updating the backend.
 
-Release main head: 56ff5cde573eccb3febd7efe2de270f9ded2b7e5.
+## Current deployment evidence
 
-- CI run [42085423627](https://github.com/pooya-labs/salon-booking/actions/runs/42085423627): passed.
-  - Linux build job: lint, unit tests, SQLite migration/conflict checks, TypeScript/build, responsive/RTL/keyboard/browser QA and owner-dashboard browser QA.
-  - Windows visual job: desktop browser QA, Android-touch responsive simulation and owner-dashboard desktop/mobile QA.
-- Pages run [42085423471](https://github.com/pooya-labs/salon-booking/actions/runs/42085423471): passed.
-  - Production Pages build and deployment succeeded.
-  - The live Apps Script relay smoke test completed successfully.
-  - The smoke test is read-only and does not create customer or booking records.
-- Owner confirmed the real operational setup and end-to-end checks are correct, including the owner workspace and manager notification delivery.
+- The latest main-branch Pages workflow completed the build and deployment successfully, then passed its read-only Apps Script relay check: [run 42395770865](https://github.com/pooya-labs/salon-booking/actions/runs/42395770865).
+- The original v1.0.0 CI run passed on both Linux and Windows: [run 42086718663](https://github.com/pooya-labs/salon-booking/actions/runs/42086718663).
+- The original release Pages deployment also passed: [run 42086718821](https://github.com/pooya-labs/salon-booking/actions/runs/42086718821).
 
-Automated browser Android coverage is a touch/device-context simulation, not a claim of physical-device certification. The owner has separately confirmed the practical acceptance checks.
+The relay check does not submit bookings or modify customer data. Owner confirmation covers the real-world operational checks and notification delivery.
 
-## Delivered product capabilities
+## Delivered features
 
-- Shayan branding and responsive Persian RTL website.
-- Owner-managed services, prices and durations.
-- Jalali calendar, Asia/Tehran timezone and 24-hour schedule controls.
-- Live server-calculated availability and conflict-safe bookings.
-- Customer booking lookup and cancellation.
-- Owner authentication with rolling persistent sessions.
-- Daily visual calendar, weekly hours, breaks, exceptions and manager time blocks.
-- Owner booking management and audit history.
-- Firebase manager push notifications; optional email is off by default.
-- Privacy, deployment and owner-operation documentation.
+- Persian RTL booking website with responsive layouts.
+- Service catalogue and owner-managed prices and durations.
+- Jalali date presentation and Tehran timezone.
+- Live availability and conflict-safe booking creation.
+- Customer appointment lookup and cancellation.
+- Owner sign-in with persistent sessions.
+- Booking list, status management and daily visual calendar.
+- Weekly hours, breaks, closures, exceptions and manual time blocks.
+- Firebase manager push notifications and optional email alerts.
+- Deployment, API, privacy and owner-operation documentation.
 
-## Known non-blocking follow-ups
+## Known limitations and follow-up work
 
-These do not block Version 1.0.0 and are intentionally deferred:
+These do not block the current release:
 
-- Independent third-party penetration test.
-- A scheduled production backup-restore and rollback drill.
-- Optional SMS, richer PWA, multi-staff and analytics capabilities.
+- No independent third-party penetration test has been completed.
+- A production backup-restore and rollback drill has not been recorded.
+- Booking-data retention periods and a privacy contact still need the salon owner's formal decision.
+- SMS, multi-staff scheduling and advanced analytics are outside the current scope.
+- Automated Android checks are browser simulations rather than physical-device certification.
 
-No independent penetration test or destructive production restore drill is claimed as completed.
+## Before changing production
 
-## Release handoff
-
-- Read ROADMAP.md for the release scope and verification evidence.
-- Read README.md for architecture, setup and operator links.
-- Preserve the current Apps Script project, private spreadsheet, Firebase project and /exec URL.
-- Do not use demo mode for real customer information.
-- Any future maintenance change must be narrowly scoped, pass the relevant tests and update the release record before publication.
+- Keep the current Apps Script project and private spreadsheet.
+- Preserve the existing /exec address when publishing a new Apps Script version.
+- Do not put the one-time bootstrap token, session data or spreadsheet exports in the repository.
+- Do not use local demo mode for real customer bookings.
+- Check the relevant workflow runs after a code change.
+- Update this file and ROADMAP.md when the release or deployment state changes.
