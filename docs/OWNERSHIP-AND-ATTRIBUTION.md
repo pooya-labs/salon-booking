@@ -10,7 +10,7 @@ The Pooya Monogram is the official owner mark. It is displayed as a centered mar
 
 [Pooya Labs Platform](https://pooya-labs.github.io/pooya-labs-platform/)
 
-This attribution does not add, change, or grant an open-source license. The repository's existing license status remains unchanged. Third-party libraries, fonts, images, datasets, trademarks, and other assets remain subject to their respective owners' rights and licenses.
+**Use permission:** Pooya Goodarzi grants everyone a non-exclusive, worldwide permission to use, copy, modify, and redistribute this project's original code and documentation, including for commercial purposes. Ownership of the original work remains with Pooya Goodarzi. This permission does not cover third-party materials, which remain subject to their owners' terms. Third-party libraries, fonts, images, datasets, trademarks, and other assets remain subject to their respective owners' rights and licenses.
 
 ## فارسی
 
@@ -20,4 +20,4 @@ This attribution does not add, change, or grant an open-source license. The repo
 
 مونوگرام پویا نشان رسمی مالکیت است و برای خوانایی، در قاب مربعی مشکی با گوشه‌های گرد و در مرکز قرار می‌گیرد. با کلیک روی نشان، وب‌سایت رسمی پلتفرم باز می‌شود.
 
-این توضیح به‌تنهایی مجوز متن‌باز ایجاد یا اعطا نمی‌کند و وضعیت مجوز فعلی مخزن را تغییر نمی‌دهد. کتابخانه‌ها، فونت‌ها، تصاویر، داده‌ها، علائم تجاری و سایر دارایی‌های اشخاص ثالث تابع حقوق و مجوز صاحبان مربوطه هستند.
+**اجازهٔ استفاده:** پویا گودرزی به همه اجازه‌ای غیرانحصاری و جهانی برای استفاده، کپی، تغییر و بازنشر کدها و مستندات اصیل این پروژه، از جمله برای مقاصد تجاری، می‌دهد. مالکیت آثار اصیل همچنان متعلق به پویا گودرزی است. این اجازه شامل دارایی‌های اشخاص ثالث نمی‌شود و آن‌ها تابع شرایط صاحبان خود هستند. کتابخانه‌ها، فونت‌ها، تصاویر، داده‌ها، علائم تجاری و سایر دارایی‌های اشخاص ثالث تابع حقوق و مجوز صاحبان مربوطه هستند.
