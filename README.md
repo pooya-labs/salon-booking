@@ -96,7 +96,7 @@ The owner attribution was refined: the Pooya Labs Platform monogram is now vendo
 
 <p align="center"><a href="https://pooya-labs.github.io/pooya-labs-platform/" aria-label="Pooya Labs Platform — official portfolio"><img src="https://raw.githubusercontent.com/pooya-labs/pooya-labs-platform/main/apps/platform/public/brand/pooya-monogram-tile.svg" alt="Pooya Monogram on a black rounded-square tile" width="96" /></a></p>
 
-**Personal owner and creator: Pooya Goodarzi.** [Pooya Labs Platform](https://pooya-labs.github.io/pooya-labs-platform/) is the official portfolio and project gateway, not a separate legal owner. Third-party assets remain subject to their respective licenses and rights. This attribution does not grant an open-source license.
+**Personal owner and creator: Pooya Goodarzi.** [Pooya Labs Platform](https://pooya-labs.github.io/pooya-labs-platform/) is the official portfolio and project gateway, not a separate legal owner. Third-party assets remain subject to their respective licenses and rights. **Use permission:** Pooya Goodarzi grants everyone a non-exclusive, worldwide permission to use, copy, modify, and redistribute this project's original code and documentation, including for commercial purposes. Ownership of the original work remains with Pooya Goodarzi. This permission does not cover third-party materials, which remain subject to their owners' terms.
 
 
 ## راهنمای فارسی
@@ -164,4 +164,4 @@ The owner attribution was refined: the Pooya Labs Platform monogram is now vendo
 
 <p align="center"><a href="https://pooya-labs.github.io/pooya-labs-platform/" aria-label="درگاه رسمی پلتفرم پویا لبز"><img src="https://raw.githubusercontent.com/pooya-labs/pooya-labs-platform/main/apps/platform/public/brand/pooya-monogram-tile.svg" alt="مونوگرام پویا در قاب مربعی مشکی با گوشه‌های گرد" width="96" /></a></p>
 
-**مالک شخصی و پدیدآورنده: پویا گودرزی.** [پلتفرم پویا لبز](https://pooya-labs.github.io/pooya-labs-platform/) درگاه رسمی معرفی پورتفولیو و پروژه‌هاست و مالک حقوقی جداگانه‌ای نیست. دارایی‌های اشخاص ثالث تابع مجوز و حقوق صاحبان آن‌ها هستند. این انتساب به‌تنهایی مجوز متن‌باز اعطا نمی‌کند.
+**مالک شخصی و پدیدآورنده: پویا گودرزی.** [پلتفرم پویا لبز](https://pooya-labs.github.io/pooya-labs-platform/) درگاه رسمی معرفی پورتفولیو و پروژه‌هاست و مالک حقوقی جداگانه‌ای نیست. دارایی‌های اشخاص ثالث تابع مجوز و حقوق صاحبان آن‌ها هستند. **اجازهٔ استفاده:** پویا گودرزی به همه اجازه‌ای غیرانحصاری و جهانی برای استفاده، کپی، تغییر و بازنشر کدها و مستندات اصیل این پروژه، از جمله برای مقاصد تجاری، می‌دهد. مالکیت آثار اصیل همچنان متعلق به پویا گودرزی است. این اجازه شامل دارایی‌های اشخاص ثالث نمی‌شود و آن‌ها تابع شرایط صاحبان خود هستند.
