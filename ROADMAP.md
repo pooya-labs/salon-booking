@@ -101,7 +101,7 @@ No independent penetration test or destructive production restore drill is claim
 
 ## Native Android manager — version 1.1.0
 
-The native Android manager implementation is feature-complete on the feature branch. It is a companion owner app; the customer booking website, Apps Script deployment, Google Sheets database and Firebase project remain the existing production services.
+The native Android manager implementation is feature-complete on the feature branch; the additional UX redesign is tracked separately in draft PR [#7](https://github.com/pooya-labs/salon-booking/pull/7). It is a companion owner app; the customer booking website, Apps Script deployment, Google Sheets database and Firebase project remain the existing production services.
 
 ### Implemented
 - [x] Kotlin and Jetpack Compose Android app with Persian RTL interface.
@@ -126,7 +126,7 @@ The current APK is a debug build, not a production-signed release. Before declar
 - [ ] Confirm latest build launches and the updated calendar, biometric flow and notification visuals work on the manager's physical phone.
 - [ ] Configure a dedicated release keystore and passwords as GitHub Actions secrets.
 - [ ] Build and verify the signed release APK/AAB.
-- [ ] Publish a versioned GitHub Release and merge PR #6.
+- [ ] Publish a versioned GitHub Release and merge the Android UI redesign PR #7 after review and final verification.
 
 Earlier physical-device checks confirmed FCM delivery in foreground, after dismissing the app from Recents, and after reboot. The latest visual and biometric changes still need a final device smoke test. Until then, describe the Android app as implementation-complete and awaiting release acceptance, not as a stable production release.
 
