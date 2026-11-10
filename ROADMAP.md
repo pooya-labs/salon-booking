@@ -119,7 +119,7 @@ The native Android manager implementation is feature-complete on the feature bra
 - [x] Debug APK artifact uploaded as `salon-manager-android-debug` (artifact ID `13766596540`).
 
 ### Release gate
-Version v1.1.0 is published as a GitHub prerelease with the owner-tested debug-signed APK. It is complete for the current direct-install use case. A stable production-signed distribution is a separate optional future milestone:
+Version [v1.1.0](https://github.com/pooya-labs/salon-booking/releases/tag/v1.1.0) is published as a GitHub prerelease with the owner-tested debug-signed APK. [Direct APK download](https://github.com/pooya-labs/salon-booking/releases/download/v1.1.0/app-debug.apk). It is complete for the current direct-install use case. A stable production-signed distribution is a separate optional future milestone:
 - [x] Owner confirmed installation and launch of the latest APK on the target phone.
 - [x] Merge PR #6 into main.
 - [x] Publish GitHub prerelease v1.1.0 with Firebase-configured APK.
