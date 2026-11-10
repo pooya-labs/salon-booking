@@ -63,11 +63,12 @@ object JalaliDate {
     }.getOrNull()
 
     fun monthLength(year: Int, month: Int): Int = runCatching {
-        val calendar = android.icu.util.PersianCalendar(android.icu.util.TimeZone.getTimeZone("Asia/Tehran"))
+        require(month in 1..12)
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tehran"), ULocale("fa_IR@calendar=persian"))
         calendar.isLenient = false
         calendar.clear()
         calendar.set(year, month - 1, 1, 12, 0, 0)
-        calendar.getActualMaximum(android.icu.util.Calendar.DATE)
+        calendar.getActualMaximum(Calendar.DATE)
     }.getOrDefault(if (month <= 6) 31 else if (month <= 11) 30 else 29)
 
     fun format(gregorian: String): String {
