@@ -109,7 +109,7 @@ test('manual time blocks are selected with a Jalali calendar and stored as Grego
   assert.match(screens, /TimeBlockDialog[\s\S]*?تاریخ انتخاب‌شده/)
   assert.match(screens, /JalaliDate\.toGregorian\(year, month, selectedDay\)/)
   assert.match(screens, /فروردین/)
-  assert.match(read('android/app/src/main/java/com/pooyalabs/salonmanager/Models.kt'), /android\.icu\.util\.PersianCalendar/)
+  assert.match(read('android/app/src/main/java/com/pooyalabs/salonmanager/Models.kt'), /ULocale\\(\"fa_IR@calendar=persian\"\\)/)
 })
 
 test('Firebase Android configuration is injected and never committed', () => {
