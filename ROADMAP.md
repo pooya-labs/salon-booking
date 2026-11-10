@@ -109,6 +109,8 @@ The native Android manager implementation is feature-complete on the feature bra
 - [x] Adaptive status/navigation bars and theme-aware surfaces across login, dashboard, calendar, cards and dialogs.
 - [x] Animated login, floating navigation and restrained screen transitions.
 - [x] Notification delivery files verified unchanged against main during the UX redesign.
+- [x] Merge the day/night UX redesign through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8) (`619c044c0b8c473fbc02b51829746f72f15a4db4`).
+- [ ] Run the final Android verification and physical-device smoke test for both themes and notifications after the owner finishes the remaining changes.
 - [x] Premium Pooya Labs branding, launcher icon and notification large icon.
 - [x] Graphical weekly calendar, daily timeline, booking indicators and Jalali manual time-block entry.
 - [x] Existing owner workflows: bookings, manual bookings, services, weekly hours, exceptions, booking rules and notification settings.
