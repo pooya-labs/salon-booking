@@ -105,6 +105,10 @@ The native Android manager implementation is feature-complete on the feature bra
 
 ### Implemented
 - [x] Kotlin and Jetpack Compose Android app with Persian RTL interface.
+- [x] Persistent System / Light / Dark appearance modes with an engineered off-white, ink and teal light palette.
+- [x] Adaptive status/navigation bars and theme-aware surfaces across login, dashboard, calendar, cards and dialogs.
+- [x] Animated login, floating navigation and restrained screen transitions.
+- [x] Notification delivery files verified unchanged against main during the UX redesign.
 - [x] Premium Pooya Labs branding, launcher icon and notification large icon.
 - [x] Graphical weekly calendar, daily timeline, booking indicators and Jalali manual time-block entry.
 - [x] Existing owner workflows: bookings, manual bookings, services, weekly hours, exceptions, booking rules and notification settings.
