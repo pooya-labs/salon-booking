@@ -30,7 +30,7 @@ Cloudflare Workers and D1 are not used by this version. Their files remain in th
 ## Version numbers
 
 - Product and npm package: 1.0.0.
-- Apps Script source: 1.5.3 in relay/Code.gs.
+- Apps Script source in the repository: 1.5.5 in relay/Code.gs. The live Google deployment must be separately upgraded before the native app can connect.
 - The Google Apps Script deployment number is managed separately by Google. Keep the existing Web App deployment and its address ending in /exec when updating the backend.
 
 ## Current deployment evidence
@@ -54,6 +54,10 @@ The relay check does not submit bookings or modify customer data. Owner confirma
 - Firebase manager push notifications and optional email alerts.
 - Deployment, API, privacy and owner-operation documentation.
 
+## Native Android manager in progress
+
+A separate Kotlin and Jetpack Compose app is being added for the salon owner. It reuses the existing Apps Script owner API and private Google Sheets database. Native FCM registration writes its token into the existing `PushSubscriptions` sheet; high-priority Android messages are rendered by a native notification channel. No second customer database or rewrite of the booking website is planned.
+
 ## Known limitations and follow-up work
 
 These do not block the current release:
@@ -62,7 +66,7 @@ These do not block the current release:
 - A production backup-restore and rollback drill has not been recorded.
 - Booking-data retention periods and a privacy contact still need the salon owner's formal decision.
 - SMS, multi-staff scheduling and advanced analytics are outside the current scope.
-- Automated Android checks are browser simulations rather than physical-device certification.
+- The native Android manager is under development in `android/`; FCM delivery must be verified on the manager's physical device before it is considered production-ready.
 
 ## Before changing production
 
