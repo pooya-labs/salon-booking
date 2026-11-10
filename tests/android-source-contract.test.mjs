@@ -52,6 +52,11 @@ test('biometric capability probing is fail-safe during startup', () => {
   assert.match(mainActivity, /runCatching \{ credentialVault\.hasSavedCredentials\(\) \}\.getOrDefault\(false\)/)
 })
 
+test('notification permission request uses a FragmentActivity-safe 16-bit request code', () => {
+  assert.match(mainActivity, /ActivityCompat\.requestPermissions\([\s\S]*?POST_NOTIFICATIONS[\s\S]*?,\s*1001\s*\)/)
+  assert.doesNotMatch(mainActivity, /rememberLauncherForActivityResult\(ActivityResultContracts\.RequestPermission\(\)\)/)
+})
+
 test('Pooya Labs launcher mark is scaled inside the Android adaptive-icon safe zone', () => {
   const adaptiveIcon = read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml')
   const foreground = read('android/app/src/main/res/drawable/ic_launcher_foreground.xml')
