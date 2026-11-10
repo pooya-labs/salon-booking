@@ -71,4 +71,8 @@ Keep the private spreadsheet private. Do not use local demo mode for real custom
 
 
 ### High-priority appointment alerts
-The manager workspace refreshes an already-approved Firebase device token after sign-in, and the backend retries temporary Firebase delivery errors. Background alerts are rendered by the service worker with high Web Push urgency, a vibration pattern and persistent interaction. For the strongest alert behavior, allow notifications for the site in the browser and enable sound and vibration for the browser/site notification channel in Android settings. Browsers and operating systems still control the final sound, vibration and interruption level; a web app cannot force the notification to override system Do Not Disturb or guarantee the same behavior as an SMS.
+The manager workspace refreshes an already-approved Firebase device token after sign-in, retries temporary Firebase delivery errors, and activates the updated push service worker immediately. It requests high Web Push delivery urgency and vibration while leaving sound selection to Android's notification channel.
+
+**Important:** granting website permission does not automatically enable sound. On Samsung One UI 8, first enable **Settings → Notifications → Advanced settings → Manage notification categories for each app**. Then open **Settings → Notifications → App notifications → Firefox or Chrome → Notification categories**. Tap the category name (not only its switch), set it to **Alert**, enable vibration and choose a notification sound. Also check notification volume and Sound mode. The exact category name depends on the browser and Android build.
+
+The Web Notifications API cannot assign an Android notification-channel sound or force the device to play the SMS ringtone. Android/browser settings still determine the actual sound and vibration; web code cannot override Do Not Disturb.
