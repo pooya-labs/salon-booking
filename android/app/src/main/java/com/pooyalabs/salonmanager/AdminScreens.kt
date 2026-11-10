@@ -75,7 +75,7 @@ import java.time.ZoneId
 
 @Composable
 fun LoadingScreen() {
-    Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF172B39), MaterialTheme.colorScheme.background))), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.background))), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = .3f)), shadowElevation = 20.dp) {
                 Box(Modifier.size(92.dp), contentAlignment = Alignment.Center) { Image(painterResource(R.drawable.pooya_monogram), null, Modifier.size(66.dp), contentScale = ContentScale.Fit) }
@@ -101,7 +101,7 @@ fun LoginScreen(
 
     Box(
         Modifier.fillMaxSize().background(
-            Brush.linearGradient(listOf(Color(0xFF070A11), Color(0xFF102633), Color(0xFF090C13)))
+            Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.surface))
         ).padding(horizontal = 22.dp, vertical = 26.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -117,7 +117,7 @@ fun LoginScreen(
             Surface(
                 modifier = Modifier.size(104.dp),
                 shape = RoundedCornerShape(30.dp),
-                color = Color(0xFF141B27),
+                color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = .28f)),
                 shadowElevation = 24.dp
             ) {
@@ -228,7 +228,7 @@ fun AdminHome(
         topBar = {
             Column(
                 Modifier.fillMaxWidth().background(
-                    Brush.horizontalGradient(listOf(Color(0xFF080B12), Color(0xFF132532), Color(0xFF080B12)))
+                    Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface))
                 )
             ) {
                 Row(
@@ -252,16 +252,16 @@ fun AdminHome(
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text("POOYA LABS", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = 1.8.sp)
-                            Text("مدیریت سالن", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text("خوش اومدی، " + state.username, color = Color(0xFF9CAFC0), fontSize = 11.sp)
+                            Text("مدیریت سالن", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text("خوش اومدی، " + state.username, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = vm::refreshAll) {
-                            Icon(Icons.Default.Refresh, "به‌روزرسانی", tint = Color.White)
+                            Icon(Icons.Default.Refresh, "به‌روزرسانی", tint = MaterialTheme.colorScheme.onSurface)
                         }
                         IconButton(onClick = { selected = AdminTab.SETTINGS }) {
-                            Icon(Icons.Default.NotificationsActive, "اعلان‌ها", tint = Color.White)
+                            Icon(Icons.Default.NotificationsActive, "اعلان‌ها", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -277,11 +277,11 @@ fun AdminHome(
         },
         bottomBar = {
             Surface(
-                color = Color(0xF0141923),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = .96f),
                 tonalElevation = 0.dp,
                 shadowElevation = 18.dp,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = .055f))
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .7f))
             ) {
                 Row(
                     Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 5.dp, vertical = 8.dp),
@@ -347,17 +347,17 @@ fun AdminHome(
 
 @Composable
 private fun MetricChip(title: String, count: String) {
-    Surface(color = Color.White.copy(alpha = .075f), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.White.copy(alpha = .08f))) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(count, color = Color.White, fontWeight = FontWeight.Bold)
-            Text(title, color = Color(0xFFDCE6DF), fontSize = 11.sp)
+            Text(count, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+            Text(title, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
         }
     }
 }
 
 @Composable
 private fun MessageStrip(message: String, error: Boolean) {
-    val accent = if (error) Color(0xFFFF887F) else MaterialTheme.colorScheme.secondary
+    val accent = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
     Surface(
         color = accent.copy(alpha = .10f),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 5.dp),
@@ -367,7 +367,7 @@ private fun MessageStrip(message: String, error: Boolean) {
         Row(Modifier.padding(horizontal = 14.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(7.dp).background(accent, CircleShape))
             Spacer(Modifier.width(10.dp))
-            Text(message, color = if (error) Color(0xFFFFAAA3) else Color(0xFFB5F7EB), fontSize = 12.sp)
+            Text(message, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, fontSize = 12.sp)
         }
     }
 }
@@ -617,15 +617,15 @@ private fun CalendarScreen(state: AdminUiState, vm: AdminViewModel) {
                         val count = bookingsByDate[dateKey].orEmpty().size
                         Surface(
                             modifier = Modifier.weight(1f).height(82.dp).clickable { vm.selectDate(dateKey) },
-                            color = if (isSelected) Color(0xFF1F5143) else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = .16f) else MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(15.dp),
                             border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.secondary.copy(alpha = .65f) else MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                Text(persianWeekday(day), color = if (isSelected) Color(0xFFB8FFF0) else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                                Text(persianWeekday(day), color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                                 Text(
                                     JalaliDate.format(dateKey).substringBefore(" "),
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 20.sp
                                 )
@@ -633,7 +633,7 @@ private fun CalendarScreen(state: AdminUiState, vm: AdminViewModel) {
                                     repeat(minOf(count, 3)) {
                                         Box(Modifier.size(4.dp).background(if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary, CircleShape))
                                     }
-                                    if (count > 0) Text(JalaliDate.faDigits(count.toString()), color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                                    if (count > 0) Text(JalaliDate.faDigits(count.toString()), color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                                     else Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .65f), fontSize = 9.sp)
                                 }
                             }
