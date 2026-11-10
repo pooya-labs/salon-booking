@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
@@ -36,6 +37,7 @@ object SalonNotifications {
         val pendingIntent = PendingIntent.getActivity(context, 81, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_salon_notification)
+            .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.pooya_monogram))
             .setContentTitle(title.ifBlank { "نوبت جدید سالن" })
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
