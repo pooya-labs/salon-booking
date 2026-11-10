@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { CalendarDays, Check, Clock3, Bell, Mail, Plus, Save, Scissors, Settings2, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
-import { listenForOwnerPushMessages, registerOwnerPushDevice } from './push-notifications'
+import { listenForOwnerPushMessages, refreshOwnerPushDeviceRegistration, registerOwnerPushDevice } from './push-notifications'
 import { JalaliDatePicker } from './JalaliDatePicker'
 import { formatJalaliDate } from './jalali-date'
 import { nextAvailableInterval } from './schedule-intervals'
@@ -182,6 +182,12 @@ export function AdminManagement() {
     void loadServices()
     void loadSchedule()
     void loadNotifications()
+  }, [])
+
+  useEffect(() => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    // Refresh a previously approved device token without prompting the manager again.
+    void refreshOwnerPushDeviceRegistration().catch(() => undefined)
   }, [])
 
   useEffect(() => {

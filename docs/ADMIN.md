@@ -68,3 +68,7 @@ The full process is documented in GITHUB-PAGES-RELAY.md. In brief:
 6. Configure the salon's real services and working hours before accepting reservations.
 
 Keep the private spreadsheet private. Do not use local demo mode for real customer data.
+
+
+### High-priority appointment alerts
+The manager workspace refreshes an already-approved Firebase device token after sign-in, and the backend retries temporary Firebase delivery errors. Background alerts are rendered by the service worker with high Web Push urgency, a vibration pattern and persistent interaction. For the strongest alert behavior, allow notifications for the site in the browser and enable sound and vibration for the browser/site notification channel in Android settings. Browsers and operating systems still control the final sound, vibration and interruption level; a web app cannot force the notification to override system Do Not Disturb or guarantee the same behavior as an SMS.

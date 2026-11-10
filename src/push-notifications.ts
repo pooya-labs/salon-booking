@@ -12,11 +12,15 @@ type FirebaseAppApi = {
   getApp(): unknown
   initializeApp(config: FirebaseConfig): unknown
 }
+type FcmPayload = {
+  notification?: { title?: string; body?: string }
+  data?: Record<string, string>
+}
 type FirebaseMessagingApi = {
   isSupported(): Promise<boolean>
   getMessaging(app: unknown): unknown
   getToken(messaging: unknown, options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }): Promise<string>
-  onMessage(messaging: unknown, callback: (payload: { notification?: { title?: string; body?: string } }) => void): () => void
+  onMessage(messaging: unknown, callback: (payload: FcmPayload) => void): () => void
 }
 
 const firebaseConfig: FirebaseConfig = {
@@ -46,28 +50,32 @@ async function getFirebaseMessaging() {
   return { messaging: messagingModule, instance: messagingModule.getMessaging(app) }
 }
 
-/** Called only from the manager's explicit button click after login. */
-export async function registerOwnerPushDevice(): Promise<void> {
+async function saveCurrentDevice(requestPermission: boolean): Promise<void> {
   if (!firebaseReady) throw new Error('تنظیمات Firebase Web Push هنوز در GitHub Actions وارد نشده است.')
   if (!('Notification' in window) || !('serviceWorker' in navigator)) {
     throw new Error('این مرورگر قابلیت اعلان وب را ندارد.')
   }
 
-  const permission = Notification.permission === 'granted'
-    ? 'granted'
-    : await Notification.requestPermission()
+  let permission = Notification.permission
+  if (permission === 'default' && requestPermission) {
+    permission = await Notification.requestPermission()
+  }
   if (permission !== 'granted') {
-    throw new Error('اجازه نمایش اعلان برای این سایت داده نشد.')
+    if (requestPermission) throw new Error('اجازه نمایش اعلان برای این سایت داده نشد.')
+    return
   }
 
+  const serviceWorkerUrl = `${import.meta.env.BASE_URL}firebase-messaging-sw.js`
+  const registration = await navigator.serviceWorker.register(serviceWorkerUrl, {
+    scope: import.meta.env.BASE_URL,
+  })
+  await registration.update().catch(() => undefined)
+  const readyRegistration = await navigator.serviceWorker.ready
+  const activeRegistration = registration.active ? registration : readyRegistration
   const { messaging, instance } = await getFirebaseMessaging()
-  const registration = await navigator.serviceWorker.register(
-    `${import.meta.env.BASE_URL}firebase-messaging-sw.js`,
-    { scope: import.meta.env.BASE_URL },
-  )
   const token = await messaging.getToken(instance, {
     vapidKey,
-    serviceWorkerRegistration: registration,
+    serviceWorkerRegistration: activeRegistration,
   })
   if (!token) throw new Error('شناسه دستگاه برای اعلان دریافت نشد.')
 
@@ -83,23 +91,58 @@ export async function registerOwnerPushDevice(): Promise<void> {
   }
 }
 
+/** Called only from the manager's explicit button click when permission is needed. */
+export async function registerOwnerPushDevice(): Promise<void> {
+  await saveCurrentDevice(true)
+}
+
+/** Re-registers an already-approved device after login, without showing a permission prompt. */
+export async function refreshOwnerPushDeviceRegistration(): Promise<void> {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  await saveCurrentDevice(false)
+}
+
+type EnhancedNotificationOptions = NotificationOptions & {
+  vibrate: number[]
+  renotify: boolean
+  timestamp: number
+}
+
+async function showOwnerNotification(title: string, body: string, data: Record<string, string> = {}): Promise<void> {
+  const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin)
+  const defaultDestination = new URL('?admin=1', baseUrl).toString()
+  const destination = data.url || defaultDestination
+  const options = {
+    body,
+    icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg`,
+    badge: `${import.meta.env.BASE_URL}icons/salon-icon.svg`,
+    tag: data.tag || `salon-booking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    renotify: true,
+    requireInteraction: true,
+    silent: false,
+    vibrate: [0, 450, 180, 450, 180, 750],
+    timestamp: Date.now(),
+    data: { url: destination },
+  } as EnhancedNotificationOptions
+
+  try {
+    const registration = await navigator.serviceWorker.ready
+    await registration.showNotification(title, options)
+  } catch {
+    try { new Notification(title, options) } catch { /* Browser blocked page notifications. */ }
+  }
+}
+
 export async function listenForOwnerPushMessages(): Promise<() => void> {
-  if (!firebaseReady || !('Notification' in window) || !('serviceWorker' in navigator) || Notification.permission !== 'granted') return () => undefined
+  if (!firebaseReady || !('Notification' in window) || !('serviceWorker' in navigator) || Notification.permission !== 'granted') {
+    return () => undefined
+  }
   try {
     const { messaging, instance } = await getFirebaseMessaging()
     return messaging.onMessage(instance, (payload) => {
-      const title = payload.notification?.title || 'اعلان جدید شایان'
-      const body = payload.notification?.body || 'یک رویداد جدید در سامانه ثبت شد.'
-      const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin)
-      const destination = new URL('?admin=1', baseUrl).toString()
-      void navigator.serviceWorker.ready.then((registration) => registration.showNotification(title, {
-        body,
-        icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg`,
-        tag: 'salon-booking-foreground',
-        data: { url: destination },
-      })).catch(() => {
-        try { new Notification(title, { body, icon: `${import.meta.env.BASE_URL}icons/salon-icon.svg` }) } catch {}
-      })
+      const title = payload.data?.title || payload.notification?.title || 'اعلان جدید شایان'
+      const body = payload.data?.body || payload.notification?.body || 'یک رویداد جدید در سامانه ثبت شد.'
+      void showOwnerNotification(title, body, payload.data || {})
     })
   } catch {
     return () => undefined

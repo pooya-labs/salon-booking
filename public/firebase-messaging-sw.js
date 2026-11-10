@@ -1,18 +1,51 @@
-// Handle clicks for foreground notifications before importing the Firebase SDK.
+// Open the authenticated manager workspace when a notification is tapped.
 self.addEventListener('notificationclick', function (event) {
   const destination = event.notification && event.notification.data && event.notification.data.url;
   if (!destination) return;
   event.notification.close();
-  event.waitUntil(clients.openWindow(destination));
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+      var destinationUrl = new URL(destination);
+      for (var index = 0; index < clientList.length; index += 1) {
+        var client = clientList[index];
+        var clientUrl = new URL(client.url);
+        if (clientUrl.origin !== destinationUrl.origin ||
+            !clientUrl.pathname.startsWith('/salon-booking/')) continue;
+        if ('focus' in client && 'navigate' in client) {
+          return client.navigate(destinationUrl.href).then(function () { return client.focus(); });
+        }
+      }
+      return clients.openWindow(destination);
+    })
+  );
 });
 
-// FCM automatically displays notification payloads while the page is in the
-// background. No custom background handler is needed (avoids duplicates).
 const firebaseConfig = __FIREBASE_CONFIG__;
 
 if (firebaseConfig && firebaseConfig.apiKey) {
   importScripts('https://www.gstatic.com/firebasejs/13.0.0/firebase-app-compat.js');
   importScripts('https://www.gstatic.com/firebasejs/13.0.0/firebase-messaging-compat.js');
   firebase.initializeApp(firebaseConfig);
-  firebase.messaging();
+  const messaging = firebase.messaging();
+
+  messaging.onBackgroundMessage(function (payload) {
+    const data = payload && payload.data ? payload.data : {};
+    const title = data.title || (payload.notification && payload.notification.title) || 'نوبت جدید سالن';
+    const body = data.body || (payload.notification && payload.notification.body) || 'یک نوبت جدید ثبت شد.';
+    const destination = data.url || 'https://pooya-labs.github.io/salon-booking/?admin=1';
+    const tag = data.tag || 'salon-booking-background-' + Date.now();
+
+    return self.registration.showNotification(title, {
+      body: body,
+      icon: 'https://pooya-labs.github.io/salon-booking/icons/salon-icon.svg',
+      badge: 'https://pooya-labs.github.io/salon-booking/icons/salon-icon.svg',
+      tag: tag,
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [0, 450, 180, 450, 180, 750],
+      timestamp: Date.now(),
+      data: { url: destination }
+    });
+  });
 }
