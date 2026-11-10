@@ -149,6 +149,7 @@ test('foreground and background push use data messages, high Web Push urgency an
   assert.match(worker, /requireInteraction: true/)
   assert.match(worker, /vibrate: \[0, 450, 180, 450, 180, 750\]/)
   assert.ok(worker.indexOf("self.addEventListener('notificationclick'") < worker.indexOf('importScripts('))
+  assert.match(worker, /clientUrl\.pathname\.startsWith\('\/salon-booking\/'\)/)
   assert.doesNotMatch(backend, /notification:\s*\{\s*title:/)
 })
 
