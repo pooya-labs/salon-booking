@@ -70,6 +70,12 @@ The full process is documented in GITHUB-PAGES-RELAY.md. In brief:
 Keep the private spreadsheet private. Do not use local demo mode for real customer data.
 
 
+### Native Android manager
+
+The native Android manager provides the owner workflows in a dedicated Compose interface: booking list and status actions, daily calendar and manual time blocks, services, weekly hours, date exceptions, booking rules and notification settings. It uses the same manager login and Google Sheets records as the website.
+
+For push, install the APK, sign in, allow notifications and register the device from the Notifications screen. The app posts a native high-importance Android channel with the system notification sound and a vibration pattern. Use the channel-settings shortcut inside the app to choose a sound. High-priority FCM is designed to wake a sleeping device and display a user-visible notification while the process is not running. Android force-stop, disabled notifications, no network and aggressive battery restrictions remain OS-level exceptions.
+
 ### High-priority appointment alerts
 The manager workspace refreshes an already-approved Firebase device token after sign-in, retries temporary Firebase delivery errors, and activates the updated push service worker immediately. It requests high Web Push delivery urgency and vibration while leaving sound selection to Android's notification channel.
 
