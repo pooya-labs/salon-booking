@@ -75,8 +75,8 @@ test('Android appearance mode persists and supplies accessible Material 3 day/ni
   assert.match(mainActivity, /putString\("theme_mode", mode\)/)
   assert.match(mainActivity, /"SYSTEM" ->|"LIGHT" ->|"DARK" ->/)
   assert.match(mainActivity, /isSystemInDarkTheme\(\)/)
-  assert.match(mainActivity, /lightColorScheme\([\s\S]*?background = Color\(0xFFF4F7FA\)[\s\S]*?primary = Color\(0xFF087F79\)/)
-  assert.match(mainActivity, /darkColorScheme\([\s\S]*?background = Color\(0xFF080A10\)[\s\S]*?primary = Color\(0xFF25E6C8\)/)
+  assert.match(mainActivity, /lightColorScheme\([\s\S]*?primary = Color\(0xFF087F79\)[\s\S]*?background = Color\(0xFFF4F7FA\)/)
+  assert.match(mainActivity, /darkColorScheme\([\s\S]*?primary = Color\(0xFF25E6C8\)[\s\S]*?background = Color\(0xFF080A10\)/)
   assert.match(screens, /"SYSTEM" to "خودکار", "LIGHT" to "روز", "DARK" to "شب"/)
 })
 
