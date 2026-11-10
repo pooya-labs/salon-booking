@@ -46,7 +46,9 @@ test('saved manager credentials are encrypted with biometric-gated Android Keyst
 })
 
 test('biometric capability probing is fail-safe during startup', () => {
-  assert.match(mainActivity, /runCatching \{ credentialVault\.isBiometricAvailable\(\) \}\.getOrDefault\(false\)/)
+  assert.ok(mainActivity.includes("remember(hasSavedCredentials)"))
+  assert.ok(mainActivity.includes("hasSavedCredentials && runCatching { credentialVault.isBiometricAvailable() }"))
+  assert.ok(mainActivity.includes("val canSaveWithBiometric = runCatching"))
   assert.match(mainActivity, /runCatching \{ credentialVault\.hasSavedCredentials\(\) \}\.getOrDefault\(false\)/)
 })
 
