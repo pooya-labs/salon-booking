@@ -51,6 +51,19 @@ When updating the backend:
 
 Do not create a fresh spreadsheet or replace the current Apps Script deployment during routine maintenance.
 
+## Native Android manager app
+
+The owner app reuses the existing API, spreadsheet and Firebase project; it does not need a new server or database.
+
+1. Register an Android app in the **same Firebase project** used by the website, with package name `com.pooyalabs.salonmanager`.
+2. Download its `google-services.json` and place it at `android/app/google-services.json` for a local build. Never commit this file.
+3. For GitHub Actions builds, add the Base64-encoded file as the repository secret `ANDROID_GOOGLE_SERVICES_JSON_BASE64`. The Android workflow injects it only during the build.
+4. Keep the existing `SALON_RELAY_URL` Actions variable; the Android workflow uses the same `/exec` address as GitHub Pages.
+5. Publish Apps Script source version **1.5.5** to the existing Web App deployment (keep the same `/exec` address). This adds the direct POST transport and Android FCM high-priority delivery.
+6. Build with `cd android && ./gradlew :app:assembleDebug` after the Gradle wrapper is generated, or use Android Studio's Gradle sync. The debug APK is uploaded as a GitHub Actions artifact.
+
+The Android app creates a high-importance notification channel with sound and vibration, requests `POST_NOTIFICATIONS` on Android 13+, and registers its FCM token in the existing `PushSubscriptions` sheet. Android users control channel sound and importance in system settings. FCM high priority is designed for user-visible alerts and can wake a sleeping device in Doze; force-stop, revoked notification permission, no network, and manufacturer battery restrictions can still delay or block delivery.
+
 ## First-time installation
 
 For a new, separate installation, follow the steps in GITHUB-PAGES-RELAY.md. The owner must create the Apps Script project, run setup, deploy it as a Web App, add SALON_RELAY_URL and complete the owner bootstrap process.
