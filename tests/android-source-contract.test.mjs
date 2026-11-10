@@ -62,8 +62,9 @@ test('Pooya Labs launcher mark is scaled inside the Android adaptive-icon safe z
   const foreground = read('android/app/src/main/res/drawable/ic_launcher_foreground.xml')
   assert.match(adaptiveIcon, /@drawable\/ic_launcher_foreground/)
   assert.match(foreground, /@drawable\/pooya_monogram/)
-  assert.match(foreground, /android:insetLeft="18dp"/)
-  assert.match(foreground, /android:insetRight="18dp"/)
+  assert.match(foreground, /android:insetLeft="16dp"/)
+  assert.match(foreground, /android:insetRight="16dp"/)
+  assert.match(read('android/app/src/main/res/drawable/ic_launcher_background.xml'), /#08130F/)
 })
 
 test('background FCM data messages are rendered immediately in a native high-importance channel', () => {
@@ -100,6 +101,14 @@ test('the native manager covers booking, calendar, manual appointments, services
   assert.match(screens, /هفته جاری/)
   assert.match(screens, /لغوشده/)
   assert.match(screens, /عدم مراجعه/)
+})
+
+
+test('manual time blocks are selected with a Jalali calendar and stored as Gregorian ISO dates', () => {
+  assert.match(screens, /TimeBlockDialog[\\s\\S]*?تاریخ انتخاب‌شده/)
+  assert.match(screens, /JalaliDate\\.toGregorian\\(year, month, selectedDay\\)/)
+  assert.match(screens, /فروردین/)
+  assert.match(read('android/app/src/main/java/com/pooyalabs/salonmanager/Models.kt'), /android\\.icu\\.util\\.PersianCalendar/)
 })
 
 test('Firebase Android configuration is injected and never committed', () => {
