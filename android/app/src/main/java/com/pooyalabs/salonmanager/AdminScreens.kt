@@ -77,7 +77,7 @@ import java.time.ZoneId
 fun LoadingScreen() {
     Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.background))), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = .3f)), shadowElevation = 20.dp) {
+            Surface(shape = RoundedCornerShape(28.dp), color = Color(0xFF000000), border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = .3f)), shadowElevation = 20.dp) {
                 Box(Modifier.size(92.dp), contentAlignment = Alignment.Center) { Image(painterResource(R.drawable.pooya_monogram), null, Modifier.size(66.dp), contentScale = ContentScale.Fit) }
             }
             CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary, strokeWidth = 2.5.dp)
