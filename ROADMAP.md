@@ -99,34 +99,33 @@ These ideas can be considered later, but they were not needed to deliver the fir
 
 No independent penetration test or destructive production restore drill is claimed as completed.
 
-## Native Android manager — version 1.0.0 (in progress)
+## Native Android manager — version 1.1.0
 
-The customer website and its existing Google Sheets records remain unchanged. A separate Kotlin/Jetpack Compose app is being built for the owner, using the same Apps Script API, owner login and Firebase project.
+The native Android manager implementation is feature-complete on the feature branch. It is a companion owner app; the customer booking website, Apps Script deployment, Google Sheets database and Firebase project remain the existing production services.
 
-### Implemented in the feature branch
-- [x] Separate Android application module with Persian RTL Compose interface.
-- [x] Encrypted owner session storage using Android Keystore.
-- [x] Direct POST transport to the same Apps Script `/exec` API, preserving the existing session and route checks.
-- [x] Native FCM service for data-only background messages; notification is rendered immediately without a network call in the FCM callback.
-- [x] Android high-priority FCM payload and high-importance notification channel with default system sound, vibration and heads-up behavior.
-- [x] Booking list, date and status filters, customer phone and tap-to-call, booking status actions and deletion.
-- [x] Manual phone/in-person booking creation.
-- [x] Daily calendar, customer appointments, time blocks and removal of time blocks.
-- [x] Service editor, weekly hours, multiple work intervals, date exceptions and booking rules.
-- [x] Notification preferences, device registration, local sound test, Android channel settings shortcut and remote server test.
-- [x] Focused Kotlin unit tests and a Node contract test for the Android/API/FCM boundary.
+### Implemented
+- [x] Kotlin and Jetpack Compose Android app with Persian RTL interface.
+- [x] Premium Pooya Labs branding, launcher icon and notification large icon.
+- [x] Graphical weekly calendar, daily timeline, booking indicators and Jalali manual time-block entry.
+- [x] Existing owner workflows: bookings, manual bookings, services, weekly hours, exceptions, booking rules and notification settings.
+- [x] AES-GCM encrypted credential storage backed by Android Keystore and biometric quick sign-in.
+- [x] Native Firebase Cloud Messaging, notification channel, reboot token reconciliation and WorkManager retry.
+- [x] Jalali date handling while preserving Gregorian ISO dates in the backend API.
+- [x] Regression tests for calendar/date handling, icon layout, notification artwork and Android/API contracts.
 
-### Native Android push verification
-- [x] Add Android package `com.pooyalabs.salonmanager` to the existing Firebase project and store the Base64 `google-services.json` as GitHub Actions secret `ANDROID_GOOGLE_SERVICES_JSON_BASE64`.
-- [x] Publish Apps Script source 1.5.5 to the existing Web App deployment, preserving the current `/exec` URL.
-- [x] Build the Firebase-configured Android APK, run source-contract tests and focused Kotlin unit tests, and upload the artifact: [Android run 42805853496](https://github.com/pooya-labs/salon-booking/actions/runs/42805853496). Artifact ID: `13758393036`.
-- [x] Install on the manager's physical phone, sign in and confirm the FCM subscription is active through real booking notifications.
-- [x] Verify real booking notifications while foregrounded and after swiping the app away from Recents.
-- [x] Add and verify post-reboot FCM token reconciliation using `BOOT_COMPLETED` + network-constrained WorkManager retry; owner confirmed a booking notification arrived after reboot without opening the app.
-- [x] Configure Samsung battery mode as Unrestricted and exclude Salon Manager from background sleep lists.
-- [ ] Verify delivery on a second network. Android force-stop, revoked notification permission, unavailable network and Do Not Disturb remain OS-level exceptions.
+### Latest automated verification — 10 November 2026
+- [x] Firebase-configured Android build, source-contract tests, Kotlin unit tests and APK artifact upload: [run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938).
+- [x] Repository CI on Linux and Windows: [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
+- [x] Debug APK artifact uploaded as `salon-manager-android-debug` (artifact ID `13766596540`).
 
-No new database, paid server or replacement customer booking website is introduced.
+### Release gate
+The current APK is a debug build, not a production-signed release. Before declaring Android 1.1.0 production-released:
+- [ ] Confirm latest build launches and the updated calendar, biometric flow and notification visuals work on the manager's physical phone.
+- [ ] Configure a dedicated release keystore and passwords as GitHub Actions secrets.
+- [ ] Build and verify the signed release APK/AAB.
+- [ ] Publish a versioned GitHub Release and merge PR #6.
+
+Earlier physical-device checks confirmed FCM delivery in foreground, after dismissing the app from Recents, and after reboot. The latest visual and biometric changes still need a final device smoke test. Until then, describe the Android app as implementation-complete and awaiting release acceptance, not as a stable production release.
 
 ## Maintenance policy
 

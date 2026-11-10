@@ -48,7 +48,7 @@ Cloudflare Workers and D1 are not used by the current production site. Their sou
 
 ## Native Android manager
 
-A dedicated Kotlin and Jetpack Compose app is being added for the salon owner. It reuses the existing Apps Script API, owner session and Google Sheets database; customer reservations remain on the website. The app includes the current owner workflows and native Android notification channels for sound, vibration and heads-up alerts. See [Android setup](./android/README.md).
+A dedicated Kotlin and Jetpack Compose manager app is implemented for the salon owner. It reuses the existing Apps Script API, owner session, private Google Sheets database and Firebase project; customer reservations remain on the website. The app includes a graphical weekly calendar, Jalali time-block entry, all manager workflows, native notifications, Pooya Labs branding and opt-in biometric quick sign-in. Automated Android tests and repository CI passed on 10 November 2026. The current downloadable APK is a debug build for final device acceptance, not a production-signed release. See [Android setup and release status](./android/README.md).
 
 ## Running the project
 
@@ -92,7 +92,11 @@ The latest Pages workflow completed the deployment and its read-only Apps Script
 - [Privacy and data handling](./docs/PRIVACY-OPERATIONS.md)
 - [Security notes and remaining risks](./docs/SECURITY-THREAT-MODEL.md)
 
-## Latest project update — 8 November 2026
+## Latest project update — 10 November 2026
+
+The native Android manager implementation reached feature-complete status. The latest Firebase-configured debug build and focused Android tests passed in [Android workflow run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938); repository CI passed in [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870). The APK is available as the `salon-manager-android-debug` artifact in the Android workflow. Final device acceptance of the latest UI/biometric changes and production signing are still required before calling the Android app a stable production release.
+
+## Previous project update — 8 November 2026
 
 The owner attribution was refined: the Pooya Labs Platform monogram is now vendored in the repository and loaded from local assets, while the original gold GitHub credit mark styling was restored. The v1.0.0 booking system remains live and in maintenance. Its active backend is Google Apps Script + private Google Sheets, with Firebase Cloud Messaging for manager notifications; Cloudflare Workers and D1 are not part of the live runtime.
 

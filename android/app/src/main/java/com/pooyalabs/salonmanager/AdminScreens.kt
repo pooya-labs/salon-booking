@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +29,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -43,6 +47,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -52,13 +60,18 @@ import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.ZoneId
 
-private val ForestColor = Color(0xFF173D32)
-private val Sage = Color(0xFFE7EEE8)
-private val CreamBg = Color(0xFFF5F3EC)
-private val MutedText = Color(0xFF77817A)
-private val InkColor = Color(0xFF1E2924)
-private val EmeraldColor = Color(0xFF2D725A)
-private val GoldTone = Color(0xFFC29A56)
+private val ForestColor = Color(0xFFE7F4ED)
+private val Sage = Color(0xFF20332C)
+private val CreamBg = Color(0xFF080E0C)
+private val MutedText = Color(0xFF9BAFA5)
+private val InkColor = Color(0xFFEAF3EE)
+private val EmeraldColor = Color(0xFF2FE0A8)
+private val GoldTone = Color(0xFFF0C879)
+private val PanelColor = Color(0xFF14211C)
+private val PanelRaisedColor = Color(0xFF1B2A24)
+private val HeaderColor = Color(0xFF050A08)
+private val LineColor = Color(0xFF2B3D35)
+private val AccentCyan = Color(0xFF61E6DF)
 
 @Composable
 fun LoadingScreen() {
@@ -71,28 +84,117 @@ fun LoadingScreen() {
 }
 
 @Composable
-fun LoginScreen(state: AdminUiState, onLogin: (String, String) -> Unit) {
+fun LoginScreen(
+    state: AdminUiState,
+    hasSavedCredentials: Boolean,
+    onLogin: (String, String, Boolean) -> Unit,
+    onBiometricLogin: () -> Unit
+) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    Box(Modifier.fillMaxSize().background(CreamBg).padding(22.dp), contentAlignment = Alignment.Center) {
-        Column(verticalArrangement = Arrangement.spacedBy(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(82.dp).background(ForestColor, RoundedCornerShape(26.dp)), contentAlignment = Alignment.Center) {
-                Text("ف", color = Color.White, fontSize = 42.sp, fontWeight = FontWeight.Bold)
+    var saveWithBiometric by remember { mutableStateOf(hasSavedCredentials) }
+
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.linearGradient(listOf(Color(0xFF07110E), Color(0xFF10251D), Color(0xFF080E0C)))
+        ).padding(horizontal = 22.dp, vertical = 26.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(104.dp),
+                shape = RoundedCornerShape(30.dp),
+                color = Color.Black,
+                border = BorderStroke(1.dp, Color.White.copy(alpha = .12f)),
+                shadowElevation = 18.dp
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.pooya_monogram),
+                    contentDescription = "نشان پویا لبز",
+                    modifier = Modifier.fillMaxSize().padding(10.dp),
+                    contentScale = ContentScale.Fit
+                )
             }
-            Text("مدیریت سالن فُرم", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = ForestColor)
-            Text("ورود امن مدیر مجموعه", color = MutedText)
-            ElevatedCard(shape = RoundedCornerShape(26.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    OutlinedTextField(username, { username = it }, label = { Text("نام کاربری") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                    OutlinedTextField(password, { password = it }, label = { Text("گذرواژه") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation())
-                    if (state.error.isNotBlank()) Text(state.error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
-                    Button(onClick = { onLogin(username, password) }, enabled = !state.busy, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("POOYA LABS", color = AccentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text("مدیریت سالن", color = ForestColor, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("ورود امن به فضای مدیریت", color = MutedText, fontSize = 13.sp)
+            }
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = PanelColor),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 14.dp)
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                    Text("خوش برگشتی", color = ForestColor, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = { Text("نام کاربری") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("گذرواژه") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = saveWithBiometric,
+                            onCheckedChange = { saveWithBiometric = it },
+                            colors = CheckboxDefaults.colors(checkedColor = EmeraldColor)
+                        )
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("ذخیره ورود با اثر انگشت", color = InkColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("رمز فقط به‌صورت رمزنگاری‌شده و محافظت‌شده با اثر انگشت نگهداری می‌شود.", color = MutedText, fontSize = 10.sp, lineHeight = 15.sp)
+                        }
+                    }
+                    if (state.error.isNotBlank()) {
+                        Text(state.error, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                    }
+                    Button(
+                        onClick = { onLogin(username, password, saveWithBiometric) },
+                        enabled = !state.busy && username.isNotBlank() && password.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        shape = RoundedCornerShape(17.dp)
+                    ) {
                         if (state.busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Text("ورود به پنل")
+                        else Text("ورود به پنل", fontWeight = FontWeight.Bold)
+                    }
+                    if (hasSavedCredentials) {
+                        OutlinedButton(
+                            onClick = onBiometricLogin,
+                            enabled = !state.busy,
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(17.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentCyan),
+                            border = BorderStroke(1.dp, AccentCyan.copy(alpha = .7f))
+                        ) {
+                            Icon(Icons.Default.Fingerprint, null, modifier = Modifier.size(21.dp))
+                            Spacer(Modifier.width(9.dp))
+                            Text("ورود سریع با اثر انگشت", fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             }
-            Text("اطلاعات ورود همان حساب فعلی پنل وب است.", color = MutedText, fontSize = 12.sp, textAlign = TextAlign.Center)
+            Text(
+                "حساب ورود همان حساب مدیریت وب‌سایت است. نشست فعال روی دستگاه امن نگهداری می‌شود.",
+                color = MutedText,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 17.sp
+            )
         }
     }
 }
@@ -102,39 +204,67 @@ private enum class AdminTab(val label: String) {
 }
 
 @Composable
-fun AdminHome(state: AdminUiState, vm: AdminViewModel) {
+fun AdminHome(
+    state: AdminUiState,
+    vm: AdminViewModel,
+    hasSavedCredentials: Boolean,
+    onClearSavedCredentials: () -> Unit
+) {
     var selected by remember { mutableStateOf(AdminTab.BOOKINGS) }
     Scaffold(
         containerColor = CreamBg,
         topBar = {
-            Column {
+            Column(
+                Modifier.fillMaxWidth().background(
+                    Brush.horizontalGradient(listOf(HeaderColor, Color(0xFF12271F), HeaderColor))
+                )
+            ) {
                 Row(
-                    Modifier.fillMaxWidth().background(ForestColor).padding(horizontal = 20.dp, vertical = 16.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 19.dp, vertical = 15.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text("فُرم", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
-                        Text("سلام، " + state.username, color = Color(0xFFCAD9CF), fontSize = 12.sp)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = CircleShape, color = Color.White.copy(alpha = .12f)) {
-                            IconButton(onClick = vm::refreshAll) { Icon(Icons.Default.Refresh, null, tint = Color.White) }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Surface(
+                            modifier = Modifier.size(45.dp),
+                            shape = RoundedCornerShape(15.dp),
+                            color = Color.Black,
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = .12f))
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.pooya_monogram),
+                                contentDescription = "پویا لبز",
+                                modifier = Modifier.fillMaxSize().padding(5.dp),
+                                contentScale = ContentScale.Fit
+                            )
                         }
-                        Surface(shape = CircleShape, color = Color.White.copy(alpha = .12f)) {
-                            IconButton(onClick = { selected = AdminTab.SETTINGS }) { Icon(Icons.Default.NotificationsActive, null, tint = Color.White) }
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("POOYA LABS", color = AccentCyan, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = 1.8.sp)
+                            Text("مدیریت سالن فُرم", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text("سلام، " + state.username, color = Color(0xFFB5C9BF), fontSize = 11.sp)
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = vm::refreshAll) {
+                            Icon(Icons.Default.Refresh, "به‌روزرسانی", tint = Color.White)
+                        }
+                        IconButton(onClick = { selected = AdminTab.SETTINGS }) {
+                            Icon(Icons.Default.NotificationsActive, "اعلان‌ها", tint = Color.White)
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth().background(ForestColor).padding(start = 20.dp, end = 20.dp, bottom = 14.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    MetricChip("نوبت‌ها", state.bookings.size.toString())
-                    MetricChip("در انتظار", state.bookings.count { it.status == "pending" }.toString())
-                    MetricChip("خدمات", state.services.count { it.isActive }.toString())
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, bottom = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MetricChip("نوبت‌ها", JalaliDate.faDigits(state.bookings.size.toString()))
+                    MetricChip("در انتظار", JalaliDate.faDigits(state.bookings.count { it.status == "pending" }.toString()))
+                    MetricChip("خدمات فعال", JalaliDate.faDigits(state.services.count { it.isActive }.toString()))
                 }
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = Color.White, tonalElevation = 10.dp) {
+            NavigationBar(containerColor = PanelColor, tonalElevation = 0.dp, contentColor = InkColor) {
                 AdminTab.entries.forEach { tab ->
                     val icon = when (tab) {
                         AdminTab.BOOKINGS -> Icons.Default.Home
@@ -148,14 +278,20 @@ fun AdminHome(state: AdminUiState, vm: AdminViewModel) {
                         onClick = { selected = tab },
                         icon = { Icon(icon, null) },
                         label = { Text(tab.label, fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = ForestColor, indicatorColor = Sage, selectedTextColor = ForestColor)
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = AccentCyan,
+                            selectedTextColor = AccentCyan,
+                            unselectedIconColor = MutedText,
+                            unselectedTextColor = MutedText,
+                            indicatorColor = Color(0xFF24423A)
+                        )
                     )
                 }
             }
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (state.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.secondary)
+            if (state.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = AccentCyan, trackColor = PanelColor)
             if (state.error.isNotBlank()) MessageStrip(state.error, true)
             if (state.message.isNotBlank()) MessageStrip(state.message, false)
             when (selected) {
@@ -163,7 +299,7 @@ fun AdminHome(state: AdminUiState, vm: AdminViewModel) {
                 AdminTab.CALENDAR -> CalendarScreen(state, vm)
                 AdminTab.SERVICES -> ServicesScreen(state, vm)
                 AdminTab.SCHEDULE -> ScheduleScreen(state, vm)
-                AdminTab.SETTINGS -> SettingsScreen(state, vm)
+                AdminTab.SETTINGS -> SettingsScreen(state, vm, hasSavedCredentials, onClearSavedCredentials)
             }
         }
     }
@@ -311,7 +447,7 @@ private fun ManualBookingDialog(
 @Composable
 private fun BookingCard(booking: Booking, onStatus: (String) -> Unit, onDelete: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
-    ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+    ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
         Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -367,11 +503,11 @@ private fun BookingCard(booking: Booking, onStatus: (String) -> Unit, onDelete: 
 @Composable
 private fun StatusBadge(status: String) {
     val (label, color) = when (status) {
-        "confirmed" -> "تأییدشده" to Color(0xFF23704F)
-        "pending" -> "در انتظار" to Color(0xFFAE7B22)
-        "completed" -> "انجام‌شده" to Color(0xFF456C83)
-        "cancelled" -> "لغوشده" to Color(0xFF9D5047)
-        "no_show" -> "عدم مراجعه" to Color(0xFF86646A)
+        "confirmed" -> "تأییدشده" to Color(0xFF4BE0A5)
+        "pending" -> "در انتظار" to Color(0xFFF0C879)
+        "completed" -> "انجام‌شده" to Color(0xFF75CDE0)
+        "cancelled" -> "لغوشده" to Color(0xFFF08D82)
+        "no_show" -> "عدم مراجعه" to Color(0xFFC19CA4)
         else -> status to MutedText
     }
     Surface(color = color.copy(alpha = .12f), shape = RoundedCornerShape(50)) {
@@ -382,76 +518,382 @@ private fun StatusBadge(status: String) {
 @Composable
 private fun CalendarScreen(state: AdminUiState, vm: AdminViewModel) {
     var showBlock by remember { mutableStateOf(false) }
+    var showManualBooking by remember { mutableStateOf(false) }
+    val selected = runCatching { LocalDate.parse(state.selectedDate) }.getOrDefault(LocalDate.now(ZoneId.of("Asia/Tehran")))
+    val days = (0L..6L).map { selected.plusDays(it) }
+    val bookingsByDate = state.bookings.groupBy { it.date }
+
     PageColumn {
-        SectionTitle("تقویم روزانه", "نوبت‌ها، ساعات کاری و مسدودی‌ها")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { shiftDate(state.selectedDate, -1, vm) }) { Icon(Icons.Default.ChevronRight, null) }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(JalaliDate.format(state.selectedDate), fontWeight = FontWeight.Bold, color = ForestColor)
-                Text(state.selectedDate, color = MutedText, fontSize = 10.sp)
-            }
-            IconButton(onClick = { shiftDate(state.selectedDate, 1, vm) }) { Icon(Icons.Default.ChevronLeft, null) }
-        }
-        Button(onClick = { showBlock = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-            Icon(Icons.Default.Add, null); Spacer(Modifier.width(7.dp)); Text("مسدود کردن زمان دستی")
-        }
-        val plan = state.dayPlan
-        if (plan == null) EmptyPanel("در حال دریافت برنامه روز…", Icons.Default.Schedule)
-        else {
-            InfoPanel("ساعات کاری", plan.windows.joinToString("  ·  ") { it.startsAt + " تا " + it.endsAt }.ifBlank { "برای این روز ساعتی ثبت نشده است." })
-            SectionTitle("نوبت‌های مشتری", JalaliDate.faDigits(plan.bookings.size.toString()) + " نوبت")
-            if (plan.bookings.isEmpty()) Text("نوبتی در این روز وجود ندارد.", color = MutedText, fontSize = 12.sp)
-            plan.bookings.forEach { item ->
-                ElevatedCard(shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
-                    Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(item.serviceName, fontWeight = FontWeight.Bold, color = ForestColor)
-                            Text(JalaliDate.faDigits(item.time + "–" + item.endTime), fontWeight = FontWeight.Bold)
+        SectionTitle("تقویم رزروها", "نمای هفتگی و برنامه گرافیکی روز")
+        Surface(
+            color = PanelColor,
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, LineColor),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("هفته جاری", color = ForestColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(JalaliDate.format(state.selectedDate), color = MutedText, fontSize = 11.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { vm.selectDate(LocalDate.now(ZoneId.of("Asia/Tehran")).toString()) }) {
+                            Icon(Icons.Default.Today, null, Modifier.size(17.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text("امروز")
                         }
-                        Text(item.name + " · " + item.durationMinutes + " دقیقه", color = MutedText, fontSize = 12.sp)
+                        IconButton(onClick = { shiftDate(state.selectedDate, -7, vm) }) {
+                            Icon(Icons.Default.ChevronRight, null, tint = InkColor)
+                        }
+                        IconButton(onClick = { shiftDate(state.selectedDate, 7, vm) }) {
+                            Icon(Icons.Default.ChevronLeft, null, tint = InkColor)
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    days.forEach { day ->
+                        val dateKey = day.toString()
+                        val isSelected = dateKey == state.selectedDate
+                        val count = bookingsByDate[dateKey].orEmpty().size
+                        Surface(
+                            modifier = Modifier.weight(1f).height(82.dp).clickable { vm.selectDate(dateKey) },
+                            color = if (isSelected) Color(0xFF1F5143) else PanelRaisedColor,
+                            shape = RoundedCornerShape(15.dp),
+                            border = BorderStroke(1.dp, if (isSelected) AccentCyan.copy(alpha = .65f) else LineColor)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                Text(persianWeekday(day), color = if (isSelected) Color(0xFFB8FFF0) else MutedText, fontSize = 9.sp)
+                                Text(
+                                    JalaliDate.format(dateKey).substringBefore(" "),
+                                    color = if (isSelected) Color.White else InkColor,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    repeat(minOf(count, 3)) {
+                                        Box(Modifier.size(4.dp).background(if (isSelected) AccentCyan else EmeraldColor, CircleShape))
+                                    }
+                                    if (count > 0) Text(JalaliDate.faDigits(count.toString()), color = if (isSelected) Color.White else MutedText, fontSize = 9.sp)
+                                    else Text("—", color = MutedText.copy(alpha = .65f), fontSize = 9.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CalendarMetric("نوبت امروز", JalaliDate.faDigits((state.dayPlan?.bookings?.size ?: 0).toString()), AccentCyan, Modifier.weight(1f))
+                    CalendarMetric("زمان مسدود", JalaliDate.faDigits((state.dayPlan?.blocks?.size ?: 0).toString()), GoldTone, Modifier.weight(1f))
+                    CalendarMetric("ساعات کاری", JalaliDate.faDigits((state.dayPlan?.windows?.size ?: 0).toString()), EmeraldColor, Modifier.weight(1f))
+                }
+            }
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { showManualBooking = true },
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = RoundedCornerShape(15.dp)
+            ) {
+                Icon(Icons.Default.Add, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("ثبت نوبت")
+            }
+            OutlinedButton(
+                onClick = { showBlock = true },
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = RoundedCornerShape(15.dp),
+                border = BorderStroke(1.dp, LineColor)
+            ) {
+                Icon(Icons.Default.Block, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("مسدود کردن زمان")
+            }
+        }
+
+        val plan = state.dayPlan
+        if (plan == null) {
+            EmptyPanel("در حال دریافت برنامه روز…", Icons.Default.Schedule)
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("خط زمانی روز", color = ForestColor, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text(JalaliDate.format(plan.date), color = MutedText, fontSize = 11.sp)
+                }
+                StatusBadge(if (plan.windows.isEmpty()) "cancelled" else "confirmed")
+            }
+            Surface(color = PanelColor, shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, LineColor)) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        TimelineLegend(AccentCyan, "نوبت تأییدشده", Modifier.weight(1f))
+                        TimelineLegend(GoldTone, "در انتظار", Modifier.weight(1f))
+                        TimelineLegend(Color(0xFFF08D82), "مسدودی", Modifier.weight(1f))
+                    }
+                    InfoPanel(
+                        "ساعات کاری",
+                        plan.windows.joinToString("  ·  ") { it.startsAt + " تا " + it.endsAt }
+                            .ifBlank { "برای این روز ساعت کاری ثبت نشده است." }
+                    )
+                    if (plan.windows.isEmpty() && plan.bookings.isEmpty() && plan.blocks.isEmpty()) {
+                        EmptyPanel("این روز تعطیل است یا بازه کاری برای آن تعریف نشده.", Icons.Default.EventAvailable)
+                    } else {
+                        DayTimeline(plan)
+                    }
+                }
+            }
+            SectionTitle("جزئیات نوبت‌های روز", JalaliDate.faDigits(plan.bookings.size.toString()) + " نوبت")
+            if (plan.bookings.isEmpty()) Text("برای این روز نوبتی ثبت نشده است.", color = MutedText, fontSize = 12.sp)
+            plan.bookings.sortedBy { timeToMinutes(it.time) }.forEach { item ->
+                ElevatedCard(shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
+                    Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(item.serviceName, fontWeight = FontWeight.Bold, color = ForestColor, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            StatusBadge(item.status)
+                        }
+                        Text(JalaliDate.faDigits(item.time + " – " + item.endTime) + "  ·  " + item.name, color = InkColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Text(JalaliDate.faDigits(item.durationMinutes.toString()) + " دقیقه", color = MutedText, fontSize = 11.sp)
                         if (item.phone.isNotBlank()) {
                             val context = LocalContext.current
                             TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + item.phone))) }) {
-                                Icon(Icons.Default.Call, null, Modifier.size(15.dp)); Spacer(Modifier.width(5.dp)); Text(item.phone)
+                                Icon(Icons.Default.Call, null, Modifier.size(15.dp))
+                                Spacer(Modifier.width(5.dp))
+                                Text(item.phone)
                             }
                         }
                     }
                 }
             }
-            SectionTitle("زمان‌های مسدودشده", plan.blocks.size.toString() + " بازه")
-            if (plan.blocks.isEmpty()) Text("زمانی به‌صورت دستی مسدود نشده است.", color = MutedText, fontSize = 12.sp)
-            plan.blocks.forEach { block ->
-                Surface(color = Color.White, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Color(0xFFE6DED2))) {
-                    Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(JalaliDate.faDigits(block.time + "–" + block.endTime), fontWeight = FontWeight.Bold)
-                            Text("مسدودی دستی · " + block.durationMinutes + " دقیقه", color = MutedText, fontSize = 11.sp)
+            if (plan.blocks.isNotEmpty()) {
+                SectionTitle("زمان‌های مسدودشده", JalaliDate.faDigits(plan.blocks.size.toString()) + " بازه")
+                plan.blocks.sortedBy { timeToMinutes(it.time) }.forEach { block ->
+                    Surface(color = PanelRaisedColor, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Color(0xFF68403B))) {
+                        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(JalaliDate.faDigits(block.time + " – " + block.endTime), fontWeight = FontWeight.Bold, color = Color(0xFFFFA59A))
+                                Text("مسدودی دستی · " + JalaliDate.faDigits(block.durationMinutes.toString()) + " دقیقه", color = MutedText, fontSize = 11.sp)
+                            }
+                            TextButton(onClick = { vm.deleteTimeBlock(block) }) { Text("برداشتن", color = Color(0xFFFFA59A)) }
                         }
-                        TextButton(onClick = { vm.deleteTimeBlock(block) }) { Text("برداشتن", color = Color(0xFF9D5047)) }
                     }
                 }
             }
         }
     }
-    if (showBlock) TimeBlockDialog(state.selectedDate, onDismiss = { showBlock = false }, onSave = { date, time, duration -> showBlock = false; vm.createTimeBlock(date, time, duration) })
+    if (showBlock) {
+        TimeBlockDialog(
+            state.selectedDate,
+            onDismiss = { showBlock = false },
+            onSave = { date, time, duration -> showBlock = false; vm.createTimeBlock(date, time, duration) }
+        )
+    }
+    if (showManualBooking) {
+        ManualBookingDialog(
+            services = state.services.filter { it.isActive },
+            initialDate = state.selectedDate,
+            onDismiss = { showManualBooking = false },
+            onSave = { first, last, phone, service, date, time, note ->
+                showManualBooking = false
+                vm.createManualBooking(first, last, phone, service, date, time, note)
+            }
+        )
+    }
+}
+
+@Composable
+private fun CalendarMetric(label: String, value: String, accent: Color, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier, color = PanelRaisedColor, shape = RoundedCornerShape(13.dp), border = BorderStroke(1.dp, LineColor)) {
+        Column(Modifier.padding(vertical = 9.dp, horizontal = 7.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(value, color = accent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = MutedText, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun TimelineLegend(color: Color, text: String, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(Modifier.size(7.dp).background(color, CircleShape))
+        Text(text, color = MutedText, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun DayTimeline(plan: DayPlan) {
+    val starts = buildList {
+        plan.windows.forEach { add(timeToMinutes(it.startsAt)) }
+        plan.bookings.forEach { add(timeToMinutes(it.time)) }
+        plan.blocks.forEach { add(timeToMinutes(it.time)) }
+    }
+    val ends = buildList {
+        plan.windows.forEach { add(timeToMinutes(it.endsAt)) }
+        plan.bookings.forEach { add(timeToMinutes(it.endTime)) }
+        plan.blocks.forEach { add(timeToMinutes(it.endTime)) }
+    }
+    val firstHour = ((starts.minOrNull() ?: 9 * 60) / 60).coerceIn(6, 22)
+    val lastHour = (((ends.maxOrNull() ?: 18 * 60) + 59) / 60).coerceIn(firstHour + 1, 23)
+    val hourHeight = 68.dp
+    val minutesToDp = 68f / 60f
+    val fullHeight = hourHeight * (lastHour - firstHour)
+
+    Box(Modifier.fillMaxWidth().height(fullHeight)) {
+        Column(Modifier.fillMaxSize()) {
+            for (hour in firstHour until lastHour) {
+                Row(Modifier.fillMaxWidth().height(hourHeight), verticalAlignment = Alignment.Top) {
+                    Text(
+                        JalaliDate.faDigits("%02d:00".format(hour)),
+                        modifier = Modifier.width(49.dp).padding(top = 3.dp),
+                        color = MutedText,
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Start
+                    )
+                    Box(
+                        Modifier.weight(1f).fillMaxHeight()
+                            .border(BorderStroke(1.dp, LineColor.copy(alpha = .82f)), RoundedCornerShape(8.dp))
+                    )
+                }
+            }
+        }
+        Box(Modifier.fillMaxSize().padding(start = 49.dp)) {
+            plan.bookings.forEach { booking ->
+                val startMinute = timeToMinutes(booking.time)
+                val endMinute = maxOf(startMinute + 30, timeToMinutes(booking.endTime))
+                val y = ((startMinute - firstHour * 60).coerceAtLeast(0) * minutesToDp).dp
+                val height = (((endMinute - startMinute).coerceAtLeast(25) * minutesToDp).dp).coerceAtLeast(46.dp)
+                val color = when (booking.status) {
+                    "pending" -> GoldTone
+                    "confirmed" -> AccentCyan
+                    "completed" -> Color(0xFF8BB7A4)
+                    "cancelled" -> Color(0xFFF08D82)
+                    else -> Color(0xFFB69BA4)
+                }
+                Surface(
+                    modifier = Modifier.offset(y = y).fillMaxWidth().padding(end = 3.dp).height(height),
+                    color = color.copy(alpha = .16f),
+                    shape = RoundedCornerShape(11.dp),
+                    border = BorderStroke(1.dp, color.copy(alpha = .65f))
+                ) {
+                    Column(Modifier.padding(horizontal = 9.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(JalaliDate.faDigits(booking.time + " · " + booking.name), color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(booking.serviceName, color = InkColor, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            plan.blocks.forEach { block ->
+                val startMinute = timeToMinutes(block.time)
+                val endMinute = maxOf(startMinute + 20, timeToMinutes(block.endTime))
+                val y = ((startMinute - firstHour * 60).coerceAtLeast(0) * minutesToDp).dp
+                val height = (((endMinute - startMinute).coerceAtLeast(20) * minutesToDp).dp).coerceAtLeast(42.dp)
+                Surface(
+                    modifier = Modifier.offset(y = y).fillMaxWidth().padding(end = 3.dp).height(height),
+                    color = Color(0xFFF08D82).copy(alpha = .13f),
+                    shape = RoundedCornerShape(11.dp),
+                    border = BorderStroke(1.dp, Color(0xFFF08D82).copy(alpha = .55f))
+                ) {
+                    Row(Modifier.fillMaxSize().padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Block, null, tint = Color(0xFFF08D82), modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(7.dp))
+                        Text("مسدود · " + JalaliDate.faDigits(block.time + "–" + block.endTime), color = Color(0xFFF08D82), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun timeToMinutes(time: String): Int {
+    val parts = time.split(":")
+    val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    return hour.coerceIn(0, 23) * 60 + minute.coerceIn(0, 59)
+}
+
+private fun persianWeekday(date: LocalDate): String = when (date.dayOfWeek.value) {
+    6 -> "شنبه"
+    7 -> "یکشنبه"
+    1 -> "دوشنبه"
+    2 -> "سه‌شنبه"
+    3 -> "چهارشنبه"
+    4 -> "پنجشنبه"
+    else -> "جمعه"
 }
 
 @Composable
 private fun TimeBlockDialog(date: String, onDismiss: () -> Unit, onSave: (String, String, Int) -> Unit) {
-    var day by remember(date) { mutableStateOf(date) }
+    val initial = remember(date) { JalaliDate.parts(date) ?: Triple(1405, 1, 1) }
+    var year by remember(date) { mutableIntStateOf(initial.first) }
+    var month by remember(date) { mutableIntStateOf(initial.second) }
+    var selectedDay by remember(date) { mutableIntStateOf(initial.third) }
     var time by remember { mutableStateOf("10:00") }
     var duration by remember { mutableStateOf("30") }
+    val monthNames = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند")
+    val monthLength = JalaliDate.monthLength(year, month)
+    val firstIso = JalaliDate.toGregorian(year, month, 1)
+    val leading = firstIso?.let { (java.time.LocalDate.parse(it).dayOfWeek.value + 1) % 7 } ?: 0
+    val days = (1..monthLength).toList()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("مسدود کردن زمان") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                OutlinedTextField(day, { day = it }, label = { Text("تاریخ میلادی YYYY-MM-DD") }, singleLine = true)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Surface(color = PanelRaisedColor, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, LineColor)) {
+                    Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            IconButton(onClick = {
+                                if (month == 1) { month = 12; year-- } else month--
+                                selectedDay = selectedDay.coerceAtMost(JalaliDate.monthLength(year, month))
+                            }) { Icon(Icons.Default.ChevronRight, "ماه قبل", tint = AccentCyan) }
+                            Text(monthNames[month - 1] + " " + JalaliDate.faDigits(year.toString()), color = ForestColor, fontWeight = FontWeight.Bold)
+                            IconButton(onClick = {
+                                if (month == 12) { month = 1; year++ } else month++
+                                selectedDay = selectedDay.coerceAtMost(JalaliDate.monthLength(year, month))
+                            }) { Icon(Icons.Default.ChevronLeft, "ماه بعد", tint = AccentCyan) }
+                        }
+                        Row(Modifier.fillMaxWidth()) {
+                            listOf("ش", "ی", "د", "س", "چ", "پ", "ج").forEach { label ->
+                                Text(label, Modifier.weight(1f), color = MutedText, textAlign = TextAlign.Center, fontSize = 11.sp)
+                            }
+                        }
+                        val cells = List(leading) { 0 } + days
+                        cells.chunked(7).forEach { week ->
+                            Row(Modifier.fillMaxWidth()) {
+                                week.forEach { value ->
+                                    if (value == 0) {
+                                        Box(Modifier.weight(1f).height(36.dp))
+                                    } else {
+                                        val selected = value == selectedDay
+                                        TextButton(
+                                            onClick = { selectedDay = value },
+                                            modifier = Modifier.weight(1f).height(36.dp),
+                                            contentPadding = PaddingValues(0.dp),
+                                            colors = ButtonDefaults.textButtonColors(
+                                                containerColor = if (selected) EmeraldColor else Color.Transparent,
+                                                contentColor = if (selected) Color(0xFF06130E) else InkColor
+                                            )
+                                        ) { Text(JalaliDate.faDigits(value.toString()), fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+                                    }
+                                }
+                                repeat(7 - week.size) { Box(Modifier.weight(1f).height(36.dp)) }
+                            }
+                        }
+                    }
+                }
+                Text("تاریخ انتخاب‌شده: " + JalaliDate.faDigits("$year/$month/$selectedDay"), color = AccentCyan, fontSize = 12.sp)
                 OutlinedTextField(time, { time = it }, label = { Text("ساعت ۲۴ ساعته") }, singleLine = true)
                 OutlinedTextField(duration, { duration = it.filter(Char::isDigit) }, label = { Text("مدت به دقیقه") }, singleLine = true)
             }
         },
-        confirmButton = { Button(onClick = { onSave(day, time, duration.toIntOrNull() ?: 30) }) { Text("ثبت مسدودی") } },
+        confirmButton = {
+            Button(onClick = {
+                val iso = JalaliDate.toGregorian(year, month, selectedDay)
+                if (iso != null && time.matches(Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) && (duration.toIntOrNull() ?: 0) > 0) {
+                    onSave(iso, time.padStart(5, '0'), duration.toInt())
+                }
+            }) { Text("ثبت مسدودی") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("انصراف") } }
     )
 }
@@ -466,7 +908,7 @@ private fun ServicesScreen(state: AdminUiState, vm: AdminViewModel) {
         })
         if (state.services.isEmpty()) EmptyPanel("هنوز خدمتی ثبت نشده است.", Icons.Default.ShoppingBag)
         state.services.forEach { service ->
-            ElevatedCard(shape = RoundedCornerShape(18.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+            ElevatedCard(shape = RoundedCornerShape(18.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(service.name, color = ForestColor, fontWeight = FontWeight.Bold)
@@ -522,7 +964,7 @@ private fun ScheduleScreen(state: AdminUiState, vm: AdminViewModel) {
     PageColumn {
         SectionTitle("برنامه کاری", "ساعات هفتگی و تعطیلی‌های ویژه")
         InfoPanel("منطقه زمانی", "تهران · Asia/Tehran")
-        Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = PanelColor)) {
             Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -539,7 +981,7 @@ private fun ScheduleScreen(state: AdminUiState, vm: AdminViewModel) {
         }
         SectionTitle("ساعات هفتگی")
         state.weeklyDays.forEach { day ->
-            Surface(color = Color.White, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth().clickable { editingDay = day }) {
+            Surface(color = PanelColor, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth().clickable { editingDay = day }) {
                 Row(Modifier.padding(horizontal = 14.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(day.name, fontWeight = FontWeight.SemiBold)
@@ -554,14 +996,14 @@ private fun ScheduleScreen(state: AdminUiState, vm: AdminViewModel) {
         })
         if (state.exceptions.isEmpty()) Text("تغییر ویژه‌ای ثبت نشده است.", color = MutedText, fontSize = 12.sp)
         state.exceptions.forEach { exception ->
-            Surface(color = Color.White, shape = RoundedCornerShape(14.dp)) {
+            Surface(color = PanelColor, shape = RoundedCornerShape(14.dp)) {
                 Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(JalaliDate.format(exception.date), fontWeight = FontWeight.Bold)
                         Text(if (exception.isClosed) "تعطیل" else exception.intervals.joinToString(" · ") { it.startsAt + " تا " + it.endsAt }, color = MutedText, fontSize = 11.sp)
                         if (exception.note.isNotBlank()) Text(exception.note, color = MutedText, fontSize = 11.sp)
                     }
-                    IconButton(onClick = { vm.deleteException(exception) }) { Icon(Icons.Default.Delete, null, tint = Color(0xFF9D5047)) }
+                    IconButton(onClick = { vm.deleteException(exception) }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFF08D82)) }
                 }
             }
         }
@@ -655,13 +1097,13 @@ private fun ExceptionDialog(onDismiss: () -> Unit, onSave: (String, Boolean, Lis
 }
 
 @Composable
-private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel) {
+private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel, hasSavedCredentials: Boolean, onClearSavedCredentials: () -> Unit) {
     var email by remember(state.notices) { mutableStateOf(state.notices.emailEnabled) }
     var project by remember(state.notices) { mutableStateOf(state.notices.firebaseProjectId) }
     val context = LocalContext.current
     PageColumn {
         SectionTitle("اعلان‌ها و تنظیمات", "دریافت اعلان بومی روی گوشی مدیر")
-        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.NotificationsActive, null, tint = EmeraldColor, modifier = Modifier.size(28.dp))
@@ -679,7 +1121,38 @@ private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel) {
                 OutlinedButton(onClick = vm::sendRemoteTest, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.NotificationsNone, null); Spacer(Modifier.width(7.dp)); Text("ارسال اعلان آزمایشی از سرور") }
             }
         }
-        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Fingerprint, null, tint = AccentCyan, modifier = Modifier.size(27.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("ورود سریع با اثر انگشت", color = ForestColor, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (hasSavedCredentials) "نام کاربری و گذرواژه به‌صورت رمزنگاری‌شده روی این دستگاه ذخیره شده‌اند."
+                            else "در ورود بعدی، گزینه ذخیره با اثر انگشت را فعال کن.",
+                            color = MutedText,
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
+                        )
+                    }
+                    StatusBadge(if (hasSavedCredentials) "confirmed" else "pending")
+                }
+                if (hasSavedCredentials) {
+                    OutlinedButton(
+                        onClick = onClearSavedCredentials,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF08D82)),
+                        border = BorderStroke(1.dp, Color(0xFFF08D82).copy(alpha = .5f))
+                    ) {
+                        Icon(Icons.Default.Delete, null)
+                        Spacer(Modifier.width(7.dp))
+                        Text("حذف اطلاعات ورود ذخیره‌شده")
+                    }
+                }
+            }
+        }
+        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("ترجیحات", color = ForestColor, fontWeight = FontWeight.Bold)
                 Row(verticalAlignment = Alignment.CenterVertically) { Text("اعلان ایمیلی", Modifier.weight(1f)); Switch(email, { email = it }) }
@@ -695,7 +1168,7 @@ private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel) {
 
 @Composable
 private fun InfoPanel(title: String, body: String) {
-    Surface(color = Sage, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = PanelRaisedColor, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(title, color = ForestColor, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             Text(body, color = MutedText, fontSize = 11.sp, lineHeight = 17.sp)
@@ -705,7 +1178,7 @@ private fun InfoPanel(title: String, body: String) {
 
 @Composable
 private fun EmptyPanel(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = PanelColor, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(icon, null, tint = EmeraldColor, modifier = Modifier.size(34.dp))
             Text(message, color = MutedText, textAlign = TextAlign.Center, fontSize = 13.sp)

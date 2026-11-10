@@ -5,6 +5,9 @@ import org.json.JSONObject
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import android.icu.util.Calendar
+import android.icu.util.TimeZone
+import android.icu.util.ULocale
 
 private val tehran = ZoneId.of("Asia/Tehran")
 private val apiDate = DateTimeFormatter.ISO_LOCAL_DATE
@@ -44,6 +47,29 @@ fun JSONArray.objects(): List<JSONObject> = (0 until length()).mapNotNull { optJ
 object JalaliDate {
     private val digits = "۰۱۲۳۴۵۶۷۸۹"
     fun faDigits(value: String): String = value.map { ch -> if (ch in '0'..'9') digits[ch - '0'] else ch }.joinToString("")
+
+    fun parts(gregorian: String): Triple<Int, Int, Int>? {
+        val date = runCatching { LocalDate.parse(gregorian) }.getOrNull() ?: return null
+        return toJalali(date.year, date.monthValue, date.dayOfMonth)
+    }
+
+    fun toGregorian(year: Int, month: Int, day: Int): String? = runCatching {
+        require(month in 1..12 && day >= 1)
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tehran"), ULocale("fa_IR@calendar=persian"))
+        calendar.isLenient = false
+        calendar.clear()
+        calendar.set(year, month - 1, day, 12, 0, 0)
+        java.time.Instant.ofEpochMilli(calendar.timeInMillis).atZone(tehran).toLocalDate().format(apiDate)
+    }.getOrNull()
+
+    fun monthLength(year: Int, month: Int): Int = runCatching {
+        require(month in 1..12)
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tehran"), ULocale("fa_IR@calendar=persian"))
+        calendar.isLenient = false
+        calendar.clear()
+        calendar.set(year, month - 1, 1, 12, 0, 0)
+        calendar.getActualMaximum(Calendar.DATE)
+    }.getOrDefault(if (month <= 6) 31 else if (month <= 11) 30 else 29)
 
     fun format(gregorian: String): String {
         val date = runCatching { LocalDate.parse(gregorian) }.getOrNull() ?: return faDigits(gregorian)

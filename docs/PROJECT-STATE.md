@@ -54,9 +54,9 @@ The relay check does not submit bookings or modify customer data. Owner confirma
 - Firebase manager push notifications and optional email alerts.
 - Deployment, API, privacy and owner-operation documentation.
 
-## Native Android manager in progress
+## Native Android manager — implementation complete, release pending
 
-A separate Kotlin and Jetpack Compose app is being added for the salon owner. It reuses the existing Apps Script owner API and private Google Sheets database. Native FCM registration writes its token into the existing `PushSubscriptions` sheet; high-priority Android messages are rendered by a native notification channel. No second customer database or rewrite of the booking website is planned.
+A separate Kotlin and Jetpack Compose manager app is implemented for the salon owner. It reuses the existing Apps Script owner API, private Google Sheets database and Firebase project. Native FCM registration writes its token into the existing `PushSubscriptions` sheet; high-priority Android messages are rendered by a native notification channel. The app includes the graphical weekly calendar, Jalali manual time-block entry, full owner workflows, Pooya Labs branding and biometric quick sign-in. No second customer database or rewrite of the booking website is introduced.
 
 ## Native Android manager status — 10 November 2026
 
@@ -70,7 +70,19 @@ A separate Kotlin and Jetpack Compose app is being added for the salon owner. It
 - The owner also set the app battery mode to Unrestricted and excluded it from Samsung background-sleep lists.
 - Android workflow [run 42805853496](https://github.com/pooya-labs/salon-booking/actions/runs/42805853496) passed with the Firebase secret injected, including source-contract tests, Firebase configuration processing, Kotlin unit tests, APK assembly and artifact upload. Artifact ID: `13758393036` (`salon-manager-android-debug`).
 - Repository CI [run 42805854365](https://github.com/pooya-labs/salon-booking/actions/runs/42805854365) passed on Linux and Windows.
-- The native Android physical-device smoke test is complete; PR #5 can be merged after confirming its latest head/checks.
+- Latest UI/biometric feature branch: [PR #6](https://github.com/pooya-labs/salon-booking/pull/6), head `f153ad79fbcf5b4f3fb33daa3bd384e34f7e32bf`.
+- Firebase-configured Android build, source-contract tests, focused Kotlin tests and APK artifact upload passed: [run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938), artifact `13766596540`.
+- Repository CI passed on Linux and Windows: [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
+- The latest APK is a debug build. Physical-device acceptance of the latest calendar, biometric and notification visual changes is still pending, as is dedicated release signing. Do not mark Android 1.1.0 as a stable production release until both are complete.
+
+## Android 1.1.0 final release checklist
+
+- [x] Android implementation and automated verification complete.
+- [x] Firebase-configured debug APK uploaded to GitHub Actions.
+- [ ] Confirm latest build on the manager's physical phone, including launch, sign-in, graphical calendar, fingerprint quick sign-in and notification appearance.
+- [ ] Configure a dedicated release keystore in repository Actions secrets.
+- [ ] Produce and verify a signed release APK/AAB.
+- [ ] Publish the versioned GitHub Release and merge PR #6.
 
 ## Known limitations and follow-up work
 
