@@ -113,6 +113,20 @@ All owner routes require a valid owner session, except the setup-status check an
 
 Weekly schedules and date exceptions support multiple non-overlapping intervals. Changes that would conflict with active bookings are rejected.
 
+## Native Android transport
+
+The native manager app uses the same `/exec` Web App URL without a browser iframe. It sends one outer HTTP `POST` containing the same proxy envelope that the Pages bridge passes to `proxyRequest()`:
+
+    {
+      "path": "/api/admin/me",
+      "method": "GET",
+      "headers": { "accept": "application/json" },
+      "body": null,
+      "sessionId": "a-random-uuid"
+    }
+
+The outer request is always POST; `path`, inner `method`, `headers`, `body` and `sessionId` are passed to `proxyRequest()`. The response contains the application `status` and a JSON-string `body`. The app stores its session identifier encrypted using Android Keystore. Owner routes still require a valid session; this transport adds no alternate login or admin bypass.
+
 ## Sessions and notifications
 
 Owner sessions have a rolling 30-day inactivity lifetime. The session identifier stored in the spreadsheet is hashed; the cache is an accelerator and is not the only record of an active session. Signing out revokes the current session.
