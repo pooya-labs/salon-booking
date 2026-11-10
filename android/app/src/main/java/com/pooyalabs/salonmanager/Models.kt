@@ -52,7 +52,7 @@ object JalaliDate {
 
     fun toGregorian(year: Int, month: Int, day: Int): String? = runCatching {
         require(month in 1..12 && day >= 1)
-        val calendar = android.icu.util.PersianCalendar(java.util.TimeZone.getTimeZone("Asia/Tehran"))
+        val calendar = android.icu.util.PersianCalendar(android.icu.util.TimeZone.getTimeZone("Asia/Tehran"))
         calendar.isLenient = false
         calendar.clear()
         calendar.set(year, month - 1, day, 12, 0, 0)
@@ -60,7 +60,7 @@ object JalaliDate {
     }.getOrNull()
 
     fun monthLength(year: Int, month: Int): Int = runCatching {
-        val calendar = android.icu.util.PersianCalendar(java.util.TimeZone.getTimeZone("Asia/Tehran"))
+        val calendar = android.icu.util.PersianCalendar(android.icu.util.TimeZone.getTimeZone("Asia/Tehran"))
         calendar.isLenient = false
         calendar.clear()
         calendar.set(year, month - 1, 1, 12, 0, 0)
