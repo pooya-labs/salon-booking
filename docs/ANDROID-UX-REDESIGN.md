@@ -1,6 +1,6 @@
 # Android manager UX redesign
 
-**Status:** implementation complete for the requested visual and theme scope; merge requested by the owner. Automated/device verification remains deferred by explicit instruction.
+**Status:** merged into `main` through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8), merge commit `619c044c0b8c473fbc02b51829746f72f15a4db4`. Automated/device verification remains deferred by explicit owner instruction.
 
 ## Visual direction
 
