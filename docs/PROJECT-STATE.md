@@ -58,6 +58,14 @@ The relay check does not submit bookings or modify customer data. Owner confirma
 
 A separate Kotlin and Jetpack Compose app is being added for the salon owner. It reuses the existing Apps Script owner API and private Google Sheets database. Native FCM registration writes its token into the existing `PushSubscriptions` sheet; high-priority Android messages are rendered by a native notification channel. No second customer database or rewrite of the booking website is planned.
 
+## Native Android manager status — 10 November 2026
+
+- Native app PR: [#5](https://github.com/pooya-labs/salon-booking/pull/5).
+- Android Gradle build, focused Kotlin unit tests and debug APK artifact passed: [Android workflow run 42794925474](https://github.com/pooya-labs/salon-booking/actions/runs/42794925474).
+- The debug artifact was produced without `ANDROID_GOOGLE_SERVICES_JSON_BASE64`; remote Firebase registration and background delivery have not been verified on a physical device.
+- The repository backend source is 1.5.5. The existing Google Apps Script Web App still needs to be republished to that source version while preserving its current `/exec` URL.
+- Do not merge/publish the native app as production-ready until Firebase setup, Apps Script deployment and physical-device notification verification are complete.
+
 ## Known limitations and follow-up work
 
 These do not block the current release:

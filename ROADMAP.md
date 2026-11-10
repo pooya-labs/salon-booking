@@ -118,8 +118,10 @@ The customer website and its existing Google Sheets records remain unchanged. A 
 
 ### Required before a usable APK with background push
 - [ ] Add the Android app `com.pooyalabs.salonmanager` to the existing Firebase project and store its Base64 `google-services.json` as the GitHub Actions secret `ANDROID_GOOGLE_SERVICES_JSON_BASE64`.
+
+The first debug artifact was built without the Firebase Android JSON secret, so the APK is compile-tested but not yet registered for remote FCM delivery. Do not distribute it as a production notification client until the secret and the existing Apps Script Web App update are complete.
 - [ ] Publish Apps Script source 1.5.5 to the existing Web App deployment, preserving the current `/exec` URL.
-- [ ] Pass Android build and unit tests in GitHub Actions.
+- [x] Pass Android build, focused Kotlin unit tests and debug APK packaging in GitHub Actions: [run 42794925474](https://github.com/pooya-labs/salon-booking/actions/runs/42794925474).
 - [ ] Install the APK on the manager's physical Android phone, sign in and confirm the FCM token is registered.
 - [ ] Verify test and real booking notifications with the app foregrounded, backgrounded and swiped away from Recents; verify sound and vibration from the Android channel settings.
 - [ ] Verify on a second network and after reboot. Document Android force-stop, notification permission, Do Not Disturb and manufacturer battery restrictions as OS-level limitations.
