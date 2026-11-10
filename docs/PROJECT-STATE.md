@@ -58,6 +58,12 @@ The relay check does not submit bookings or modify customer data. Owner confirma
 
 A separate Kotlin and Jetpack Compose manager app is implemented for the salon owner. It reuses the existing Apps Script owner API, private Google Sheets database and Firebase project. Native FCM registration writes its token into the existing `PushSubscriptions` sheet; high-priority Android messages are rendered by a native notification channel. The app includes the graphical weekly calendar, Jalali manual time-block entry, full owner workflows, Pooya Labs branding and biometric quick sign-in. No second customer database or rewrite of the booking website is introduced.
 
+## Native Android UX redesign — 10 November 2026
+
+The manager UI is being refreshed with an obsidian/graphite visual system, restrained cyan-mint accents, floating animated bottom navigation, and short transitions between the secure login and management areas. The work is limited to the native Android presentation layer; booking APIs, authentication, database and notification flows remain unchanged. See [docs/ANDROID-UX-REDESIGN.md](ANDROID-UX-REDESIGN.md).
+
+**Verification is intentionally on hold** at the owner's request until all requested UI changes are complete. Do not run tests, builds, APK assembly or CI during this design iteration.
+
 ## Native Android manager status — 10 November 2026
 
 - Native app PR: [#5](https://github.com/pooya-labs/salon-booking/pull/5).
