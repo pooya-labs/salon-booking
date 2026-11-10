@@ -64,7 +64,7 @@ The native manager now includes persistent System / Light / Dark modes. The ligh
 
 The notification implementation was intentionally not edited. `Notifications.kt`, `PushTokenSync.kt`, `SalonMessagingService.kt` and `AndroidManifest.xml` were checked against `main`; their Git blob SHAs match exactly. No FCM callback, channel, rendering, boot reconciliation, WorkManager retry, permission or server-registration code was changed. See [docs/ANDROID-UX-REDESIGN.md](ANDROID-UX-REDESIGN.md).
 
-Automated tests and local Gradle builds were not run for this iteration at the owner's request. The latest appearance modes and notification behavior still require final verification before another APK is published.
+PR #8 was squash-merged into `main` as `619c044c0b8c473fbc02b51829746f72f15a4db4`. Automated tests and local Gradle builds were not manually run for this iteration at the owner's request; repository CI may run automatically after merge. The latest appearance modes and unchanged notification behavior still require final verification before another APK is published.
 
 ## Native Android manager status — 10 November 2026
 
