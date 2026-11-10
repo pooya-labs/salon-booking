@@ -2297,3 +2297,7 @@ hr { border-color:var(--line); }
   color: #d6ba8d;
   font-size: 8px;
 }
+
+
+.admin-booking-phone-missing { display:block; margin-top:7px; color:#9d695b; font-size:10px; }
+.admin-calendar-booking-phone.admin-booking-phone-missing { margin-top:5px; color:#d7a19a; font-size:8px; }
