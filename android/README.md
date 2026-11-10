@@ -17,6 +17,10 @@ Native owner app for Shayan Barber Studio. The customer booking website remains 
 
 Without Firebase configuration the project still compiles and the local notification preview works, but remote FCM registration is unavailable. The automated build reports this as a warning; do not use such an APK as the production manager app.
 
+## Interface design
+
+The native manager uses a Persian RTL interface with an obsidian/graphite visual system, cyan-mint accents, animated login entry, floating bottom navigation and restrained screen transitions. The design direction and current verification hold are documented in `../docs/ANDROID-UX-REDESIGN.md`.
+
 ## Build
 
 Open the `android/` folder in Android Studio, let Gradle sync, then run the `app` configuration. To build from a machine with Gradle 8.13 installed:
