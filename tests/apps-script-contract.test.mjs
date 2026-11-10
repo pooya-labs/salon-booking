@@ -9,6 +9,8 @@ const manifest = JSON.parse(readFileSync(new URL('../relay/appsscript.json', imp
 const bridge = readFileSync(new URL('../relay/Bridge.html', import.meta.url), 'utf8')
 const pushClient = readFileSync(new URL('../src/push-notifications.ts', import.meta.url), 'utf8')
 const worker = readFileSync(new URL('../public/firebase-messaging-sw.js', import.meta.url), 'utf8')
+const adminClient = readFileSync(new URL('../src/Admin.tsx', import.meta.url), 'utf8')
+const calendarClient = readFileSync(new URL('../src/AdminCalendar.tsx', import.meta.url), 'utf8')
 const relayClient = readFileSync(new URL('../src/relay.ts', import.meta.url), 'utf8')
 
 test('Apps Script backend parses as V8 JavaScript', () => {
@@ -134,12 +136,28 @@ test('phone booking email alerts show confirmed status and the booking source', 
   assert.ok(backend.includes("booking.status === 'confirmed' ? 'تأیید شده' : 'در انتظار تأیید'"))
 })
 
-test('foreground and background push use the Pages admin route and service-worker notifications', () => {
+test('foreground and background push use data messages, high Web Push urgency and persistent vibration', () => {
   assert.ok(pushClient.includes('registration.showNotification'))
   assert.ok(pushClient.includes("new URL('?admin=1'"))
-  assert.ok(backend.includes("fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/?admin=1' }"))
+  assert.ok(pushClient.includes('refreshOwnerPushDeviceRegistration'))
+  assert.ok(pushClient.includes('requireInteraction: true'))
+  assert.ok(pushClient.includes('vibrate: [0, 450, 180, 450, 180, 750]'))
+  assert.match(backend, /data:\s*\{[\s\S]*?title:[\s\S]*?body:/)
+  assert.match(backend, /Urgency:\s*'high'/)
+  assert.match(backend, /for \(var attempt = 0; attempt < 3/)
+  assert.match(worker, /messaging\.onBackgroundMessage/)
+  assert.match(worker, /requireInteraction: true/)
+  assert.match(worker, /vibrate: \[0, 450, 180, 450, 180, 750\]/)
   assert.ok(worker.indexOf("self.addEventListener('notificationclick'") < worker.indexOf('importScripts('))
-  assert.doesNotMatch(worker, /onBackgroundMessage/)
+  assert.doesNotMatch(backend, /notification:\s*\{\s*title:/)
+})
+
+test('manager booking views expose customer names and phone numbers as tap-to-call links', () => {
+  assert.match(adminClient, /booking\.phone/)
+  assert.match(adminClient, /tel:\$\{booking\.phone\}/)
+  assert.match(calendarClient, /booking\.phone/)
+  assert.match(calendarClient, /tel:\$\{booking\.phone\}/)
+  assert.match(backend, /name: item\.row\.name, phone: item\.row\.phone/)
 })
 
 test('Pages relay has bounded, recoverable iframe and request failures', () => {
