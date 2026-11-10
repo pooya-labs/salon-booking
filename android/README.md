@@ -68,9 +68,23 @@ The workflow artifact is named `salon-manager-android-debug` and contains `app-d
 - [x] Focused Kotlin unit tests passed.
 - [x] Debug APK assembled and uploaded.
 - [x] Repository CI passed on Linux and Windows.
-- [ ] Install the latest APK on the manager's physical phone and confirm launch, sign-in, calendar, biometric enrollment/quick sign-in and notification appearance.
-- [ ] Configure a dedicated Android release signing key in GitHub Actions secrets; never commit the keystore or passwords.
-- [ ] Build and verify a signed release APK (and optionally AAB), then publish a versioned GitHub Release.
-- [ ] Merge the feature PR and mark the Android production release complete after the above checks.
+- [x] Owner confirmed the latest APK installs and launches successfully on the target phone.
+- [x] Merge PR #6 and publish the v1.1.0 GitHub prerelease with the tested debug-signed APK.
+- [ ] Optional future hardening: configure a dedicated production signing key and publish a stable signed APK/AAB. Play Store distribution is not part of this project release.
 
 The earlier physical-device FCM checks for foreground, background-after-Recents-dismissal and reboot token reconciliation remain valid for the notification implementation at that time. They do not replace the final smoke test for the latest UI and biometric changes.
+
+
+## Published prerelease — v1.1.0
+
+The project owner confirmed that the latest APK installs and launches successfully on the target phone. PR #6 was squash-merged into `main` as commit `2274f5810c5f12c1a5eab5bd86cdb8977e0f29b0`.
+
+Version `v1.1.0` is published as a **GitHub prerelease**. The release workflow builds and attaches the Firebase-configured APK and reruns focused Android unit tests. The APK is debug-signed, not production-signed. This is suitable for the owner's direct installation and current project use, but future updates must use the same signing key to install over it. A separately managed release keystore is not configured in this repository.
+
+- Release page: https://github.com/pooya-labs/salon-booking/releases/tag/v1.1.0
+- Source tag: `v1.1.0`
+- Merged source: `2274f5810c5f12c1a5eab5bd86cdb8977e0f29b0`
+- Automated Android build on the merged commit: https://github.com/pooya-labs/salon-booking/actions/runs/42822583643
+- Repository CI on the merged commit: https://github.com/pooya-labs/salon-booking/actions/runs/42822583696
+
+The booking website, Apps Script backend, private Sheets database and Firebase project remain the existing live services. The Android manager implementation and current owner-verified prerelease are complete. Production signing and Play Store distribution are intentionally out of scope for this release.
