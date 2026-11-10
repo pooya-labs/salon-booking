@@ -127,3 +127,15 @@ Verification on the current UI code:
 - Repository CI passed on Linux and Windows, including lint, unit tests, migrations, typecheck/build, responsive/RTL browser QA and owner-dashboard date-range QA: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998).
 
 Remaining acceptance is physical-device-only: install this exact APK, verify all three appearance modes and restart persistence, then confirm biometric login, calendar interactions and the already-working FCM notifications. The automated tests do not replace this real-device check. The v1.2.0 GitHub prerelease is now published as a debug-signed owner-validation build: [release page](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0) · [direct APK](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk). The release workflow [42864377838](https://github.com/pooya-labs/salon-booking/actions/runs/42864377838) completed its Firebase-configured build and Kotlin tests successfully. Complete the physical-device smoke test before wider distribution.
+
+## Latest Android release asset refresh — 10 November 2026
+
+The startup/loading screen's Pooya monogram now sits on a pure-black tile (`#000000`) so the mint mark is legible against the light loading background. The change is intentionally limited to the logo surface plus a source-contract regression test. The monogram artwork, loading spinner/copy, Firebase configuration, notification delivery files, Apps Script API and booking data path were not modified.
+
+- Source change and regression test are included in main commit `10a11211992441eef4a13af64cc62b424e33bf83`.
+- Firebase-configured Android build, focused Android tests and release-asset upload all succeeded: [workflow run 42867684705](https://github.com/pooya-labs/salon-booking/actions/runs/42867684705).
+- The existing [v1.2.0 GitHub prerelease](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0) now contains the refreshed `app-debug.apk` (22,279,497 bytes; asset timestamp 10 November 2026, 17:44 UTC): [direct APK download](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk).
+- The release workflow completed successfully. Main-branch repository CI and Pages deployment triggered by the documentation commit are tracked separately; do not report them as passed until their runs finish.
+- Owner-side acceptance remains pending for this exact APK: startup logo contrast, all three themes and persistence, biometric quick sign-in, calendar interactions and the existing FCM notification flow.
+
+The APK is a debug-signed owner-validation build. Production signing and Play Store distribution remain out of scope. The live booking website remains version 1.0.0; Android manager version 1.2.0 is a separate companion-app release.
