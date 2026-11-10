@@ -73,6 +73,7 @@ test('background FCM data messages are rendered immediately in a native high-imp
   assert.match(messaging, /override fun onMessageReceived/)
   assert.ok(messaging.indexOf('SalonNotifications.show') < messaging.indexOf('override fun onNewToken'))
   assert.match(notifications, /NotificationManager\.IMPORTANCE_HIGH/)
+  assert.match(notifications, /setLargeIcon\(BitmapFactory\.decodeResource\(context\.resources, R\.drawable\.pooya_monogram\)\)/)
   assert.match(notifications, /enableVibration\(true\)/)
   assert.match(notifications, /setSound\(Settings\.System\.DEFAULT_NOTIFICATION_URI/)
   assert.match(backend, /android:\s*\{ priority: 'HIGH', ttl: '86400s' \}/)
@@ -105,10 +106,10 @@ test('the native manager covers booking, calendar, manual appointments, services
 
 
 test('manual time blocks are selected with a Jalali calendar and stored as Gregorian ISO dates', () => {
-  assert.match(screens, /TimeBlockDialog[\\s\\S]*?تاریخ انتخاب‌شده/)
-  assert.match(screens, /JalaliDate\\.toGregorian\\(year, month, selectedDay\\)/)
+  assert.match(screens, /TimeBlockDialog[\s\S]*?تاریخ انتخاب‌شده/)
+  assert.match(screens, /JalaliDate\.toGregorian\(year, month, selectedDay\)/)
   assert.match(screens, /فروردین/)
-  assert.match(read('android/app/src/main/java/com/pooyalabs/salonmanager/Models.kt'), /android\\.icu\\.util\\.PersianCalendar/)
+  assert.match(read('android/app/src/main/java/com/pooyalabs/salonmanager/Models.kt'), /android\.icu\.util\.PersianCalendar/)
 })
 
 test('Firebase Android configuration is injected and never committed', () => {
