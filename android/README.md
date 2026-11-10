@@ -82,6 +82,8 @@ The project owner confirmed that the latest APK installs and launches successful
 Version `v1.1.0` is published as a **GitHub prerelease**. The release workflow builds and attaches the Firebase-configured APK and reruns focused Android unit tests. The APK is debug-signed, not production-signed. This is suitable for the owner's direct installation and current project use, but future updates must use the same signing key to install over it. A separately managed release keystore is not configured in this repository.
 
 - Release page: https://github.com/pooya-labs/salon-booking/releases/tag/v1.1.0
+- Direct APK: https://github.com/pooya-labs/salon-booking/releases/download/v1.1.0/app-debug.apk
+- Release build and publish workflow succeeded: https://github.com/pooya-labs/salon-booking/actions/runs/42822741628
 - Source tag: `v1.1.0`
 - Merged source: `2274f5810c5f12c1a5eab5bd86cdb8977e0f29b0`
 - Automated Android build on the merged commit: https://github.com/pooya-labs/salon-booking/actions/runs/42822583643
