@@ -73,16 +73,18 @@ A separate Kotlin and Jetpack Compose manager app is implemented for the salon o
 - Latest UI/biometric feature branch: [PR #6](https://github.com/pooya-labs/salon-booking/pull/6), head `f153ad79fbcf5b4f3fb33daa3bd384e34f7e32bf`.
 - Firebase-configured Android build, source-contract tests, focused Kotlin tests and APK artifact upload passed: [run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938), artifact `13766596540`.
 - Repository CI passed on Linux and Windows: [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
-- The latest APK is a debug build. Physical-device acceptance of the latest calendar, biometric and notification visual changes is still pending, as is dedicated release signing. Do not mark Android 1.1.0 as a stable production release until both are complete.
+- The owner has now confirmed successful installation and launch of the latest APK on the target phone.
+- PR #6 was squash-merged into main as `2274f5810c5f12c1a5eab5bd86cdb8977e0f29b0`.
+- GitHub prerelease v1.1.0 is published with the tested debug-signed APK. Production signing and Play Store distribution are optional future work, not blockers for the current direct-install use case.
 
 ## Android 1.1.0 final release checklist
 
 - [x] Android implementation and automated verification complete.
 - [x] Firebase-configured debug APK uploaded to GitHub Actions.
-- [ ] Confirm latest build on the manager's physical phone, including launch, sign-in, graphical calendar, fingerprint quick sign-in and notification appearance.
-- [ ] Configure a dedicated release keystore in repository Actions secrets.
-- [ ] Produce and verify a signed release APK/AAB.
-- [ ] Publish the versioned GitHub Release and merge PR #6.
+- [x] Owner confirmed latest APK installs and launches on the target phone.
+- [x] Merge PR #6 into main.
+- [x] Publish GitHub prerelease v1.1.0 with debug-signed APK.
+- [ ] Optional future task: configure production signing and publish stable signed APK/AAB.
 
 ## Known limitations and follow-up work
 
