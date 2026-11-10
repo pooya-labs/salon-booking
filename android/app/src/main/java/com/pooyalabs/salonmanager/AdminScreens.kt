@@ -823,20 +823,77 @@ private fun persianWeekday(date: LocalDate): String = when (date.dayOfWeek.value
 
 @Composable
 private fun TimeBlockDialog(date: String, onDismiss: () -> Unit, onSave: (String, String, Int) -> Unit) {
-    var day by remember(date) { mutableStateOf(date) }
+    val initial = remember(date) { JalaliDate.parts(date) ?: Triple(1405, 1, 1) }
+    var year by remember(date) { mutableIntStateOf(initial.first) }
+    var month by remember(date) { mutableIntStateOf(initial.second) }
+    var selectedDay by remember(date) { mutableIntStateOf(initial.third) }
     var time by remember { mutableStateOf("10:00") }
     var duration by remember { mutableStateOf("30") }
+    val monthNames = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند")
+    val monthLength = JalaliDate.monthLength(year, month)
+    val firstIso = JalaliDate.toGregorian(year, month, 1)
+    val leading = firstIso?.let { (java.time.LocalDate.parse(it).dayOfWeek.value + 1) % 7 } ?: 0
+    val days = (1..monthLength).toList()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("مسدود کردن زمان") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                OutlinedTextField(day, { day = it }, label = { Text("تاریخ میلادی YYYY-MM-DD") }, singleLine = true)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Surface(color = PanelRaisedColor, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, LineColor)) {
+                    Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            IconButton(onClick = {
+                                if (month == 1) { month = 12; year-- } else month--
+                                selectedDay = selectedDay.coerceAtMost(JalaliDate.monthLength(year, month))
+                            }) { Icon(Icons.Default.ChevronRight, "ماه قبل", tint = AccentCyan) }
+                            Text(monthNames[month - 1] + " " + JalaliDate.faDigits(year.toString()), color = ForestColor, fontWeight = FontWeight.Bold)
+                            IconButton(onClick = {
+                                if (month == 12) { month = 1; year++ } else month++
+                                selectedDay = selectedDay.coerceAtMost(JalaliDate.monthLength(year, month))
+                            }) { Icon(Icons.Default.ChevronLeft, "ماه بعد", tint = AccentCyan) }
+                        }
+                        Row(Modifier.fillMaxWidth()) {
+                            listOf("ش", "ی", "د", "س", "چ", "پ", "ج").forEach { label ->
+                                Text(label, Modifier.weight(1f), color = MutedText, textAlign = TextAlign.Center, fontSize = 11.sp)
+                            }
+                        }
+                        val cells = List(leading) { 0 } + days
+                        cells.chunked(7).forEach { week ->
+                            Row(Modifier.fillMaxWidth()) {
+                                week.forEach { value ->
+                                    if (value == 0) {
+                                        Box(Modifier.weight(1f).height(36.dp))
+                                    } else {
+                                        val selected = value == selectedDay
+                                        TextButton(
+                                            onClick = { selectedDay = value },
+                                            modifier = Modifier.weight(1f).height(36.dp),
+                                            contentPadding = PaddingValues(0.dp),
+                                            colors = ButtonDefaults.textButtonColors(
+                                                containerColor = if (selected) EmeraldColor else Color.Transparent,
+                                                contentColor = if (selected) Color(0xFF06130E) else InkColor
+                                            )
+                                        ) { Text(JalaliDate.faDigits(value.toString()), fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+                                    }
+                                }
+                                repeat(7 - week.size) { Box(Modifier.weight(1f).height(36.dp)) }
+                            }
+                        }
+                    }
+                }
+                Text("تاریخ انتخاب‌شده: " + JalaliDate.faDigits("$year/$month/$selectedDay"), color = AccentCyan, fontSize = 12.sp)
                 OutlinedTextField(time, { time = it }, label = { Text("ساعت ۲۴ ساعته") }, singleLine = true)
                 OutlinedTextField(duration, { duration = it.filter(Char::isDigit) }, label = { Text("مدت به دقیقه") }, singleLine = true)
             }
         },
-        confirmButton = { Button(onClick = { onSave(day, time, duration.toIntOrNull() ?: 30) }) { Text("ثبت مسدودی") } },
+        confirmButton = {
+            Button(onClick = {
+                val iso = JalaliDate.toGregorian(year, month, selectedDay)
+                if (iso != null && time.matches(Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) && (duration.toIntOrNull() ?: 0) > 0) {
+                    onSave(iso, time.padStart(5, '0'), duration.toInt())
+                }
+            }) { Text("ثبت مسدودی") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("انصراف") } }
     )
 }
