@@ -54,7 +54,7 @@ test('Pooya Labs launcher mark is scaled inside the Android adaptive-icon safe z
   const adaptiveIcon = read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml')
   const foreground = read('android/app/src/main/res/drawable/ic_launcher_foreground.xml')
   assert.match(adaptiveIcon, /@drawable\/ic_launcher_foreground/)
-  assert.match(foreground, /@drawable="pooya_monogram"/)
+  assert.match(foreground, /@drawable\\/pooya_monogram/)
   assert.match(foreground, /android:insetLeft="18dp"/)
   assert.match(foreground, /android:insetRight="18dp"/)
 })
