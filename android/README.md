@@ -48,7 +48,7 @@ The repository owner confirmed that the Android app was registered in the existi
 
 ## Modern branding, calendar and biometric sign-in
 
-The app uses the official Pooya Labs monogram artwork from the platform brand directory and a dark graphite / mint interface. The weekly calendar provides a seven-day selector, appointment counts, a visual daily timeline, booking details, and manual time blocking. Booking, services, weekly hours, exceptions, booking rules, notification settings and account operations remain available in their own manager sections.
+The app keeps the official Pooya Labs monogram inside the manager interface and uses a separate custom salon launcher identity: a silver appointment calendar crossed with mint scissors on an obsidian background. The Android adaptive icon includes a dedicated foreground layer, a separate background layer, and a monochrome layer for Android themed icons. The weekly calendar provides a seven-day selector, appointment counts, a visual daily timeline, booking details, and manual time blocking. Booking, services, weekly hours, exceptions, booking rules, notification settings and account operations remain available in their own manager sections.
 
 To enable one-tap sign-in, sign in manually and select **ذخیره ورود با اثر انگشت**. After successful login, confirm the biometric prompt. The username and password are encrypted with AES-GCM and a non-exportable Android Keystore key that requires strong biometric authentication for every cryptographic operation. They are never stored as plaintext. On later visits, use **ورود سریع با اثر انگشت**. If biometric enrollment changes or the device key is invalidated, remove the saved credentials and sign in again manually.
 
