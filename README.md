@@ -48,7 +48,7 @@ Cloudflare Workers and D1 are not used by the current production site. Their sou
 
 ## Native Android manager
 
-The native Android owner app is named **Shayan Barber Studio**. It reuses the existing Apps Script API, owner session, private Google Sheets database and Firebase project; customer reservations remain on the website. The app includes a graphical weekly calendar, Jalali time-block entry, all manager workflows, native notifications, Pooya Labs creator branding, opt-in biometric quick sign-in and persistent System / Light / Dark appearance modes. Android 1.2.0 is published as a GitHub prerelease with a Firebase-configured debug-signed APK; a dedicated production signing key is not configured. Automated Android build/unit tests and Linux/Windows repository CI have passed for the current UI changes. The owner should install this prerelease and smoke-test both themes and notifications before wider distribution. See [Android setup and release status](./android/README.md).
+The native Android owner app is named **Shayan Barber Studio**. It reuses the existing Apps Script API, owner session, private Google Sheets database and Firebase project; customer reservations remain on the website. The app includes a graphical weekly calendar, Jalali time-block entry, all manager workflows, native notifications, Pooya Labs creator branding, opt-in biometric quick sign-in and persistent System / Light / Dark appearance modes. Android 1.2.0 is published as a GitHub prerelease with a Firebase-configured debug-signed APK. The latest APK replaces the earlier v1.2.0 release asset and includes a pure-black tile behind the Pooya startup monogram for legibility. Android build and unit tests passed; repository CI and Pages deployment are running for the documentation/source update. The owner should install this exact APK and smoke-test both themes, biometric sign-in, calendar interactions and notifications. A dedicated production signing key is not configured. See [Android setup and release status](./android/README.md).
 
 ## Running the project
 
@@ -94,7 +94,7 @@ The latest Pages workflow completed the deployment and its read-only Apps Script
 
 ## Latest project update — 10 November 2026
 
-The native Android manager implementation reached feature-complete status. The owner app now includes persistent System / Light / Dark appearance modes with a dedicated, high-contrast light palette and adaptive Android system bars. The notification delivery implementation remains unchanged. The latest Firebase-configured debug build and focused Android tests passed in [Android workflow run 42863648949](https://github.com/pooya-labs/salon-booking/actions/runs/42863648949); repository CI passed on Linux and Windows in [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998). The APK is available as the `salon-manager-android-debug` artifact in the Android workflow. The owner confirmed successful installation and launch of the latest APK. Version 1.2.0 is published as a GitHub prerelease for owner validation. [Download Shayan Barber Studio 1.2.0 APK](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk). Dedicated production signing remains a separate future step.
+The Android startup monogram was refined after owner review: the tile behind the mint Pooya mark now uses pure black (`#000000`) so the mark remains clearly legible. The notification implementation, Firebase routing, Apps Script API and booking database were not changed. The Firebase-configured Android build, source-contract tests, Kotlin unit tests and release asset upload passed in [release workflow run 42867684705](https://github.com/pooya-labs/salon-booking/actions/runs/42867684705). The updated `app-debug.apk` has replaced the previous APK asset in the existing [v1.2.0 GitHub prerelease](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0); [download the updated APK](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk). The release workflow completed successfully. Repository CI and Pages deployment for this documentation update are running. The owner still needs to install this exact APK and smoke-test the logo, themes, biometric sign-in, calendar and notification delivery. Dedicated production signing remains a separate future step.
 
 ## Previous project update — 8 November 2026
 
@@ -164,9 +164,9 @@ The owner attribution was refined: the Pooya Labs Platform monogram is now vendo
 
 برای جزئیات فنی، راهنمای پنل مدیریت، استقرار، API و حریم خصوصی، به فایل‌های مستندات در پوشهٔ docs مراجعه کنید.
 
-### آخرین تغییرات — ۸ نوامبر ۲۰۲۶
+### آخرین تغییرات — ۱۰ نوامبر ۲۰۲۶
 
-نمایش مالکیت پروژه اصلاح شد: مونوگرام پلتفرم پویا لبز به‌صورت محلی داخل مخزن قرار گرفته و از فایل‌های خود پروژه بارگذاری می‌شود؛ در عین حال ظاهر طلایی نشان GitHub نیز به حالت اصلی بازگردانده شد. سامانهٔ رزرو نسخهٔ ۱.۰.۰ همچنان فعال و در وضعیت نگه‌داری است. backend فعال آن Google Apps Script و Google Sheets خصوصی است و اعلان مدیر از Firebase Cloud Messaging استفاده می‌کند؛ Cloudflare Workers و D1 در runtime فعلی نقشی ندارند.
+پس از بازبینی صفحهٔ شروع برنامه، پس‌زمینهٔ قاب مونوگرام پویا به مشکی خالص (`#000000`) تغییر کرد تا نشان فیروزه‌ای خواناتر باشد. کد و مسیر ارسال اعلان‌ها، Firebase، Apps Script و پایگاه دادهٔ رزرو تغییری نکردند. ساخت اندروید، تست‌های منبع و تست‌های Kotlin موفق شدند و فایل APK جدید جایگزین فایل قبلی در انتشار رسمی پیش‌انتشار [نسخهٔ ۱.۲.۰](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0) شد. [دریافت مستقیم APK به‌روزشده](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk). بررسی نهایی روی گوشی مدیر برای لوگو، تم‌ها، ورود اثر انگشت، تقویم و اعلان‌ها همچنان باقی است.
 
 ### مالکیت و نگه‌داری
 
