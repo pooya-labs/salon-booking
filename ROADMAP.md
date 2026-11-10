@@ -116,16 +116,15 @@ The customer website and its existing Google Sheets records remain unchanged. A 
 - [x] Notification preferences, device registration, local sound test, Android channel settings shortcut and remote server test.
 - [x] Focused Kotlin unit tests and a Node contract test for the Android/API/FCM boundary.
 
-### Required before a usable APK with background push
-- [ ] Add the Android app `com.pooyalabs.salonmanager` to the existing Firebase project and store its Base64 `google-services.json` as the GitHub Actions secret `ANDROID_GOOGLE_SERVICES_JSON_BASE64`.
-
-The first debug artifact was built without the Firebase Android JSON secret, so the APK is compile-tested but not yet registered for remote FCM delivery. Do not distribute it as a production notification client until the secret and the existing Apps Script Web App update are complete.
-- [ ] Publish Apps Script source 1.5.5 to the existing Web App deployment, preserving the current `/exec` URL.
-- [x] Pass Android build, focused Kotlin unit tests and debug APK packaging in GitHub Actions: [run 42794925474](https://github.com/pooya-labs/salon-booking/actions/runs/42794925474).
-- [ ] Install the APK on the manager's physical Android phone, sign in and confirm the FCM token is registered.
-- [ ] Verify test and real booking notifications with the app foregrounded, backgrounded and swiped away from Recents; verify sound and vibration from the Android channel settings.
-- [ ] Verify on a second network and after reboot. Document Android force-stop, notification permission, Do Not Disturb and manufacturer battery restrictions as OS-level limitations.
-- [ ] Rebuild after the reboot token-sync patch, then confirm a real booking notification arrives after reboot without opening the app.
+### Native Android push verification
+- [x] Add Android package `com.pooyalabs.salonmanager` to the existing Firebase project and store the Base64 `google-services.json` as GitHub Actions secret `ANDROID_GOOGLE_SERVICES_JSON_BASE64`.
+- [x] Publish Apps Script source 1.5.5 to the existing Web App deployment, preserving the current `/exec` URL.
+- [x] Build the Firebase-configured Android APK, run source-contract tests and focused Kotlin unit tests, and upload the artifact: [Android run 42805853496](https://github.com/pooya-labs/salon-booking/actions/runs/42805853496). Artifact ID: `13758393036`.
+- [x] Install on the manager's physical phone, sign in and confirm the FCM subscription is active through real booking notifications.
+- [x] Verify real booking notifications while foregrounded and after swiping the app away from Recents.
+- [x] Add and verify post-reboot FCM token reconciliation using `BOOT_COMPLETED` + network-constrained WorkManager retry; owner confirmed a booking notification arrived after reboot without opening the app.
+- [x] Configure Samsung battery mode as Unrestricted and exclude Salon Manager from background sleep lists.
+- [ ] Verify delivery on a second network. Android force-stop, revoked notification permission, unavailable network and Do Not Disturb remain OS-level exceptions.
 
 No new database, paid server or replacement customer booking website is introduced.
 
