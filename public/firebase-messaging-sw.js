@@ -1,3 +1,14 @@
+// Replace stale push workers immediately so old clients use the latest handlers.
+self.addEventListener('install', function (event) {
+  event.waitUntil(self.skipWaiting());
+});
+self.addEventListener('activate', function (event) {
+  event.waitUntil(self.clients.claim());
+});
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
+});
+
 // Open the authenticated manager workspace when a notification is tapped.
 self.addEventListener('notificationclick', function (event) {
   const destination = event.notification && event.notification.data && event.notification.data.url;
@@ -42,7 +53,7 @@ if (firebaseConfig && firebaseConfig.apiKey) {
       tag: tag,
       renotify: true,
       requireInteraction: true,
-      silent: false,
+      // Leave silent unset so Android uses the browser's configured notification sound.
       vibrate: [0, 450, 180, 450, 180, 750],
       timestamp: Date.now(),
       data: { url: destination }
