@@ -168,3 +168,17 @@ For the next person working on the repository:
 - [x] Linux and Windows repository CI, including responsive/RTL and owner-dashboard browser QA, passed: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998).
 - [ ] Physical-device acceptance of both themes, biometric login, calendar and existing notification delivery.
 - [x] Publish the v1.2.0 debug-signed GitHub prerelease for owner validation: [release](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0) · [APK](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk).
+
+## Android 1.2.0 — refreshed owner-validation APK (10 November 2026)
+
+The existing v1.2.0 prerelease asset was rebuilt and replaced after the owner requested a pure-black background behind the mint Pooya monogram on the startup/loading screen. This is a narrowly scoped contrast correction; the mark, loading animation, notification implementation, Firebase configuration, Apps Script API and booking data path remain unchanged.
+
+- [x] Change only the startup logo tile to pure black (`#000000`).
+- [x] Add a regression test that asserts the black logo tile remains in the startup loading surface.
+- [x] Firebase-configured Android build, source-contract tests, Kotlin unit tests and APK assembly passed.
+- [x] Publish/replace `app-debug.apk` in the existing [v1.2.0 GitHub prerelease](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0).
+- [x] Release workflow completed successfully: [run 42867684705](https://github.com/pooya-labs/salon-booking/actions/runs/42867684705).
+- [x] Direct download: [Shayan Barber Studio 1.2.0 APK](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk) (22,279,497 bytes; refreshed 10 November 2026).
+- [ ] Owner installs this exact updated APK and verifies startup logo, System / Light / Dark themes, biometric sign-in, calendar interactions and existing FCM notification delivery.
+
+The APK is still a Firebase-configured debug-signed owner-validation build. Production signing and Play Store distribution are not included. The website remains version 1.0.0; Android app version 1.2.0 is tracked separately.
