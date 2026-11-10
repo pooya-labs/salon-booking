@@ -23,7 +23,7 @@ The native manager offers three persistent appearance modes: **System**, **Light
 
 The UX redesign did not modify the notification delivery implementation. `Notifications.kt`, `PushTokenSync.kt`, `SalonMessagingService.kt` and `AndroidManifest.xml` were compared with `main` and have matching Git blob SHAs. FCM handling, channels, reboot reconciliation, WorkManager retry, permissions and server registration remain unchanged.
 
-See [Android UX redesign notes](../docs/ANDROID-UX-REDESIGN.md).
+See [Android UX redesign notes](../docs/ANDROID-UX-REDESIGN.md). The day/night theme implementation was merged through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8) (`619c044c0b8c473fbc02b51829746f72f15a4db4`). Final verification is intentionally pending until the owner completes the remaining changes.
 
 ## Build
 
