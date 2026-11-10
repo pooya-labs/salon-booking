@@ -2274,3 +2274,26 @@ hr { border-color:var(--line); }
 .site-footer .footer-github-link{gap:7px}
 .site-footer .footer-github-link svg{opacity:.76}
 @media(max-width:680px){.site-footer .footer-pooya-mark{width:21px;height:23px;flex-basis:21px}}
+
+
+/* Customer contact details in the authenticated owner workspace. */
+.admin-booking-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 7px;
+  color: #9b754f;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.6;
+  direction: ltr;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.admin-booking-phone:hover { color: #c59a69; text-decoration: underline; }
+.admin-calendar-booking-phone {
+  margin-top: 5px;
+  color: #d6ba8d;
+  font-size: 8px;
+}
