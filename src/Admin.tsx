@@ -352,7 +352,7 @@ export function AdminApp({ demoMode }: { demoMode: boolean }) {
                   <div className="admin-booking-main">
                     <div className="admin-booking-title"><strong>{booking.name}</strong></div>
                     <p>{booking.service} · {toPersianDigits(booking.durationMinutes)} دقیقه</p>
-                    {booking.phone && <a className="admin-booking-phone" href={`tel:${booking.phone}`} dir="ltr" aria-label={`تماس با ${booking.name}`}><Phone size={13} /> {booking.phone}</a>}
+                    {booking.phone && <a className="admin-booking-phone" href={`tel:${booking.phone}`} dir="ltr" aria-label={`تماس با ${booking.name} به شماره ${booking.phone}`}><Phone size={13} /> {booking.phone}</a>}
                     <small className="admin-booking-origin">{booking.source === 'phone' ? 'ثبت‌شده با تماس تلفنی' : 'رزرو آنلاین'}</small>
                   </div>
                   <div className="admin-booking-actions">
