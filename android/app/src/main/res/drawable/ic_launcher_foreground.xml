@@ -2,6 +2,6 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/pooya_monogram"
     android:insetLeft="16dp"
-    android:insetTop="18dp"
-    android:insetRight="18dp"
-    android:insetBottom="18dp" />
+    android:insetTop="16dp"
+    android:insetRight="16dp"
+    android:insetBottom="16dp" />
