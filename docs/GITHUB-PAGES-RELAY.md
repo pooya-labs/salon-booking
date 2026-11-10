@@ -99,6 +99,8 @@ A notification failure does not remove an appointment that has already been save
 
 The current deployment has already been accepted. For routine updates:
 
+**Backend release 1.5.4:** this release normalizes customer phone fields in both protected manager booking APIs and refreshes the push service worker. Publish `relay/Code.gs` as a new version of the existing Apps Script Web App; pushing to GitHub alone does not update this backend.
+
 - Keep the existing Apps Script project and spreadsheet.
 - Preserve the deployed /exec address.
 - Apply source updates to the existing project instead of creating a replacement.
