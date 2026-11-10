@@ -34,12 +34,13 @@ test('manager session is encrypted with a non-exportable Android Keystore key', 
 
 test('saved manager credentials are encrypted with biometric-gated Android Keystore', () => {
   assert.match(credentialVault, /AndroidKeyStore/)
-  assert.match(credentialVault, /setUserAuthenticationRequired\\(true\\)/)
-  assert.match(credentialVault, /AUTH_BIOMETRIC_STRONG/)
-  assert.match(credentialVault, /AES\\/GCM\\/NoPadding/)
-  assert.match(credentialVault, /storeAuthenticated/)
-  assert.match(credentialVault, /readAuthenticated/)
+  assert.ok(credentialVault.includes("setUserAuthenticationRequired(true)"))
+  assert.ok(credentialVault.includes("AUTH_BIOMETRIC_STRONG"))
+  assert.ok(credentialVault.includes("AES/GCM/NoPadding"))
+  assert.ok(credentialVault.includes("storeAuthenticated"))
+  assert.ok(credentialVault.includes("readAuthenticated"))
   assert.match(manifest, /android:allowBackup="false"/)
+  assert.match(manifest, /android.permission.USE_BIOMETRIC/)
   assert.match(screens, /ورود سریع با اثر انگشت/)
 })
 
