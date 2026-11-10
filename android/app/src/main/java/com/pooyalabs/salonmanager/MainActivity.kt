@@ -26,12 +26,12 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import javax.crypto.Cipher
 
-private val Background = Color(0xFF080E0C)
-private val Panel = Color(0xFF14211C)
-private val TextPrimary = Color(0xFFEAF3EE)
-private val Mint = Color(0xFF2FE0A8)
-private val Cyan = Color(0xFF61E6DF)
-private val Muted = Color(0xFF9BAFA5)
+private val Background = Color(0xFF080A10)
+private val Panel = Color(0xFF141923)
+private val TextPrimary = Color(0xFFF4F6FA)
+private val Mint = Color(0xFF25E6C8)
+private val Cyan = Color(0xFF39D9F2)
+private val Muted = Color(0xFF929BAA)
 private val Danger = Color(0xFFF08D82)
 
 class MainActivity : FragmentActivity() {
@@ -79,8 +79,8 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = android.graphics.Color.rgb(5, 10, 8)
-        window.navigationBarColor = android.graphics.Color.rgb(8, 14, 12)
+        window.statusBarColor = android.graphics.Color.rgb(8, 10, 16)
+        window.navigationBarColor = android.graphics.Color.rgb(8, 10, 16)
         SalonNotifications.ensureChannel(this)
 
         setContent {
@@ -171,7 +171,7 @@ class MainActivity : FragmentActivity() {
                         onBackground = TextPrimary,
                         surface = Panel,
                         onSurface = TextPrimary,
-                        surfaceVariant = Color(0xFF20332C),
+                        surfaceVariant = Color(0xFF202A38),
                         onSurfaceVariant = Muted,
                         tertiary = Color(0xFFF0C879),
                         error = Danger,
