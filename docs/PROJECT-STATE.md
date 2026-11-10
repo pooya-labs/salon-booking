@@ -76,7 +76,8 @@ The manager UI is being refreshed with an obsidian/graphite visual system, restr
 - The owner also set the app battery mode to Unrestricted and excluded it from Samsung background-sleep lists.
 - Android workflow [run 42805853496](https://github.com/pooya-labs/salon-booking/actions/runs/42805853496) passed with the Firebase secret injected, including source-contract tests, Firebase configuration processing, Kotlin unit tests, APK assembly and artifact upload. Artifact ID: `13758393036` (`salon-manager-android-debug`).
 - Repository CI [run 42805854365](https://github.com/pooya-labs/salon-booking/actions/runs/42805854365) passed on Linux and Windows.
-- Latest UI/biometric feature branch: [PR #6](https://github.com/pooya-labs/salon-booking/pull/6), head `f153ad79fbcf5b4f3fb33daa3bd384e34f7e32bf`.
+- Original UI/biometric implementation: [PR #6](https://github.com/pooya-labs/salon-booking/pull/6) was merged.
+- Follow-on native Android UX redesign: [draft PR #7](https://github.com/pooya-labs/salon-booking/pull/7), branch head `270f0acb020687cc03d9520948b90418dcaff160`. It includes the updated obsidian/cyan visual system and motion; tests/builds remain intentionally deferred until the owner finishes the remaining changes.
 - Firebase-configured Android build, source-contract tests, focused Kotlin tests and APK artifact upload passed: [run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938), artifact `13766596540`.
 - Repository CI passed on Linux and Windows: [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
 - The latest APK is a debug build. Physical-device acceptance of the latest calendar, biometric and notification visual changes is still pending, as is dedicated release signing. Do not mark Android 1.1.0 as a stable production release until both are complete.
@@ -88,7 +89,8 @@ The manager UI is being refreshed with an obsidian/graphite visual system, restr
 - [ ] Confirm latest build on the manager's physical phone, including launch, sign-in, graphical calendar, fingerprint quick sign-in and notification appearance.
 - [ ] Configure a dedicated release keystore in repository Actions secrets.
 - [ ] Produce and verify a signed release APK/AAB.
-- [ ] Publish the versioned GitHub Release and merge PR #6.
+- [ ] Complete the remaining UI changes, run final verification, then merge draft PR #7.
+- [ ] Publish the versioned GitHub Release.
 
 ## Known limitations and follow-up work
 
