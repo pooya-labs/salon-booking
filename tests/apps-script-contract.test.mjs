@@ -137,9 +137,10 @@ test('phone booking email alerts show confirmed status and the booking source', 
 })
 
 test('native Android API uses the same authenticated proxy envelope as the website', () => {
-  assert.match(backend, /function doPost\\(e\\)[\\s\\S]*?proxyRequest\\(request\\)[\\s\\S]*?ContentService\\.createTextOutput/)
-  assert.match(backend, /function proxyRequest\\(input\\)[\\s\\S]*?sessionId = String\\(input\\.sessionId \\|\\| ''\\)/)
-  assert.match(backend, /if \\(path\\.indexOf\\('\/api\/admin\/'\\) === 0\\) return dispatchAdmin_/)
+  assert.match(backend, /function doPost\(e\)[\s\S]*?proxyRequest\(request\)[\s\S]*?ContentService\.createTextOutput/)
+  assert.match(backend, /function proxyRequest\(input\)[\s\S]*?sessionId = String\(input\.sessionId \|\| ''\)/)
+  assert.match(backend, /if \(path\.indexOf\('\/api\/admin\/'\) === 0\) return dispatchAdmin_/)
+  assert.match(backend, /android:\s*\{ priority: 'HIGH', ttl: '86400s' \}/)
 })
 
 test('foreground and background push use data messages, high Web Push urgency and persistent vibration', () => {
