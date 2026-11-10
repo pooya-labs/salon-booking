@@ -1,6 +1,6 @@
-# Salon Manager for Android
+# Shayan Barber Studio — Android App
 
-Native owner app for Shayan Barber Studio. The customer booking website remains on GitHub Pages. The app reuses the existing Apps Script owner API, session model, private Google Sheet and Firebase project; it does not create a second database.
+Native owner app displayed on Android as **Shayan Barber Studio**. The customer booking website remains on GitHub Pages. The app reuses the existing Apps Script owner API, session model, private Google Sheet and Firebase project; it does not create a second database.
 
 ## Requirements
 
