@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarClock, Check, ChevronLeft, ChevronRight, LockKeyhole, RefreshCw, Unlock, X } from 'lucide-react'
+import { CalendarClock, Check, ChevronLeft, ChevronRight, LockKeyhole, Phone, RefreshCw, Unlock, X } from 'lucide-react'
 import { JalaliDatePicker } from './JalaliDatePicker'
 import { formatJalaliDate, getIranTodayDateKey } from './jalali-date'
 import { availableBlockDurations, buildDaySlots, type TimeRange } from './day-schedule'
@@ -9,6 +9,8 @@ type DayBooking = {
   time: string
   endTime: string
   serviceName: string
+  name: string
+  phone: string
   durationMinutes: number
 }
 type DayBlock = {
@@ -274,7 +276,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
             <div className="admin-calendar-list-panel">
               <header><h4>نوبت‌های مشتری</h4><span>{toFa(bookings.length)}</span></header>
               {bookings.length === 0 ? <p>برای این روز نوبت فعالی ثبت نشده است.</p> : bookings.map(booking => (
-                <article key={booking.id}><time dir="ltr">{booking.time}–{booking.endTime}</time><div><strong>{booking.serviceName}</strong><small>{toFa(booking.durationMinutes)} دقیقه</small></div></article>
+                <article key={booking.id}><time dir="ltr">{booking.time}–{booking.endTime}</time><div><strong>{booking.serviceName}</strong><small>{booking.name} · {toFa(booking.durationMinutes)} دقیقه</small>{booking.phone && <a className="admin-booking-phone admin-calendar-booking-phone" href={`tel:${booking.phone}`} dir="ltr"><Phone size={11} /> {booking.phone}</a>}</div></article>
               ))}
             </div>
             <div className="admin-calendar-list-panel">
