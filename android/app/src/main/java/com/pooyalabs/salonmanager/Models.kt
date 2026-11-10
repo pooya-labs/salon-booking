@@ -5,6 +5,9 @@ import org.json.JSONObject
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import android.icu.util.Calendar
+import android.icu.util.TimeZone
+import android.icu.util.ULocale
 
 private val tehran = ZoneId.of("Asia/Tehran")
 private val apiDate = DateTimeFormatter.ISO_LOCAL_DATE
@@ -52,7 +55,7 @@ object JalaliDate {
 
     fun toGregorian(year: Int, month: Int, day: Int): String? = runCatching {
         require(month in 1..12 && day >= 1)
-        val calendar = android.icu.util.PersianCalendar(android.icu.util.TimeZone.getTimeZone("Asia/Tehran"))
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tehran"), ULocale("fa_IR@calendar=persian"))
         calendar.isLenient = false
         calendar.clear()
         calendar.set(year, month - 1, day, 12, 0, 0)
