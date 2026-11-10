@@ -62,9 +62,11 @@ A separate Kotlin and Jetpack Compose app is being added for the salon owner. It
 
 - Native app PR: [#5](https://github.com/pooya-labs/salon-booking/pull/5).
 - Android Gradle build, focused Kotlin unit tests and debug APK artifact passed: [Android workflow run 42794925474](https://github.com/pooya-labs/salon-booking/actions/runs/42794925474).
-- The debug artifact was produced without `ANDROID_GOOGLE_SERVICES_JSON_BASE64`; remote Firebase registration and background delivery have not been verified on a physical device.
-- The repository backend source is 1.5.5. The existing Google Apps Script Web App still needs to be republished to that source version while preserving its current `/exec` URL.
-- Do not merge/publish the native app as production-ready until Firebase setup, Apps Script deployment and physical-device notification verification are complete.
+- The owner confirmed on 10 November 2026 that the Android app was registered in the existing Firebase project, the `ANDROID_GOOGLE_SERVICES_JSON_BASE64` repository secret was added, and Apps Script source 1.5.5 was republished to the existing Web App deployment while preserving its `/exec` URL.
+- Android workflow [run 42801068973](https://github.com/pooya-labs/salon-booking/actions/runs/42801068973) passed with Firebase configuration injected: `processDebugGoogleServices`, focused Kotlin unit tests, and `assembleDebug` all completed successfully. Artifact: `salon-manager-android-debug` (artifact ID `13755747528`).
+- Repository CI [run 42801069055](https://github.com/pooya-labs/salon-booking/actions/runs/42801069055) passed on both Linux and Windows, including Windows desktop/mobile visual QA.
+- The newly built APK is configured with Firebase, but manager sign-in, FCM token registration and background delivery have not yet been verified on a physical device.
+- Keep PR #5 open until the physical-device smoke test is complete; do not describe background notification delivery as production-verified yet.
 
 ## Known limitations and follow-up work
 
