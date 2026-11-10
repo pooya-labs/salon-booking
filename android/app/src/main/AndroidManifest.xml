@@ -8,7 +8,7 @@
 
     <application
         android:allowBackup="false"
-        android:label="مدیریت سالن · پویا لبز"
+        android:label="Shayan Barber Studio"
         android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar"
