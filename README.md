@@ -48,7 +48,7 @@ Cloudflare Workers and D1 are not used by the current production site. Their sou
 
 ## Native Android manager
 
-A dedicated Kotlin and Jetpack Compose manager app is implemented for the salon owner. It reuses the existing Apps Script API, owner session, private Google Sheets database and Firebase project; customer reservations remain on the website. The app includes a graphical weekly calendar, Jalali time-block entry, all manager workflows, native notifications, Pooya Labs branding and opt-in biometric quick sign-in. Automated Android tests and repository CI passed on 10 November 2026. The current downloadable APK is a debug build for final device acceptance, not a production-signed release. See [Android setup and release status](./android/README.md).
+A dedicated Kotlin and Jetpack Compose manager app is implemented for the salon owner. It reuses the existing Apps Script API, owner session, private Google Sheets database and Firebase project; customer reservations remain on the website. The app includes a graphical weekly calendar, Jalali time-block entry, all manager workflows, native notifications, Pooya Labs branding and opt-in biometric quick sign-in. Automated Android tests and repository CI passed on 10 November 2026. The owner confirmed successful installation and launch on the target phone. Version 1.1.0 is published as a GitHub prerelease with a debug-signed APK; a dedicated production signing key is not configured. See [Android setup and release status](./android/README.md).
 
 ## Running the project
 
@@ -94,7 +94,7 @@ The latest Pages workflow completed the deployment and its read-only Apps Script
 
 ## Latest project update — 10 November 2026
 
-The native Android manager implementation reached feature-complete status. The latest Firebase-configured debug build and focused Android tests passed in [Android workflow run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938); repository CI passed in [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870). The APK is available as the `salon-manager-android-debug` artifact in the Android workflow. Final device acceptance of the latest UI/biometric changes and production signing are still required before calling the Android app a stable production release.
+The native Android manager implementation reached feature-complete status. The latest Firebase-configured debug build and focused Android tests passed in [Android workflow run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938); repository CI passed in [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870). The APK is available as the `salon-manager-android-debug` artifact in the Android workflow. The owner confirmed successful installation and launch of the latest APK. Version 1.1.0 is published as a GitHub prerelease. Dedicated production signing remains a separate future step.
 
 ## Previous project update — 8 November 2026
 
