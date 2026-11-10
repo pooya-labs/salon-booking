@@ -51,3 +51,26 @@ The repository owner has confirmed that the Android app was registered in the ex
 The app uses the official Pooya Labs monogram artwork from the platform brand directory and a dark graphite / mint interface. The weekly calendar provides a seven-day selector, appointment counts, a visual daily timeline, booking details, and manual time blocking. Booking, services, weekly hours, exceptions, booking rules, notification settings and account operations remain available in their own manager sections.
 
 To enable one-tap sign-in, sign in manually and select **ذخیره ورود با اثر انگشت**. After successful login, confirm the biometric prompt. The username and password are encrypted with AES-GCM and a non-exportable Android Keystore key that requires strong biometric authentication for every cryptographic operation. They are never stored as plaintext. On later visits, use **ورود سریع با اثر انگشت**. If biometric enrollment changes or the device key is invalidated, remove the saved credentials and sign in again manually.
+
+
+## Release status — 10 November 2026
+
+**Implementation status: feature-complete; production release: pending final acceptance.**
+
+The latest branch commit is `f153ad79fbcf5b4f3fb33daa3bd384e34f7e32bf`. The Firebase-configured Android workflow passed, including source-contract tests, Google Services configuration processing, focused Kotlin unit tests, APK assembly and artifact upload: [workflow run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938). Repository CI passed on Linux and Windows: [workflow run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
+
+The workflow artifact is named `salon-manager-android-debug` and contains `app-debug.apk`. It is a debug variant and must be treated as a test build. It is not a production-signed APK or an Android App Bundle. Do not distribute it as a stable public release.
+
+### Final release checklist
+
+- [x] Firebase configuration injected by GitHub Actions without committing `google-services.json`.
+- [x] Android source-contract regression tests passed.
+- [x] Focused Kotlin unit tests passed.
+- [x] Debug APK assembled and uploaded.
+- [x] Repository CI passed on Linux and Windows.
+- [ ] Install the latest APK on the manager's physical phone and confirm launch, sign-in, calendar, biometric enrollment/quick sign-in and notification appearance.
+- [ ] Configure a dedicated Android release signing key in GitHub Actions secrets; never commit the keystore or passwords.
+- [ ] Build and verify a signed release APK (and optionally AAB), then publish a versioned GitHub Release.
+- [ ] Merge the feature PR and mark the Android production release complete after the above checks.
+
+The earlier physical-device FCM checks for foreground, background-after-Recents-dismissal and reboot token reconciliation remain valid for the notification implementation at that time. They do not replace the final smoke test for the latest UI and biometric changes.
