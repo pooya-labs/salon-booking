@@ -56,6 +56,8 @@ private val ForestColor = Color(0xFF173D32)
 private val Sage = Color(0xFFE7EEE8)
 private val CreamBg = Color(0xFFF5F3EC)
 private val MutedText = Color(0xFF77817A)
+private val InkColor = Color(0xFF1E2924)
+private val EmeraldColor = Color(0xFF2D725A)
 private val GoldTone = Color(0xFFC29A56)
 
 @Composable
@@ -327,7 +329,7 @@ private fun BookingCard(booking: Booking, onStatus: (String) -> Unit, onDelete: 
             }
             if (booking.phone.isNotBlank()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(booking.phone, color = Ink, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Text(booking.phone, color = InkColor, fontSize = 13.sp, modifier = Modifier.weight(1f))
                     val context = LocalContext.current
                     OutlinedButton(onClick = {
                         context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + booking.phone)))
@@ -469,7 +471,7 @@ private fun ServicesScreen(state: AdminUiState, vm: AdminViewModel) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(service.name, color = ForestColor, fontWeight = FontWeight.Bold)
                         Text(service.category + " · " + service.durationMinutes + " دقیقه", color = MutedText, fontSize = 11.sp)
-                        Text(if (service.priceAmount > 0) JalaliDate.faDigits(service.priceAmount.toString()) + " " + service.priceCurrency else "قیمت توافقی", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Text(if (service.priceAmount > 0) JalaliDate.faDigits(service.priceAmount.toString()) + " " + service.priceCurrency else "قیمت توافقی", color = InkColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Switch(checked = service.isActive, onCheckedChange = { vm.toggleService(service) })
@@ -662,7 +664,7 @@ private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel) {
         ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.NotificationsActive, null, tint = Emerald, modifier = Modifier.size(28.dp))
+                    Icon(Icons.Default.NotificationsActive, null, tint = EmeraldColor, modifier = Modifier.size(28.dp))
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text("اعلان‌های اندروید", fontWeight = FontWeight.Bold, color = ForestColor)
@@ -705,7 +707,7 @@ private fun InfoPanel(title: String, body: String) {
 private fun EmptyPanel(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(icon, null, tint = Emerald, modifier = Modifier.size(34.dp))
+            Icon(icon, null, tint = EmeraldColor, modifier = Modifier.size(34.dp))
             Text(message, color = MutedText, textAlign = TextAlign.Center, fontSize = 13.sp)
         }
     }
