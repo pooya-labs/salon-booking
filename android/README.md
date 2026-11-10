@@ -19,7 +19,7 @@ Without Firebase configuration the project still compiles and the local notifica
 
 ## Interface design
 
-The native manager uses a Persian RTL interface with an obsidian/graphite visual system, cyan-mint accents, animated login entry, floating bottom navigation and restrained screen transitions. The design direction and current verification hold are documented in `../docs/ANDROID-UX-REDESIGN.md`.
+The native manager uses a Persian RTL interface with persistent System / Light / Dark themes, animated login entry, floating bottom navigation and restrained screen transitions. The notification implementation was deliberately left untouched. Design and verification notes are in `../docs/ANDROID-UX-REDESIGN.md`.
 
 ## Build
 
