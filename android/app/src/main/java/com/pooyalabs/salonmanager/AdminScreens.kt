@@ -47,6 +47,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,7 +115,8 @@ fun LoginScreen(
                 Image(
                     painter = painterResource(R.drawable.pooya_monogram),
                     contentDescription = "نشان پویا لبز",
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.fillMaxSize().padding(10.dp),
+                    contentScale = ContentScale.Fit
                 )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -229,7 +231,12 @@ fun AdminHome(
                             color = Color.Black,
                             border = BorderStroke(1.dp, Color.White.copy(alpha = .12f))
                         ) {
-                            Image(painterResource(R.drawable.pooya_monogram), "پویا لبز", Modifier.padding(5.dp))
+                            Image(
+                                painter = painterResource(R.drawable.pooya_monogram),
+                                contentDescription = "پویا لبز",
+                                modifier = Modifier.fillMaxSize().padding(5.dp),
+                                contentScale = ContentScale.Fit
+                            )
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text("POOYA LABS", color = AccentCyan, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = 1.8.sp)
