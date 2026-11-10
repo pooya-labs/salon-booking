@@ -41,3 +41,6 @@ The app creates a native high-importance Android channel with the system notific
 - Service catalogue creation and editing.
 - Weekly hours, breaks, date exceptions and booking rules.
 - Firebase device registration, local sound test, remote test push and email preference.
+## Production setup checkpoint — 10 November 2026
+
+The repository owner has confirmed that the Android app was registered in the existing Firebase project, the `ANDROID_GOOGLE_SERVICES_JSON_BASE64` Actions secret was added, and Apps Script source 1.5.5 was published to the existing Web App deployment while preserving its `/exec` URL. The next automated build must verify that Firebase configuration is injected successfully. Actual manager sign-in, token registration, and background notification delivery still require a physical-device test; these are not yet marked as verified.
