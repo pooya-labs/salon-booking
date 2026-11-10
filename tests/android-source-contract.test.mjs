@@ -8,6 +8,7 @@ const appGradle = read('android/app/build.gradle.kts')
 const api = read('android/app/src/main/java/com/pooyalabs/salonmanager/SalonApi.kt')
 const vault = read('android/app/src/main/java/com/pooyalabs/salonmanager/SessionVault.kt')
 const credentialVault = read('android/app/src/main/java/com/pooyalabs/salonmanager/CredentialVault.kt')
+const mainActivity = read('android/app/src/main/java/com/pooyalabs/salonmanager/MainActivity.kt')
 const vm = read('android/app/src/main/java/com/pooyalabs/salonmanager/AdminViewModel.kt')
 const screens = read('android/app/src/main/java/com/pooyalabs/salonmanager/AdminScreens.kt')
 const notifications = read('android/app/src/main/java/com/pooyalabs/salonmanager/Notifications.kt')
@@ -42,6 +43,20 @@ test('saved manager credentials are encrypted with biometric-gated Android Keyst
   assert.match(manifest, /android:allowBackup="false"/)
   assert.match(manifest, /android.permission.USE_BIOMETRIC/)
   assert.match(screens, /ورود سریع با اثر انگشت/)
+})
+
+test('biometric capability probing is fail-safe during startup', () => {
+  assert.match(mainActivity, /runCatching \{ credentialVault\.isBiometricAvailable\(\) \}\.getOrDefault\(false\)/)
+  assert.match(mainActivity, /runCatching \{ credentialVault\.hasSavedCredentials\(\) \}\.getOrDefault\(false\)/)
+})
+
+test('Pooya Labs launcher mark is scaled inside the Android adaptive-icon safe zone', () => {
+  const adaptiveIcon = read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml')
+  const foreground = read('android/app/src/main/res/drawable/ic_launcher_foreground.xml')
+  assert.match(adaptiveIcon, /@drawable\/ic_launcher_foreground/)
+  assert.match(foreground, /@drawable="pooya_monogram"/)
+  assert.match(foreground, /android:insetLeft="18dp"/)
+  assert.match(foreground, /android:insetRight="18dp"/)
 })
 
 test('background FCM data messages are rendered immediately in a native high-importance channel', () => {
