@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -53,7 +54,6 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -349,7 +349,7 @@ fun AdminHome(
 
 @Composable
 private fun MetricChip(title: String, count: String) {
-    Surface(color = Color.White.copy(alpha = .12f), shape = RoundedCornerShape(12.dp)) {
+    Surface(color = Color.White.copy(alpha = .075f), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.White.copy(alpha = .08f))) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(count, color = Color.White, fontWeight = FontWeight.Bold)
             Text(title, color = Color(0xFFDCE6DF), fontSize = 11.sp)
@@ -359,8 +359,18 @@ private fun MetricChip(title: String, count: String) {
 
 @Composable
 private fun MessageStrip(message: String, error: Boolean) {
-    Surface(color = if (error) Color(0xFFFFE9E5) else Color(0xFFE4F1E7), modifier = Modifier.fillMaxWidth()) {
-        Text(message, Modifier.padding(horizontal = 16.dp, vertical = 9.dp), color = if (error) Color(0xFF9D3326) else ForestColor, fontSize = 12.sp)
+    val accent = if (error) Color(0xFFFF887F) else AccentCyan
+    Surface(
+        color = accent.copy(alpha = .10f),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 5.dp),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, accent.copy(alpha = .24f))
+    ) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).background(accent, CircleShape))
+            Spacer(Modifier.width(10.dp))
+            Text(message, color = if (error) Color(0xFFFFAAA3) else Color(0xFFB5F7EB), fontSize = 12.sp)
+        }
     }
 }
 
