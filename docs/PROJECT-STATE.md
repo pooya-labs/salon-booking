@@ -75,7 +75,7 @@ A separate Kotlin and Jetpack Compose manager app is implemented for the salon o
 - Repository CI passed on Linux and Windows: [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
 - The owner has now confirmed successful installation and launch of the latest APK on the target phone.
 - PR #6 was squash-merged into main as `2274f5810c5f12c1a5eab5bd86cdb8977e0f29b0`.
-- GitHub prerelease v1.1.0 is published with the tested debug-signed APK. Production signing and Play Store distribution are optional future work, not blockers for the current direct-install use case.
+- GitHub prerelease [v1.1.0](https://github.com/pooya-labs/salon-booking/releases/tag/v1.1.0) is published with the tested debug-signed APK ([direct download](https://github.com/pooya-labs/salon-booking/releases/download/v1.1.0/app-debug.apk)). Release build and upload workflow passed: [run 42822741628](https://github.com/pooya-labs/salon-booking/actions/runs/42822741628). Production signing and Play Store distribution are optional future work, not blockers for the current direct-install use case.
 
 ## Android 1.1.0 final release checklist
 
