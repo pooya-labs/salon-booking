@@ -276,7 +276,7 @@ export function AdminCalendar({ slotIntervalMinutes }: { slotIntervalMinutes: nu
             <div className="admin-calendar-list-panel">
               <header><h4>نوبت‌های مشتری</h4><span>{toFa(bookings.length)}</span></header>
               {bookings.length === 0 ? <p>برای این روز نوبت فعالی ثبت نشده است.</p> : bookings.map(booking => (
-                <article key={booking.id}><time dir="ltr">{booking.time}–{booking.endTime}</time><div><strong>{booking.serviceName}</strong><small>{booking.name} · {toFa(booking.durationMinutes)} دقیقه</small>{booking.phone && <a className="admin-booking-phone admin-calendar-booking-phone" href={`tel:${booking.phone}`} dir="ltr"><Phone size={11} /> {booking.phone}</a>}</div></article>
+                <article key={booking.id}><time dir="ltr">{booking.time}–{booking.endTime}</time><div><strong>{booking.serviceName}</strong><small>{booking.name} · {toFa(booking.durationMinutes)} دقیقه</small>{booking.phone ? <a className="admin-booking-phone admin-calendar-booking-phone" href={`tel:${booking.phone}`} dir="ltr"><Phone size={11} /> {booking.phone}</a> : <small className="admin-booking-phone-missing">شماره تماس از سرور دریافت نشد</small>}</div></article>
               ))}
             </div>
             <div className="admin-calendar-list-panel">

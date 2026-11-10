@@ -42,7 +42,7 @@ The active Apps Script project is a separate Google-account resource. Keep the p
 When updating the backend:
 
 1. Review the change in relay/Code.gs and relay/appsscript.json.
-2. Copy the updated source into the existing Apps Script project.
+2. **A GitHub Pages deployment does not update Google Apps Script.** Copy the updated source into the existing Apps Script project separately.
 3. Run setupSalonDatabase() if the change adds or updates spreadsheet columns or tabs. The setup is designed to be additive; confirm the target is the existing salon spreadsheet.
 4. Approve only the scopes the project needs.
 5. In Deploy → Manage deployments, edit the current Web App deployment and publish a new version.

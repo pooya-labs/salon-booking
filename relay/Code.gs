@@ -10,7 +10,7 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.5.3';
+var APP_VERSION_ = '1.5.4';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
@@ -554,7 +554,8 @@ function getAdminBookings_(query, owner) {
   rows.sort(function (a, b) { return rowStartMs_(a, settings.timezone) - rowStartMs_(b, settings.timezone); });
   return { status: 200, payload: { ok: true, timezone: settings.timezone, from: from, to: to, bookings: rows.map(function (row) {
     return {
-      id: row.id, reference: row.reference, name: row.name, phone: row.phone,
+      id: row.id, reference: row.reference, name: row.name || '',
+      phone: normalizeDigits_(String(row.phone || '')).trim(),
       startsAt: row.startsAt, endsAt: row.endsAt, status: row.status, note: row.note,
       service: row.serviceName, durationMinutes: Number(row.durationMinutes), source: row.source || 'online'
     };
@@ -679,7 +680,9 @@ function getAdminDaySchedule_(query) {
     return {
       id: item.row.id, date: item.date,
       time: item.time, endTime: item.endTime,
-      serviceName: item.row.serviceName, name: item.row.name || '', phone: item.row.phone || '',
+      serviceName: item.row.serviceName,
+      name: item.row.name || '',
+      phone: normalizeDigits_(String(item.row.phone || '')).trim(),
       durationMinutes: Number(item.row.durationMinutes), status: item.row.status
     };
   }).filter(function (booking) {
@@ -1219,7 +1222,12 @@ function removePushSubscription_(input, owner) {
   return getNotificationSettings_();
 }
 function sendTestPush_(owner) {
-  var result = sendPushPayload_({ title: 'اعلان‌های فُرم فعال‌اند', body: 'این یک اعلان آزمایشی از پنل مدیریت است.' });
+  var result = sendPushPayload_({
+    title: 'آزمایش اعلان نوبت فُرم',
+    body: 'اگر این اعلان را می‌بینی، مسیر ارسال و نمایش اعلان کار می‌کند.',
+    id: 'test-' + uuid_(),
+    kind: 'test'
+  });
   if (result.sent < 1) return error_(409, 'push_not_ready', 'هنوز دستگاهی برای اعلان ثبت نشده یا تنظیمات Firebase کامل نیست.');
   audit_('notifications.test_sent', owner.id, 'notification', 'push', { sent: result.sent, failed: result.failed });
   return { status: 200, payload: { ok: true, sent: result.sent, failed: result.failed }};

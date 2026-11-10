@@ -213,7 +213,8 @@ try {
         workingIntervals: [{ startsAt: '09:00', endsAt: '17:00' }],
         bookings: [{
           id: 'qa-day-booking', date: requestedDate, time: '10:00', endTime: '10:45',
-          serviceName: 'کوتاهی مو', durationMinutes: 45, status: 'confirmed',
+          serviceName: 'کوتاهی مو', name: 'مشتری آزمایشی', phone: '+989123456789',
+          durationMinutes: 45, status: 'confirmed',
         }],
         blocks: mockTimeBlocks,
       }) })
@@ -277,6 +278,9 @@ try {
   await page.getByRole('heading', { name: 'سلام، QA Owner.' }).waitFor({ state: 'visible' })
   await page.locator('.admin-date-navigation [role="status"]').waitFor({ state: 'visible' })
   await page.locator('.admin-manage-tabs').waitFor({ state: 'visible' })
+  const mainBookingPhone = page.locator('a.admin-booking-phone[href="tel:+491234567890"]')
+  await mainBookingPhone.waitFor({ state: 'visible' })
+  assert.equal((await mainBookingPhone.textContent()).trim(), '+491234567890')
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-desktop-dashboard.png'), fullPage: true })
 
   await assertNoAccessibilityViolations(page, 'owner dashboard')
@@ -294,7 +298,11 @@ try {
   await page.locator('.admin-calendar').waitFor({ state: 'visible' })
   await assertNoAccessibilityViolations(page, 'owner daily visual booking calendar')
   await page.locator('.admin-day-slot.is-booked').first().waitFor({ state: 'visible' })
-  await page.locator('.admin-calendar-list-panel').filter({ hasText: 'نوبت‌های مشتری' }).getByText('کوتاهی مو').waitFor({ state: 'visible' })
+  const dailyCustomerList = page.locator('.admin-calendar-list-panel').filter({ hasText: 'نوبت‌های مشتری' })
+  await dailyCustomerList.getByText('کوتاهی مو').waitFor({ state: 'visible' })
+  const dailyBookingPhone = dailyCustomerList.locator('a[href="tel:+989123456789"]')
+  await dailyBookingPhone.waitFor({ state: 'visible' })
+  assert.equal((await dailyBookingPhone.textContent()).trim(), '+989123456789')
   await page.screenshot({ path: resolve(visualArtifacts, 'admin-daily-calendar-desktop.png'), fullPage: true })
   const previousCalendarDate = dayScheduleDates.at(-1)
   await Promise.all([

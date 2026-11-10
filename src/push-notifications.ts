@@ -70,6 +70,21 @@ async function saveCurrentDevice(requestPermission: boolean): Promise<void> {
     scope: import.meta.env.BASE_URL,
   })
   await registration.update().catch(() => undefined)
+
+  // Activate the updated push worker immediately so stale clients cannot keep old handlers.
+  const pendingWorker = registration.installing || registration.waiting
+  if (pendingWorker) {
+    await new Promise<void>((resolve, reject) => {
+      const finish = () => {
+        if (pendingWorker.state === 'activated') resolve()
+        else if (pendingWorker.state === 'redundant') reject(new Error('به‌روزرسانی سرویس اعلان کامل نشد.'))
+      }
+      pendingWorker.addEventListener('statechange', finish)
+      if (registration.waiting === pendingWorker) pendingWorker.postMessage({ type: 'SKIP_WAITING' })
+      finish()
+    })
+  }
+
   const readyRegistration = await navigator.serviceWorker.ready
   const activeRegistration = registration.active ? registration : readyRegistration
   const { messaging, instance } = await getFirebaseMessaging()
@@ -119,7 +134,7 @@ async function showOwnerNotification(title: string, body: string, data: Record<s
     tag: data.tag || `salon-booking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     renotify: true,
     requireInteraction: true,
-    silent: false,
+    // Let Android use the browser notification channel's configured sound.
     vibrate: [0, 450, 180, 450, 180, 750],
     timestamp: Date.now(),
     data: { url: destination },
