@@ -90,7 +90,9 @@ class MainActivity : FragmentActivity() {
             var hasSavedCredentials by remember { mutableStateOf(runCatching { credentialVault.hasSavedCredentials() }.getOrDefault(false)) }
             var pendingCredentials by remember { mutableStateOf<SavedOwnerCredentials?>(null) }
             var awaitingBiometricServerLogin by remember { mutableStateOf(false) }
-            val biometricAvailable = remember { runCatching { credentialVault.isBiometricAvailable() }.getOrDefault(false) }
+            val biometricAvailable = remember(hasSavedCredentials) {
+                hasSavedCredentials && runCatching { credentialVault.isBiometricAvailable() }.getOrDefault(false)
+            }
 
             val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
             LaunchedEffect(Unit) {
@@ -180,14 +182,24 @@ class MainActivity : FragmentActivity() {
                             state = state,
                             hasSavedCredentials = hasSavedCredentials && biometricAvailable,
                             onLogin = { username, password, remember ->
-                                if (remember && biometricAvailable) {
-                                    pendingCredentials = SavedOwnerCredentials(username.trim(), password)
+                                if (remember) {
+                                    val canSaveWithBiometric = runCatching {
+                                        credentialVault.isBiometricAvailable()
+                                    }.getOrDefault(false)
+                                    if (canSaveWithBiometric) {
+                                        pendingCredentials = SavedOwnerCredentials(username.trim(), password)
+                                    } else {
+                                        pendingCredentials = null
+                                        Toast.makeText(
+                                            context,
+                                            "اثر انگشت در دسترس نیست؛ ورود عادی انجام می‌شود.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
                                 } else {
                                     pendingCredentials = null
-                                    if (!remember) {
-                                        credentialVault.clear()
-                                        hasSavedCredentials = false
-                                    }
+                                    credentialVault.clear()
+                                    hasSavedCredentials = false
                                 }
                                 vm.login(username, password)
                             },
