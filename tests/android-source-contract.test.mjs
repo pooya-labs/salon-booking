@@ -11,6 +11,7 @@ const vm = read('android/app/src/main/java/com/pooyalabs/salonmanager/AdminViewM
 const screens = read('android/app/src/main/java/com/pooyalabs/salonmanager/AdminScreens.kt')
 const notifications = read('android/app/src/main/java/com/pooyalabs/salonmanager/Notifications.kt')
 const messaging = read('android/app/src/main/java/com/pooyalabs/salonmanager/SalonMessagingService.kt')
+const pushSync = read('android/app/src/main/java/com/pooyalabs/salonmanager/PushTokenSync.kt')
 const backend = read('relay/Code.gs')
 
 test('Android client uses the existing Apps Script proxy and validates owner sessions', () => {
@@ -39,6 +40,15 @@ test('background FCM data messages are rendered immediately in a native high-imp
   assert.match(notifications, /enableVibration\(true\)/)
   assert.match(notifications, /setSound\(Settings\.System\.DEFAULT_NOTIFICATION_URI/)
   assert.match(backend, /android:\s*\{ priority: 'HIGH', ttl: '86400s' \}/)
+})
+
+test('FCM token is reconciled after reboot with persistent network retries', () => {
+  assert.match(manifest, /RECEIVE_BOOT_COMPLETED/)
+  assert.match(manifest, /\.PushBootReceiver/)
+  assert.match(pushSync, /Intent\.ACTION_BOOT_COMPLETED/)
+  assert.match(pushSync, /NetworkType\.CONNECTED/)
+  assert.match(pushSync, /Result\.retry\(\)/)
+  assert.match(messaging, /PushTokenSyncWorker\.enqueue\(applicationContext, token\)/)
 })
 
 test('the native manager covers booking, calendar, manual appointments, services, schedule and notifications', () => {
