@@ -70,6 +70,12 @@ test('Shayan Barber Studio launcher mark is scaled inside the Android adaptive-i
   assert.match(read('android/app/src/main/res/drawable/ic_launcher_background.xml'), /#11131A/)
 })
 
+test('startup Pooya monogram is placed on a true black tile for contrast', () => {
+  const loadingScreen = screens.slice(screens.indexOf('fun LoadingScreen()'), screens.indexOf('@Composable', screens.indexOf('fun LoadingScreen()') + 1))
+  assert.match(loadingScreen, /Surface\([\s\S]*?color = Color\(0xFF000000\)/)
+  assert.match(loadingScreen, /R\.drawable\.pooya_monogram/)
+})
+
 test('Android appearance mode persists and supplies accessible Material 3 day/night palettes', () => {
   assert.match(mainActivity, /getSharedPreferences\("salon_ui_preferences"/)
   assert.match(mainActivity, /getString\("theme_mode", "SYSTEM"\)/)
