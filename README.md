@@ -40,11 +40,15 @@ The production version uses four services:
 1. **GitHub Pages** serves the website and owner workspace.
 2. A hidden iframe connects the frontend to the salon's **Google Apps Script** web app.
 3. Apps Script handles booking requests and stores records in a **private Google Spreadsheet** owned by the salon.
-4. **Firebase Cloud Messaging** delivers push notifications to the manager's registered browser or PWA.
+4. **Firebase Cloud Messaging** delivers browser/PWA notifications and native Android push to the manager app.
 
 The Apps Script web app runs under the deploying owner's Google account. Its web app address and the private spreadsheet are part of the live setup; they should not be replaced casually.
 
 Cloudflare Workers and D1 are not used by the current production site. Their source and migrations remain in the repository as older recovery material. There is no automatic transfer from D1 to Google Sheets.
+
+## Native Android manager
+
+A dedicated Kotlin and Jetpack Compose app is being added for the salon owner. It reuses the existing Apps Script API, owner session and Google Sheets database; customer reservations remain on the website. The app includes the current owner workflows and native Android notification channels for sound, vibration and heads-up alerts. See [Android setup](./android/README.md).
 
 ## Running the project
 
