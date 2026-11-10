@@ -17,6 +17,14 @@ Native owner app for Shayan Barber Studio. The customer booking website remains 
 
 Without Firebase configuration the project still compiles and the local notification preview works, but remote FCM registration is unavailable. The automated build reports this as a warning; do not use such an APK as the production manager app.
 
+## Interface design and themes
+
+The native manager offers three persistent appearance modes: **System**, **Light** and **Dark**. System follows Android's current appearance setting. Light uses a cool off-white canvas, white cards, deep ink typography, slate secondary text and accessible teal/cyan accents; Dark retains the obsidian/graphite and cyan-mint identity. The selected mode is stored in app-private preferences and survives restarts. Login, loading, dashboard, calendar, booking cards, dialogs and system bars adapt to the active palette.
+
+The UX redesign did not modify the notification delivery implementation. `Notifications.kt`, `PushTokenSync.kt`, `SalonMessagingService.kt` and `AndroidManifest.xml` were compared with `main` and have matching Git blob SHAs. FCM handling, channels, reboot reconciliation, WorkManager retry, permissions and server registration remain unchanged.
+
+See [Android UX redesign notes](../docs/ANDROID-UX-REDESIGN.md).
+
 ## Build
 
 Open the `android/` folder in Android Studio, let Gradle sync, then run the `app` configuration. To build from a machine with Gradle 8.13 installed:
