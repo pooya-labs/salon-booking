@@ -58,6 +58,14 @@ The relay check does not submit bookings or modify customer data. Owner confirma
 
 A separate Kotlin and Jetpack Compose manager app is implemented for the salon owner. It reuses the existing Apps Script owner API, private Google Sheets database and Firebase project. Native FCM registration writes its token into the existing `PushSubscriptions` sheet; high-priority Android messages are rendered by a native notification channel. The app includes the graphical weekly calendar, Jalali manual time-block entry, full owner workflows, Pooya Labs branding and biometric quick sign-in. No second customer database or rewrite of the booking website is introduced.
 
+## Native Android UX redesign — 10 November 2026
+
+The native manager now includes persistent System / Light / Dark modes. The light palette uses cool off-white (#F4F7FA), white cards, deep ink (#17212F), slate secondary text and accessible teal/cyan accents; the dark palette retains obsidian/graphite and cyan-mint. The selected mode is stored in app-private preferences, and Android status/navigation bars adapt their contrast. Login, loading, dashboard, calendar, cards and dialogs use the active Material 3 palette. The floating animated navigation and restrained page transitions remain in place.
+
+The notification implementation was intentionally not edited. `Notifications.kt`, `PushTokenSync.kt`, `SalonMessagingService.kt` and `AndroidManifest.xml` were checked against `main`; their Git blob SHAs match exactly. No FCM callback, channel, rendering, boot reconciliation, WorkManager retry, permission or server-registration code was changed. See [docs/ANDROID-UX-REDESIGN.md](ANDROID-UX-REDESIGN.md).
+
+Automated tests and local Gradle builds were not run for this iteration at the owner's request. The latest appearance modes and notification behavior still require final verification before another APK is published.
+
 ## Native Android manager status — 10 November 2026
 
 - Native app PR: [#5](https://github.com/pooya-labs/salon-booking/pull/5).
