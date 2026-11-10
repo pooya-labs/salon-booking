@@ -23,7 +23,7 @@ The native manager offers three persistent appearance modes: **System**, **Light
 
 The UX redesign did not modify the notification delivery implementation. `Notifications.kt`, `PushTokenSync.kt`, `SalonMessagingService.kt` and `AndroidManifest.xml` were compared with `main` and have matching Git blob SHAs. FCM handling, channels, reboot reconciliation, WorkManager retry, permissions and server registration remain unchanged.
 
-See [Android UX redesign notes](../docs/ANDROID-UX-REDESIGN.md). The day/night theme implementation was merged through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8) (`619c044c0b8c473fbc02b51829746f72f15a4db4`). Final verification is intentionally pending until the owner completes the remaining changes.
+See [Android UX redesign notes](../docs/ANDROID-UX-REDESIGN.md). The day/night theme implementation was merged through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8) (`619c044c0b8c473fbc02b51829746f72f15a4db4`). The startup monogram tile is pure black (`#000000`) behind the existing mint artwork to preserve mark contrast; only the loading logo surface changed, not the loading animation or notification pipeline.
 
 ## Build
 
@@ -112,3 +112,15 @@ Version 1.2.0 (versionCode 3) includes the persistent System / Light / Dark them
 - Release workflow [42864377838](https://github.com/pooya-labs/salon-booking/actions/runs/42864377838) built, tested and uploaded the APK successfully.
 - Before wider distribution, install this exact build on the owner's phone and verify System / Light / Dark switching, restart persistence, biometric sign-in, calendar interactions and FCM delivery in foreground/background/reboot conditions.
 - Production signing and Play Store publication remain out of scope.
+
+### Latest APK refresh — 10 November 2026
+
+The owner requested a black background behind the Pooya startup monogram because the mint mark was not sufficiently legible on the light loading surface. The loading logo tile now uses pure black (`#000000`); the monogram artwork, spinner, loading copy, notification code and Firebase integration are unchanged.
+
+- [x] Regression coverage added for the black startup monogram tile.
+- [x] Firebase-configured Android build and focused source-contract/Kotlin tests passed.
+- [x] Release workflow [42867684705](https://github.com/pooya-labs/salon-booking/actions/runs/42867684705) completed successfully and replaced the `app-debug.apk` asset in the existing [v1.2.0 prerelease](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0).
+- [x] Updated APK asset is available at [direct download](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk) (22,279,497 bytes; asset updated 10 November 2026 at 17:44 UTC).
+- [ ] Owner physical-device smoke test of the updated logo, themes, biometric sign-in, calendar and existing notifications.
+
+The release is a debug-signed owner-validation build, not a production-signed public distribution. Keep the previous installed APK until the updated APK has been installed and checked.
