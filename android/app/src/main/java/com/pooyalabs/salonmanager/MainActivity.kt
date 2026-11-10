@@ -17,6 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
+import androidx.core.view.WindowCompat
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.LayoutDirection
@@ -25,14 +30,6 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import javax.crypto.Cipher
-
-private val Background = Color(0xFF080A10)
-private val Panel = Color(0xFF141923)
-private val TextPrimary = Color(0xFFF4F6FA)
-private val Mint = Color(0xFF25E6C8)
-private val Cyan = Color(0xFF39D9F2)
-private val Muted = Color(0xFF929BAA)
-private val Danger = Color(0xFFF08D82)
 
 class MainActivity : FragmentActivity() {
     private var activeBiometricPrompt: BiometricPrompt? = null
@@ -79,12 +76,18 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = android.graphics.Color.rgb(8, 10, 16)
-        window.navigationBarColor = android.graphics.Color.rgb(8, 10, 16)
         SalonNotifications.ensureChannel(this)
 
         setContent {
             val context = LocalContext.current
+            val themePreferences = remember { getSharedPreferences("salon_ui_preferences", MODE_PRIVATE) }
+            var themeMode by remember { mutableStateOf(themePreferences.getString("theme_mode", "SYSTEM") ?: "SYSTEM") }
+            val systemDark = isSystemInDarkTheme()
+            val useDarkTheme = when (themeMode) {
+                "LIGHT" -> false
+                "DARK" -> true
+                else -> systemDark
+            }
             val credentialVault = remember { CredentialVault(applicationContext) }
             var hasSavedCredentials by remember { mutableStateOf(runCatching { credentialVault.hasSavedCredentials() }.getOrDefault(false)) }
             var pendingCredentials by remember { mutableStateOf<SavedOwnerCredentials?>(null) }
@@ -160,24 +163,54 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
+            SideEffect {
+                val systemBarColor = if (useDarkTheme) android.graphics.Color.rgb(8, 10, 16) else android.graphics.Color.rgb(244, 247, 250)
+                window.statusBarColor = systemBarColor
+                window.navigationBarColor = systemBarColor
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !useDarkTheme
+                    isAppearanceLightNavigationBars = !useDarkTheme
+                }
+            }
+            val salonColorScheme = if (useDarkTheme) {
+                darkColorScheme(
+                    primary = Color(0xFF25E6C8),
+                    onPrimary = Color(0xFF06130E),
+                    secondary = Color(0xFF39D9F2),
+                    onSecondary = Color(0xFF071311),
+                    background = Color(0xFF080A10),
+                    onBackground = Color(0xFFF4F6FA),
+                    surface = Color(0xFF141923),
+                    onSurface = Color(0xFFE8EDF5),
+                    surfaceVariant = Color(0xFF202A38),
+                    onSurfaceVariant = Color(0xFF929BAA),
+                    outline = Color(0xFF354253),
+                    outlineVariant = Color(0xFF293343),
+                    tertiary = Color(0xFFFFC86B),
+                    error = Color(0xFFFF887F),
+                    onError = Color(0xFF250C08)
+                )
+            } else {
+                lightColorScheme(
+                    primary = Color(0xFF087F79),
+                    onPrimary = Color(0xFFFFFFFF),
+                    secondary = Color(0xFF087E98),
+                    onSecondary = Color(0xFFFFFFFF),
+                    background = Color(0xFFF4F7FA),
+                    onBackground = Color(0xFF17212F),
+                    surface = Color(0xFFFFFFFF),
+                    onSurface = Color(0xFF17212F),
+                    surfaceVariant = Color(0xFFE8EEF3),
+                    onSurfaceVariant = Color(0xFF596777),
+                    outline = Color(0xFFB8C5D0),
+                    outlineVariant = Color(0xFFD7E0E7),
+                    tertiary = Color(0xFF98600D),
+                    error = Color(0xFFB42318),
+                    onError = Color(0xFFFFFFFF)
+                )
+            }
             CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides LayoutDirection.Rtl) {
-                MaterialTheme(
-                    colorScheme = darkColorScheme(
-                        primary = Mint,
-                        onPrimary = Color(0xFF06130E),
-                        secondary = Cyan,
-                        onSecondary = Color(0xFF071311),
-                        background = Background,
-                        onBackground = TextPrimary,
-                        surface = Panel,
-                        onSurface = TextPrimary,
-                        surfaceVariant = Color(0xFF202A38),
-                        onSurfaceVariant = Muted,
-                        tertiary = Color(0xFFF0C879),
-                        error = Danger,
-                        onError = Color(0xFF250C08)
-                    )
-                ) {
+                MaterialTheme(colorScheme = salonColorScheme) {
                     when {
                         state.checkingSession -> LoadingScreen()
                         !state.signedIn -> LoginScreen(
@@ -243,6 +276,11 @@ class MainActivity : FragmentActivity() {
                             state = state,
                             vm = vm,
                             hasSavedCredentials = hasSavedCredentials,
+                            themeMode = themeMode,
+                            onThemeModeChange = { mode ->
+                                themeMode = mode
+                                themePreferences.edit().putString("theme_mode", mode).apply()
+                            },
                             onClearSavedCredentials = {
                                 credentialVault.clear()
                                 hasSavedCredentials = false
