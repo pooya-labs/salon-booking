@@ -18,6 +18,7 @@ const backend = read('relay/Code.gs')
 
 test('Android client uses the existing Apps Script proxy and validates owner sessions', () => {
   assert.match(manifest, /android:label="Shayan Barber Studio"/)
+  assert.match(mainActivity, /ورود امن Shayan Barber Studio/)
   assert.match(manifest, /android\.permission\.INTERNET/)
   assert.match(api, /\.post\(envelope\.toString\(\)\.toRequestBody/)
   assert.match(api, /\.put\("path", path\)/)
@@ -58,7 +59,7 @@ test('notification permission request uses a FragmentActivity-safe 16-bit reques
   assert.doesNotMatch(mainActivity, /rememberLauncherForActivityResult\(ActivityResultContracts\.RequestPermission\(\)\)/)
 })
 
-test('Pooya Labs launcher mark is scaled inside the Android adaptive-icon safe zone', () => {
+test('Shayan Barber Studio launcher mark is scaled inside the Android adaptive-icon safe zone', () => {
   const adaptiveIcon = read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml')
   const foreground = read('android/app/src/main/res/drawable/ic_launcher_foreground.xml')
   assert.match(adaptiveIcon, /@drawable\/ic_launcher_foreground/)

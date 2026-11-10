@@ -39,7 +39,7 @@ class MainActivity : FragmentActivity() {
         onError: (String) -> Unit
     ) {
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("ورود امن پویا لبز")
+            .setTitle("ورود امن Shayan Barber Studio")
             .setSubtitle("برای ادامه، اثر انگشت خود را تأیید کن")
             .setNegativeButtonText("انصراف")
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)

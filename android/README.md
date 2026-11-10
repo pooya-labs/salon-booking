@@ -98,3 +98,16 @@ Version `v1.1.0` is published as a **GitHub prerelease**. The release workflow b
 - Repository CI on the merged commit: https://github.com/pooya-labs/salon-booking/actions/runs/42822583696
 
 The booking website, Apps Script backend, private Sheets database and Firebase project remain the existing live services. The Android manager implementation and current owner-verified prerelease are complete. Production signing and Play Store distribution are intentionally out of scope for this release.
+
+
+## Shayan Barber Studio 1.2.0 — current release candidate
+
+The Android launcher and system app label are **Shayan Barber Studio**. The biometric system prompt uses the same product name. The application ID remains `com.pooyalabs.salonmanager`, preserving the existing Firebase registration and install identity.
+
+Version 1.2.0 (versionCode 3) includes the persistent System / Light / Dark theme selector, the engineered light palette, adaptive system bars, animated login/navigation transitions and the updated Shayan app name. The existing booking backend, Apps Script endpoint, Firebase project, encrypted credentials and notification delivery code are unchanged.
+
+- Android workflow: [run 42863648949](https://github.com/pooya-labs/salon-booking/actions/runs/42863648949) — source-contract tests, Firebase injection, Kotlin unit tests, APK build and artifact upload passed.
+- Repository CI: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998) — Linux and Windows browser QA passed.
+- The debug APK is built and available in the Android workflow artifact. It is not production-signed.
+- Before broad distribution, install this exact build on the owner's phone and verify System / Light / Dark switching, restart persistence, biometric sign-in, calendar interactions and FCM delivery in foreground/background/reboot conditions.
+- Production signing and Play Store publication remain out of scope.

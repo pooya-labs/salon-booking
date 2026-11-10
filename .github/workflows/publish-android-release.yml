@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".release/v1.1.0"
+      - ".release/v1.2.0"
     tags:
       - "v*"
 
@@ -49,15 +49,15 @@ jobs:
       - name: Publish APK to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Salon Manager v1.1.0
-          tag_name: v1.1.0
+          name: Shayan Barber Studio v1.2.0
+          tag_name: v1.2.0
           target_commitish: main
           prerelease: true
           generate_release_notes: true
           body: |
-            ## Android manager 1.1.0
+            ## Shayan Barber Studio — Android 1.2.0
 
-            This is the tested **debug-signed APK** for the salon manager. It was installed and smoke-tested by the project owner.
+            This is the Firebase-configured, automated-test-passing **debug-signed APK** for Shayan Barber Studio. It includes the renamed Android app identity, persistent System / Light / Dark appearance modes, theme-aware Material 3 surfaces, adaptive system bars and restrained navigation motion. The latest APK still requires a physical-device smoke test for both themes and notification delivery before broad distribution.
 
             **Important:** this is a prerelease/debug build, not a production-signed APK. It is intended for direct installation by the manager. A future update signed with a different key cannot update this installation in place; uninstalling may remove local app data.
 

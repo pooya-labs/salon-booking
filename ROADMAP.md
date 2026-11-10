@@ -155,3 +155,16 @@ For the next person working on the repository:
 - Read docs/ADMIN.md for owner operations.
 - Read docs/GITHUB-PAGES-RELAY.md before touching Apps Script.
 - Keep customer records, bootstrap tokens, private spreadsheet exports and service credentials out of GitHub.
+
+
+## Android manager 1.2.0 — release candidate
+
+- [x] Set Android app display name and biometric prompt to **Shayan Barber Studio**.
+- [x] Keep application ID unchanged for Firebase and install continuity.
+- [x] Persistent System / Light / Dark themes with adaptive Android system bars.
+- [x] Modern login/navigation motion and Material 3 day/night palettes.
+- [x] Verify notification delivery source files remain unchanged.
+- [x] Firebase-configured Android source-contract tests, Kotlin unit tests and APK assembly passed: [run 42863648949](https://github.com/pooya-labs/salon-booking/actions/runs/42863648949).
+- [x] Linux and Windows repository CI, including responsive/RTL and owner-dashboard browser QA, passed: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998).
+- [ ] Physical-device acceptance of both themes, biometric login, calendar and existing notification delivery.
+- [ ] Publish the v1.2.0 debug-signed GitHub prerelease after the device smoke test.

@@ -112,3 +112,18 @@ These do not block the current release:
 - Do not use local demo mode for real customer bookings.
 - Check the relevant workflow runs after a code change.
 - Update this file and ROADMAP.md when the release or deployment state changes.
+
+
+## Shayan Barber Studio Android 1.2.0 — 10 November 2026
+
+The Android system display name and biometric prompt now read **Shayan Barber Studio**. The package/application ID remains `com.pooyalabs.salonmanager`; Firebase registration and existing installs therefore keep the same app identity. Gradle version is 1.2.0 / versionCode 3.
+
+The current Android code includes persistent System / Light / Dark themes, an engineered high-contrast light palette, adaptive status/navigation bars and restrained login/navigation motion. No changes were made to Apps Script, Google Sheets, Firebase routing, credential encryption or notification delivery code.
+
+Verification on the current UI code:
+- Android source-contract tests passed, including app label, launcher asset, theme persistence and notification contracts.
+- Firebase configuration injection succeeded.
+- Focused Kotlin unit tests and debug APK assembly passed; artifact ID 13785568487 in [Android workflow run 42863648949](https://github.com/pooya-labs/salon-booking/actions/runs/42863648949).
+- Repository CI passed on Linux and Windows, including lint, unit tests, migrations, typecheck/build, responsive/RTL browser QA and owner-dashboard date-range QA: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998).
+
+Remaining acceptance is physical-device-only: install this exact APK, verify all three appearance modes and restart persistence, then confirm biometric login, calendar interactions and the already-working FCM notifications. The automated tests do not replace this real-device check. The v1.2.0 GitHub prerelease should be published only after that smoke test.
