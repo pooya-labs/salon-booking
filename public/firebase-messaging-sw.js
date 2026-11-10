@@ -5,10 +5,14 @@ self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+      var destinationUrl = new URL(destination);
       for (var index = 0; index < clientList.length; index += 1) {
         var client = clientList[index];
-        if ('focus' in client) {
-          return client.navigate(destination).then(function () { return client.focus(); });
+        var clientUrl = new URL(client.url);
+        if (clientUrl.origin !== destinationUrl.origin ||
+            !clientUrl.pathname.startsWith('/salon-booking/')) continue;
+        if ('focus' in client && 'navigate' in client) {
+          return client.navigate(destinationUrl.href).then(function () { return client.focus(); });
         }
       }
       return clients.openWindow(destination);
