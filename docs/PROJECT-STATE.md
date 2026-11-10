@@ -65,9 +65,12 @@ A separate Kotlin and Jetpack Compose app is being added for the salon owner. It
 - The owner confirmed on 10 November 2026 that the Android app was registered in the existing Firebase project, the `ANDROID_GOOGLE_SERVICES_JSON_BASE64` repository secret was added, and Apps Script source 1.5.5 was republished to the existing Web App deployment while preserving its `/exec` URL.
 - Android workflow [run 42801068973](https://github.com/pooya-labs/salon-booking/actions/runs/42801068973) passed with Firebase configuration injected: `processDebugGoogleServices`, focused Kotlin unit tests, and `assembleDebug` all completed successfully. Artifact: `salon-manager-android-debug` (artifact ID `13755747528`).
 - Repository CI [run 42801069055](https://github.com/pooya-labs/salon-booking/actions/runs/42801069055) passed on both Linux and Windows, including Windows desktop/mobile visual QA.
-- The owner confirmed on a physical phone that real booking notifications arrive while the app is open and after it is swiped away from Recents. After a device reboot, however, a booking notification appeared only after the app was opened; reboot delivery is therefore **not yet verified**.
-- A follow-up patch adds a `BOOT_COMPLETED` receiver and a network-constrained WorkManager task that re-registers the current FCM token with retry. This patch must be rebuilt and tested on the physical phone before claiming reboot-safe delivery.
-- Keep PR #5 open until the physical-device smoke test is complete; do not describe background notification delivery as production-verified yet.
+- The owner confirmed on the physical Android phone that real booking notifications arrive while the app is open, after it is swiped away from Recents, and after a full device reboot **without opening the app**.
+- The reboot fix adds a `BOOT_COMPLETED` receiver and a network-constrained WorkManager task that reconciles the current FCM token with the Apps Script subscription endpoint and retries transient failures.
+- The owner also set the app battery mode to Unrestricted and excluded it from Samsung background-sleep lists.
+- Android workflow [run 42805853496](https://github.com/pooya-labs/salon-booking/actions/runs/42805853496) passed with the Firebase secret injected, including source-contract tests, Firebase configuration processing, Kotlin unit tests, APK assembly and artifact upload. Artifact ID: `13758393036` (`salon-manager-android-debug`).
+- Repository CI [run 42805854365](https://github.com/pooya-labs/salon-booking/actions/runs/42805854365) passed on Linux and Windows.
+- The native Android physical-device smoke test is complete; PR #5 can be merged after confirming its latest head/checks.
 
 ## Known limitations and follow-up work
 
@@ -77,7 +80,7 @@ These do not block the current release:
 - A production backup-restore and rollback drill has not been recorded.
 - Booking-data retention periods and a privacy contact still need the salon owner's formal decision.
 - SMS, multi-staff scheduling and advanced analytics are outside the current scope.
-- The native Android manager is under development in `android/`; FCM delivery must be verified on the manager's physical device before it is considered production-ready.
+- The native Android manager is implemented under `android/`; FCM receipt has been confirmed on the manager's physical device in foreground, after swiping the app away, and after reboot. Android force-stop, revoked notification permission, unavailable network, Do Not Disturb and OEM background restrictions remain OS-level exceptions.
 
 ## Before changing production
 
