@@ -60,7 +60,7 @@ A separate Kotlin and Jetpack Compose manager app is implemented for the salon o
 
 ## Native Android UX redesign — 10 November 2026
 
-The manager UI is being refreshed with an obsidian/graphite visual system, restrained cyan-mint accents, floating animated bottom navigation, and short transitions between the secure login and management areas. The work is limited to the native Android presentation layer; booking APIs, authentication, database and notification flows remain unchanged. See [docs/ANDROID-UX-REDESIGN.md](ANDROID-UX-REDESIGN.md).
+The manager UI now has persistent System / Light / Dark modes. The dark palette uses obsidian/graphite and cyan-mint; the light palette uses cool off-white, white surfaces, deep ink and accessible teal. Floating animated navigation and restrained transitions are retained. The notification implementation was not edited: `Notifications.kt`, `PushTokenSync.kt`, `SalonMessagingService.kt` and `AndroidManifest.xml` have the same Git blob SHAs as `main`. See [docs/ANDROID-UX-REDESIGN.md](ANDROID-UX-REDESIGN.md).
 
 **Verification is intentionally on hold** at the owner's request until all requested UI changes are complete. Do not run tests, builds, APK assembly or CI during this design iteration.
 
@@ -77,7 +77,7 @@ The manager UI is being refreshed with an obsidian/graphite visual system, restr
 - Android workflow [run 42805853496](https://github.com/pooya-labs/salon-booking/actions/runs/42805853496) passed with the Firebase secret injected, including source-contract tests, Firebase configuration processing, Kotlin unit tests, APK assembly and artifact upload. Artifact ID: `13758393036` (`salon-manager-android-debug`).
 - Repository CI [run 42805854365](https://github.com/pooya-labs/salon-booking/actions/runs/42805854365) passed on Linux and Windows.
 - Original UI/biometric implementation: [PR #6](https://github.com/pooya-labs/salon-booking/pull/6) was merged.
-- Follow-on native Android UX redesign: [draft PR #7](https://github.com/pooya-labs/salon-booking/pull/7), branch head `270f0acb020687cc03d9520948b90418dcaff160`. It includes the updated obsidian/cyan visual system and motion; tests/builds remain intentionally deferred until the owner finishes the remaining changes.
+- Follow-on native Android UX redesign: [PR #7](https://github.com/pooya-labs/salon-booking/pull/7), branch `feature/android-modern-brand-biometric-calendar`. It includes persistent System / Light / Dark themes, adaptive system bars and motion. Notification implementation files were verified unchanged against `main`.
 - Firebase-configured Android build, source-contract tests, focused Kotlin tests and APK artifact upload passed: [run 42820405938](https://github.com/pooya-labs/salon-booking/actions/runs/42820405938), artifact `13766596540`.
 - Repository CI passed on Linux and Windows: [run 42820405870](https://github.com/pooya-labs/salon-booking/actions/runs/42820405870).
 - The latest APK is a debug build. Physical-device acceptance of the latest calendar, biometric and notification visual changes is still pending, as is dedicated release signing. Do not mark Android 1.1.0 as a stable production release until both are complete.
@@ -89,7 +89,8 @@ The manager UI is being refreshed with an obsidian/graphite visual system, restr
 - [ ] Confirm latest build on the manager's physical phone, including launch, sign-in, graphical calendar, fingerprint quick sign-in and notification appearance.
 - [ ] Configure a dedicated release keystore in repository Actions secrets.
 - [ ] Produce and verify a signed release APK/AAB.
-- [ ] Complete the remaining UI changes, run final verification, then merge draft PR #7.
+- [ ] Merge PR #7 as requested; automated tests/builds remain deferred by owner instruction.
+- [ ] After merge, run the final verification and physical-device checks before publishing.
 - [ ] Publish the versioned GitHub Release.
 
 ## Known limitations and follow-up work
