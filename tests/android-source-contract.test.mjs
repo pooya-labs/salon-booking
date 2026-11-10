@@ -66,7 +66,18 @@ test('Pooya Labs launcher mark is scaled inside the Android adaptive-icon safe z
   assert.match(read('android/app/src/main/res/drawable/ic_salon_launcher_mark.xml'), /#35D9C0/)
   assert.match(foreground, /android:insetLeft="16dp"/)
   assert.match(foreground, /android:insetRight="16dp"/)
-  assert.match(read('android/app/src/main/res/drawable/ic_launcher_background.xml'), /#08130F/)
+  assert.match(read('android/app/src/main/res/drawable/ic_launcher_background.xml'), /#11131A/)
+})
+
+test('Android appearance mode persists and supplies accessible Material 3 day/night palettes', () => {
+  assert.match(mainActivity, /getSharedPreferences\("salon_ui_preferences"/)
+  assert.match(mainActivity, /getString\("theme_mode", "SYSTEM"\)/)
+  assert.match(mainActivity, /putString\("theme_mode", mode\)/)
+  assert.match(mainActivity, /"SYSTEM" ->|"LIGHT" ->|"DARK" ->/)
+  assert.match(mainActivity, /isSystemInDarkTheme\(\)/)
+  assert.match(mainActivity, /lightColorScheme\([\s\S]*?background = Color\(0xFFF4F7FA\)[\s\S]*?primary = Color\(0xFF087F79\)/)
+  assert.match(mainActivity, /darkColorScheme\([\s\S]*?background = Color\(0xFF080A10\)[\s\S]*?primary = Color\(0xFF25E6C8\)/)
+  assert.match(screens, /"SYSTEM" to "خودکار", "LIGHT" to "روز", "DARK" to "شب"/)
 })
 
 test('background FCM data messages are rendered immediately in a native high-importance channel', () => {
