@@ -932,7 +932,7 @@ private fun ScheduleScreen(state: AdminUiState, vm: AdminViewModel) {
         })
         if (state.exceptions.isEmpty()) Text("تغییر ویژه‌ای ثبت نشده است.", color = MutedText, fontSize = 12.sp)
         state.exceptions.forEach { exception ->
-            Surface(color = Color.White, shape = RoundedCornerShape(14.dp)) {
+            Surface(color = PanelColor, shape = RoundedCornerShape(14.dp)) {
                 Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(JalaliDate.format(exception.date), fontWeight = FontWeight.Bold)
@@ -1039,7 +1039,7 @@ private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel, hasSavedCred
     val context = LocalContext.current
     PageColumn {
         SectionTitle("اعلان‌ها و تنظیمات", "دریافت اعلان بومی روی گوشی مدیر")
-        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.NotificationsActive, null, tint = EmeraldColor, modifier = Modifier.size(28.dp))
@@ -1088,7 +1088,7 @@ private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel, hasSavedCred
                 }
             }
         }
-        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+        ElevatedCard(shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = PanelColor)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("ترجیحات", color = ForestColor, fontWeight = FontWeight.Bold)
                 Row(verticalAlignment = Alignment.CenterVertically) { Text("اعلان ایمیلی", Modifier.weight(1f)); Switch(email, { email = it }) }
@@ -1114,7 +1114,7 @@ private fun InfoPanel(title: String, body: String) {
 
 @Composable
 private fun EmptyPanel(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = PanelColor, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(icon, null, tint = EmeraldColor, modifier = Modifier.size(34.dp))
             Text(message, color = MutedText, textAlign = TextAlign.Center, fontSize = 13.sp)
