@@ -87,10 +87,10 @@ class MainActivity : FragmentActivity() {
         setContent {
             val context = LocalContext.current
             val credentialVault = remember { CredentialVault(applicationContext) }
-            var hasSavedCredentials by remember { mutableStateOf(credentialVault.hasSavedCredentials()) }
+            var hasSavedCredentials by remember { mutableStateOf(runCatching { credentialVault.hasSavedCredentials() }.getOrDefault(false)) }
             var pendingCredentials by remember { mutableStateOf<SavedOwnerCredentials?>(null) }
             var awaitingBiometricServerLogin by remember { mutableStateOf(false) }
-            val biometricAvailable = remember { credentialVault.isBiometricAvailable() }
+            val biometricAvailable = remember { runCatching { credentialVault.isBiometricAvailable() }.getOrDefault(false) }
 
             val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
             LaunchedEffect(Unit) {
