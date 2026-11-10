@@ -1,0 +1,67 @@
+name: Android Manager App
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "relay/Code.gs"
+      - "tests/android-source-contract.test.mjs"
+      - ".github/workflows/android-app.yml"
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "relay/Code.gs"
+      - "tests/android-source-contract.test.mjs"
+      - ".github/workflows/android-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-manager-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fast source-contract tests
+        run: npm run test:unit
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Install Android SDK 36
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - name: Inject private Firebase Android configuration
+        env:
+          FIREBASE_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -n "$FIREBASE_JSON" ]; then
+            echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
+          else
+            echo "::warning::Firebase Android config is not installed; the APK can be built but remote push registration remains disabled."
+          fi
+      - name: Build and run focused Android unit tests
+        env:
+          SALON_RELAY_URL: ${{ vars.SALON_RELAY_URL }}
+        run: gradle -p android :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: salon-manager-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

@@ -10,7 +10,7 @@
  *   2. Copy the bootstrap token printed in the execution log.
  *   3. Deploy as a Web app: execute as you, access: anyone.
  */
-var APP_VERSION_ = '1.5.4';
+var APP_VERSION_ = '1.5.5';
 var DB_PROPERTY_ = 'SALON_DB_ID';
 var BOOTSTRAP_PROPERTY_ = 'ADMIN_BOOTSTRAP_TOKEN';
 var NOTIFICATION_PROPERTY_ = 'NOTIFICATION_EMAIL';
@@ -49,6 +49,20 @@ function doGet() {
   return HtmlService.createHtmlOutputFromFile('Bridge')
     .setTitle('Salon Booking API')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * Native Android transport. All requests still pass through proxyRequest(),
+ * preserving the existing route allow-list and owner-session checks.
+ */
+function doPost(e) {
+  var raw = e && e.postData && e.postData.contents ? String(e.postData.contents) : '';
+  var request = parseJson_(raw);
+  var response = request && typeof request === 'object' && !Array.isArray(request)
+    ? proxyRequest(request)
+    : result_(400, { ok: false, error: 'invalid_request', message: 'ساختار درخواست برنامه معتبر نیست.' });
+  return ContentService.createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
@@ -1265,6 +1279,7 @@ function sendPushPayload_(notification) {
       tag: 'salon-booking-' + eventId.slice(0, 80),
       kind: String(notification.kind || 'test')
     },
+    android: { priority: 'HIGH', ttl: '86400s' },
     webpush: { headers: { Urgency: 'high', TTL: '86400' } }
   }});
   var sent = 0, failed = 0;

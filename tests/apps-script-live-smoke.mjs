@@ -146,6 +146,27 @@ try {
       JSON.stringify({ frameDiagnostics, bridgeMessages }),
   )
 
+  // Exercise the direct POST transport used by the native Android app (read-only health only).
+  const nativeHealthResponse = await fetch(relayUrl, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    signal: AbortSignal.timeout(30000),
+    body: JSON.stringify({
+      path: '/api/health',
+      method: 'GET',
+      headers: { accept: 'application/json' },
+      body: null,
+      sessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    }),
+  });
+  assert.equal(nativeHealthResponse.ok, true, 'Apps Script native POST transport must return a successful HTTP response');
+  const nativeEnvelope = await nativeHealthResponse.json();
+  assert.equal(nativeEnvelope.status, 200, 'native envelope must return application status 200: ' + JSON.stringify(nativeEnvelope));
+  const nativeHealth = JSON.parse(nativeEnvelope.body || '{}');
+  assert.equal(nativeHealth.service, 'salon-booking-apps-script');
+  assert.equal(nativeHealth.version, '1.5.5', 'native transport must reach the upgraded Apps Script source');
+
   const result = await page.evaluate(async () => {
     const read = async (path) => {
       const response = await window.fetch(path, {
@@ -181,7 +202,7 @@ try {
   assert.equal(result.health.status, 200, 'Apps Script /api/health must return HTTP 200: ' + JSON.stringify(result.health))
   assert.equal(result.health.payload?.ok, true, 'Apps Script health response must be successful')
   assert.equal(result.health.payload?.service, 'salon-booking-apps-script', 'the endpoint must run the Apps Script backend, not an old relay')
-  assert.equal(result.health.payload?.version, '1.5.4', 'the deployed Apps Script source must be upgraded to the current backend version')
+  assert.equal(result.health.payload?.version, '1.5.5', 'the deployed Apps Script source must be upgraded to the current backend version')
 
   assert.equal(result.config.status, 200, 'private Sheets settings must be readable through the public config route: ' + JSON.stringify(result.config))
   assert.equal(result.config.payload?.ok, true, 'public config response must be successful')

@@ -136,6 +136,13 @@ test('phone booking email alerts show confirmed status and the booking source', 
   assert.ok(backend.includes("booking.status === 'confirmed' ? 'تأیید شده' : 'در انتظار تأیید'"))
 })
 
+test('native Android API uses the same authenticated proxy envelope as the website', () => {
+  assert.match(backend, /function doPost\(e\)[\s\S]*?proxyRequest\(request\)[\s\S]*?ContentService\.createTextOutput/)
+  assert.match(backend, /function proxyRequest\(input\)[\s\S]*?sessionId = String\(input\.sessionId \|\| ''\)/)
+  assert.match(backend, /if \(path\.indexOf\('\/api\/admin\/'\) === 0\) return dispatchAdmin_/)
+  assert.match(backend, /android:\s*\{ priority: 'HIGH', ttl: '86400s' \}/)
+})
+
 test('foreground and background push use data messages, high Web Push urgency and persistent vibration', () => {
   assert.ok(pushClient.includes('registration.showNotification'))
   assert.ok(pushClient.includes("new URL('?admin=1'"))
@@ -301,7 +308,7 @@ test('Apps Script salon timezone is pinned to Iran', () => {
   assert.ok(backend.includes("local_timezone: 'Asia/Tehran'"))
   assert.ok(backend.includes('requestedTimezone !== IRAN_TIMEZONE_'))
   assert.ok(backend.includes('var timezone = IRAN_TIMEZONE_'))
-  assert.ok(backend.includes("var APP_VERSION_ = '1.5.4'"))
+  assert.ok(backend.includes("var APP_VERSION_ = '1.5.5'"))
   assert.match(backend, /status: 'confirmed'/)
   assert.match(backend, /REQUEST_TABLE_CACHE_/)
   assert.match(backend, /REQUEST_SPREADSHEET_/)
