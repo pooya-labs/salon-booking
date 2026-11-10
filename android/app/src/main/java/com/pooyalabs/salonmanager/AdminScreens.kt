@@ -107,6 +107,8 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var saveWithBiometric by remember { mutableStateOf(hasSavedCredentials) }
+    var showLogin by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { showLogin = true }
 
     Box(
         Modifier.fillMaxSize().background(
@@ -114,6 +116,10 @@ fun LoginScreen(
         ).padding(horizontal = 22.dp, vertical = 26.dp),
         contentAlignment = Alignment.Center
     ) {
+        AnimatedVisibility(
+            visible = showLogin,
+            enter = fadeIn(tween(520)) + slideInVertically(tween(520)) { it / 12 }
+        ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -209,6 +215,7 @@ fun LoginScreen(
                 textAlign = TextAlign.Center,
                 lineHeight = 17.sp
             )
+        }
         }
     }
 }
@@ -1223,7 +1230,7 @@ private fun SettingsScreen(state: AdminUiState, vm: AdminViewModel, hasSavedCred
         }
         InfoPanel("حساب مدیر", "ورود با همان حساب پنل فعلی. نشست ورود روی دستگاه به‌صورت رمزگذاری‌شده نگهداری می‌شود.")
         OutlinedButton(onClick = vm::logout, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF9D5047))) { Icon(Icons.Default.Close, null); Spacer(Modifier.width(7.dp)); Text("خروج از حساب") }
-        Text("نسخه ۱.۰.۰ · ساخته‌شده توسط Pooya Labs", color = MutedText, fontSize = 10.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Text("نسخه ۱.۱.۰ · ساخته‌شده توسط Pooya Labs", color = MutedText, fontSize = 10.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
     }
 }
 
