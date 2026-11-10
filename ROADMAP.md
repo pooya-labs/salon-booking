@@ -167,4 +167,4 @@ For the next person working on the repository:
 - [x] Firebase-configured Android source-contract tests, Kotlin unit tests and APK assembly passed: [run 42863648949](https://github.com/pooya-labs/salon-booking/actions/runs/42863648949).
 - [x] Linux and Windows repository CI, including responsive/RTL and owner-dashboard browser QA, passed: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998).
 - [ ] Physical-device acceptance of both themes, biometric login, calendar and existing notification delivery.
-- [ ] Publish the v1.2.0 debug-signed GitHub prerelease after the device smoke test.
+- [x] Publish the v1.2.0 debug-signed GitHub prerelease for owner validation: [release](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0) · [APK](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk).

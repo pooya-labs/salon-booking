@@ -100,7 +100,7 @@ Version `v1.1.0` is published as a **GitHub prerelease**. The release workflow b
 The booking website, Apps Script backend, private Sheets database and Firebase project remain the existing live services. The Android manager implementation and current owner-verified prerelease are complete. Production signing and Play Store distribution are intentionally out of scope for this release.
 
 
-## Shayan Barber Studio 1.2.0 — current release candidate
+## Shayan Barber Studio 1.2.0 — published prerelease
 
 The Android launcher and system app label are **Shayan Barber Studio**. The biometric system prompt uses the same product name. The application ID remains `com.pooyalabs.salonmanager`, preserving the existing Firebase registration and install identity.
 
@@ -108,6 +108,7 @@ Version 1.2.0 (versionCode 3) includes the persistent System / Light / Dark them
 
 - Android workflow: [run 42863648949](https://github.com/pooya-labs/salon-booking/actions/runs/42863648949) — source-contract tests, Firebase injection, Kotlin unit tests, APK build and artifact upload passed.
 - Repository CI: [run 42863648998](https://github.com/pooya-labs/salon-booking/actions/runs/42863648998) — Linux and Windows browser QA passed.
-- The debug APK is built and available in the Android workflow artifact. It is not production-signed.
-- Before broad distribution, install this exact build on the owner's phone and verify System / Light / Dark switching, restart persistence, biometric sign-in, calendar interactions and FCM delivery in foreground/background/reboot conditions.
+- The debug APK is published as a GitHub prerelease: [v1.2.0 release page](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0) · [direct APK download](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk). It is not production-signed.
+- Release workflow [42864377838](https://github.com/pooya-labs/salon-booking/actions/runs/42864377838) built, tested and uploaded the APK successfully.
+- Before wider distribution, install this exact build on the owner's phone and verify System / Light / Dark switching, restart persistence, biometric sign-in, calendar interactions and FCM delivery in foreground/background/reboot conditions.
 - Production signing and Play Store publication remain out of scope.
