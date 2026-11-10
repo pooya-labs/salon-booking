@@ -45,6 +45,28 @@ object JalaliDate {
     private val digits = "۰۱۲۳۴۵۶۷۸۹"
     fun faDigits(value: String): String = value.map { ch -> if (ch in '0'..'9') digits[ch - '0'] else ch }.joinToString("")
 
+    fun parts(gregorian: String): Triple<Int, Int, Int>? {
+        val date = runCatching { LocalDate.parse(gregorian) }.getOrNull() ?: return null
+        return toJalali(date.year, date.monthValue, date.dayOfMonth)
+    }
+
+    fun toGregorian(year: Int, month: Int, day: Int): String? = runCatching {
+        require(month in 1..12 && day >= 1)
+        val calendar = android.icu.util.PersianCalendar(java.util.TimeZone.getTimeZone("Asia/Tehran"))
+        calendar.isLenient = false
+        calendar.clear()
+        calendar.set(year, month - 1, day, 12, 0, 0)
+        java.time.Instant.ofEpochMilli(calendar.timeInMillis).atZone(tehran).toLocalDate().format(apiDate)
+    }.getOrNull()
+
+    fun monthLength(year: Int, month: Int): Int = runCatching {
+        val calendar = android.icu.util.PersianCalendar(java.util.TimeZone.getTimeZone("Asia/Tehran"))
+        calendar.isLenient = false
+        calendar.clear()
+        calendar.set(year, month - 1, 1, 12, 0, 0)
+        calendar.getActualMaximum(android.icu.util.Calendar.DATE)
+    }.getOrDefault(if (month <= 6) 31 else if (month <= 11) 30 else 29)
+
     fun format(gregorian: String): String {
         val date = runCatching { LocalDate.parse(gregorian) }.getOrNull() ?: return faDigits(gregorian)
         val (year, month, day) = toJalali(date.year, date.monthValue, date.dayOfMonth)
