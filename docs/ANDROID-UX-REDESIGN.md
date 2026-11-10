@@ -1,6 +1,6 @@
 # Android manager UX redesign
 
-**Status:** merged into `main` through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8), merge commit `619c044c0b8c473fbc02b51829746f72f15a4db4`. Automated/device verification remains deferred by explicit owner instruction.
+**Status:** merged into `main` through [PR #8](https://github.com/pooya-labs/salon-booking/pull/8), merge commit `619c044c0b8c473fbc02b51829746f72f15a4db4`. Automated Android verification subsequently passed in the v1.2.0 release workflow. Owner physical-device acceptance of the refreshed APK remains pending.
 
 ## Visual direction
 
@@ -53,3 +53,9 @@ This is a visual and interaction redesign of the native Android manager only. It
 ## Deferred verification
 
 Per owner instruction, no tests or local Gradle builds were manually run during this iteration. A merge may trigger repository-configured GitHub Actions automatically. Physical-device verification of both themes and the unchanged notification flow is still required before publishing a new APK/release.
+
+## Startup monogram contrast correction — 10 November 2026
+
+Following owner review of the loading screen, the rounded tile behind the Pooya mint monogram was changed to pure black (`#000000`). This keeps the P/monogram readable on the light startup background while preserving the artwork, tile geometry, spinner, loading text and surrounding animation. A source-contract regression test now guards the black tile. The notification delivery implementation and Firebase wiring were not changed.
+
+The Firebase-configured Android build, source-contract tests, Kotlin unit tests and APK release upload passed in [workflow run 42867684705](https://github.com/pooya-labs/salon-booking/actions/runs/42867684705). The updated APK replaced the earlier asset in the existing [v1.2.0 prerelease](https://github.com/pooya-labs/salon-booking/releases/tag/v1.2.0): [direct download](https://github.com/pooya-labs/salon-booking/releases/download/v1.2.0/app-debug.apk). Physical-device verification of the refreshed startup logo, themes, biometric sign-in, calendar and notifications remains with the owner.
