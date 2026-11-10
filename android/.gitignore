@@ -1,0 +1,6 @@
+# Firebase config is private project configuration; inject it only at build time.
+app/google-services.json
+local.properties
+.gradle/
+build/
+app/build/

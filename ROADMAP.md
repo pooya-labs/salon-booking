@@ -7,7 +7,7 @@ Version 1.0.0 is the first completed release of the booking system for Shayan Ba
 **Default branch:** main  
 **Live site:** https://pooya-labs.github.io/salon-booking/  
 **Owner workspace:** https://pooya-labs.github.io/salon-booking/?admin=1  
-**Apps Script source version:** 1.5.3 (relay/Code.gs)  
+**Apps Script source version:** 1.5.5 in repository; live Web App deployment update is still required for native Android  
 **Product version:** 1.0.0
 
 ## Release status
@@ -98,6 +98,33 @@ These ideas can be considered later, but they were not needed to deliver the fir
 - A scheduled production backup-restore and rollback exercise.
 
 No independent penetration test or destructive production restore drill is claimed as completed.
+
+## Native Android manager — version 1.0.0 (in progress)
+
+The customer website and its existing Google Sheets records remain unchanged. A separate Kotlin/Jetpack Compose app is being built for the owner, using the same Apps Script API, owner login and Firebase project.
+
+### Implemented in the feature branch
+- [x] Separate Android application module with Persian RTL Compose interface.
+- [x] Encrypted owner session storage using Android Keystore.
+- [x] Direct POST transport to the same Apps Script `/exec` API, preserving the existing session and route checks.
+- [x] Native FCM service for data-only background messages; notification is rendered immediately without a network call in the FCM callback.
+- [x] Android high-priority FCM payload and high-importance notification channel with default system sound, vibration and heads-up behavior.
+- [x] Booking list, date and status filters, customer phone and tap-to-call, booking status actions and deletion.
+- [x] Manual phone/in-person booking creation.
+- [x] Daily calendar, customer appointments, time blocks and removal of time blocks.
+- [x] Service editor, weekly hours, multiple work intervals, date exceptions and booking rules.
+- [x] Notification preferences, device registration, local sound test, Android channel settings shortcut and remote server test.
+- [x] Focused Kotlin unit tests and a Node contract test for the Android/API/FCM boundary.
+
+### Required before a usable APK with background push
+- [ ] Add the Android app `com.pooyalabs.salonmanager` to the existing Firebase project and store its Base64 `google-services.json` as the GitHub Actions secret `ANDROID_GOOGLE_SERVICES_JSON_BASE64`.
+- [ ] Publish Apps Script source 1.5.5 to the existing Web App deployment, preserving the current `/exec` URL.
+- [ ] Pass Android build and unit tests in GitHub Actions.
+- [ ] Install the APK on the manager's physical Android phone, sign in and confirm the FCM token is registered.
+- [ ] Verify test and real booking notifications with the app foregrounded, backgrounded and swiped away from Recents; verify sound and vibration from the Android channel settings.
+- [ ] Verify on a second network and after reboot. Document Android force-stop, notification permission, Do Not Disturb and manufacturer battery restrictions as OS-level limitations.
+
+No new database, paid server or replacement customer booking website is introduced.
 
 ## Maintenance policy
 
