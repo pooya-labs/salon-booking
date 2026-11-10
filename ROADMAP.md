@@ -119,11 +119,11 @@ The native Android manager implementation is feature-complete on the feature bra
 - [x] Debug APK artifact uploaded as `salon-manager-android-debug` (artifact ID `13766596540`).
 
 ### Release gate
-The current APK is a debug build, not a production-signed release. Before declaring Android 1.1.0 production-released:
-- [ ] Confirm latest build launches and the updated calendar, biometric flow and notification visuals work on the manager's physical phone.
-- [ ] Configure a dedicated release keystore and passwords as GitHub Actions secrets.
-- [ ] Build and verify the signed release APK/AAB.
-- [ ] Publish a versioned GitHub Release and merge PR #6.
+Version v1.1.0 is published as a GitHub prerelease with the owner-tested debug-signed APK. It is complete for the current direct-install use case. A stable production-signed distribution is a separate optional future milestone:
+- [x] Owner confirmed installation and launch of the latest APK on the target phone.
+- [x] Merge PR #6 into main.
+- [x] Publish GitHub prerelease v1.1.0 with Firebase-configured APK.
+- [ ] Optional: configure a dedicated release keystore and publish a stable signed APK/AAB.
 
 Earlier physical-device checks confirmed FCM delivery in foreground, after dismissing the app from Recents, and after reboot. The latest visual and biometric changes still need a final device smoke test. Until then, describe the Android app as implementation-complete and awaiting release acceptance, not as a stable production release.
 
