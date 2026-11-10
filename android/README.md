@@ -43,7 +43,7 @@ The app creates a native high-importance Android channel with the system notific
 - Firebase device registration, local sound test, remote test push and email preference.
 ## Production setup checkpoint — 10 November 2026
 
-The repository owner has confirmed that the Android app was registered in the existing Firebase project, the `ANDROID_GOOGLE_SERVICES_JSON_BASE64` Actions secret was added, and Apps Script source 1.5.5 was published to the existing Web App deployment while preserving its `/exec` URL. The next automated build must verify that Firebase configuration is injected successfully. Actual manager sign-in, token registration, and background notification delivery still require a physical-device test; these are not yet marked as verified.
+The repository owner confirmed that the Android app was registered in the existing Firebase project, the `ANDROID_GOOGLE_SERVICES_JSON_BASE64` Actions secret was added, and Apps Script source 1.5.5 was published to the existing Web App deployment while preserving its `/exec` URL. Firebase configuration injection was subsequently verified by Android workflow runs 42805853496 and 42820405938. Earlier physical-device checks confirmed manager sign-in, FCM subscription and notification delivery in foreground, after dismissing the app from Recents, and after reboot. The final smoke test for the latest calendar, biometric and notification visual changes remains pending.
 
 
 ## Modern branding, calendar and biometric sign-in
