@@ -2,6 +2,9 @@ name: Publish Android Manager Release
 
 on:
   push:
+    branches: [main]
+    paths:
+      - ".release/v1.1.0"
     tags:
       - "v*"
 
@@ -46,7 +49,9 @@ jobs:
       - name: Publish APK to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Salon Manager ${{ github.ref_name }}
+          name: Salon Manager v1.1.0
+          tag_name: v1.1.0
+          target_commitish: main
           prerelease: true
           generate_release_notes: true
           body: |
