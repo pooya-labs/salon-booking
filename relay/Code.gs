@@ -679,8 +679,8 @@ function getAdminDaySchedule_(query) {
     return {
       id: item.row.id, date: item.date,
       time: item.time, endTime: item.endTime,
-      serviceName: item.row.serviceName, durationMinutes: Number(item.row.durationMinutes),
-      status: item.row.status
+      serviceName: item.row.serviceName, name: item.row.name || '', phone: item.row.phone || '',
+      durationMinutes: Number(item.row.durationMinutes), status: item.row.status
     };
   }).filter(function (booking) {
     return /^([01]\d|2[0-3]):[0-5]\d$/.test(booking.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(booking.endTime);
@@ -1227,7 +1227,12 @@ function sendTestPush_(owner) {
 function sendPushNotifications_(booking) {
   var title = booking.source === 'phone' ? 'نوبت تلفنی جدید فُرم' : 'نوبت آنلاین تأیید شد · فُرم';
   var body = [booking.name, booking.serviceName, booking.date + ' · ' + booking.time].filter(Boolean).join(' — ');
-  var result = sendPushPayload_({ title: title, body: body || 'یک نوبت جدید ثبت شد.' });
+  var result = sendPushPayload_({
+    title: title,
+    body: body || 'یک نوبت جدید ثبت شد.',
+    id: booking.id || booking.reference,
+    kind: 'booking'
+  });
   Logger.log('Push sent=' + result.sent + ', failed=' + result.failed);
 }
 function sendPushPayload_(notification) {
@@ -1239,34 +1244,65 @@ function sendPushPayload_(notification) {
   try { accessToken = ScriptApp.getOAuthToken(); } catch (error) {
     Logger.log('Push OAuth unavailable: ' + String(error)); return { sent: 0, failed: devices.length };
   }
+
+  // Data-only messages let the service worker control vibration, persistence and click routing.
+  // High Web Push urgency asks supporting push services to deliver promptly.
+  var eventId = String(notification.id || Utilities.getUuid());
+  var messageBody = JSON.stringify({ message: {
+    token: '',
+    data: {
+      title: String(notification.title || 'نوبت جدید سالن').slice(0, 120),
+      body: String(notification.body || 'یک نوبت جدید ثبت شد.').slice(0, 500),
+      url: 'https://pooya-labs.github.io/salon-booking/?admin=1',
+      tag: 'salon-booking-' + eventId.slice(0, 80),
+      kind: String(notification.kind || 'test')
+    },
+    webpush: { headers: { Urgency: 'high', TTL: '86400' } }
+  }});
   var sent = 0, failed = 0;
   devices.forEach(function (device) {
-    try {
-      var response = UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + projectId + '/messages:send', {
-        method: 'post', contentType: 'application/json',
-        headers: { Authorization: 'Bearer ' + accessToken },
-        payload: JSON.stringify({ message: {
-          token: device.token,
-          notification: { title: notification.title, body: notification.body },
-          webpush: {
-            notification: { icon: 'https://pooya-labs.github.io/salon-booking/icons/salon-icon.svg' },
-            fcmOptions: { link: 'https://pooya-labs.github.io/salon-booking/?admin=1' }
-          }
-        }}),
-        muteHttpExceptions: true
-      });
-      var status = response.getResponseCode();
-      if (status >= 200 && status < 300) sent += 1;
-      else {
-        failed += 1;
-        var responseBody = response.getContentText() || '';
-        Logger.log('FCM failed HTTP ' + status + ' ' + responseBody.slice(0, 300));
-        if (status === 404 || /UNREGISTERED|registration-token-not-registered/i.test(responseBody)) {
-          device.isActive = 'false'; device.updatedAt = nowIso_();
-          updateRecord_('PushSubscriptions', 'token', device.token, device);
+    var delivered = false;
+    var lastStatus = 0;
+    var lastError = '';
+    for (var attempt = 0; attempt < 3 && !delivered; attempt += 1) {
+      try {
+        var requestBody = JSON.parse(messageBody);
+        requestBody.message.token = device.token;
+        var response = UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + projectId + '/messages:send', {
+          method: 'post',
+          contentType: 'application/json',
+          headers: { Authorization: 'Bearer ' + accessToken },
+          payload: JSON.stringify(requestBody),
+          muteHttpExceptions: true
+        });
+        lastStatus = response.getResponseCode();
+        lastError = response.getContentText() || '';
+        if (lastStatus >= 200 && lastStatus < 300) {
+          delivered = true;
+          sent += 1;
+          break;
         }
+
+        if (lastStatus === 404 || /UNREGISTERED|registration-token-not-registered/i.test(lastError)) {
+          device.isActive = 'false';
+          device.updatedAt = nowIso_();
+          updateRecord_('PushSubscriptions', 'token', device.token, device);
+          break;
+        }
+
+        var retryable = lastStatus === 408 || lastStatus === 429 || lastStatus >= 500 ||
+          /UNAVAILABLE|INTERNAL|RESOURCE_EXHAUSTED|temporarily unavailable/i.test(lastError);
+        if (!retryable || attempt === 2) break;
+      } catch (error) {
+        lastError = String(error && error.message || error);
+        if (attempt === 2) break;
       }
-    } catch (error) { failed += 1; Logger.log('FCM request failed: ' + String(error)); }
+      Utilities.sleep(400 * (attempt + 1));
+    }
+    if (!delivered) {
+      failed += 1;
+      Logger.log('FCM delivery failed after retries; HTTP ' + lastStatus + ' ' + String(lastError).slice(0, 300));
+    }
   });
   return { sent: sent, failed: failed };
 }
