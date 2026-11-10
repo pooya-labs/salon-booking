@@ -2,6 +2,15 @@ package com.pooyalabs.salonmanager
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,9 +53,11 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
@@ -60,24 +71,27 @@ import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.ZoneId
 
-private val ForestColor = Color(0xFFE7F4ED)
-private val Sage = Color(0xFF20332C)
-private val CreamBg = Color(0xFF080E0C)
-private val MutedText = Color(0xFF9BAFA5)
-private val InkColor = Color(0xFFEAF3EE)
-private val EmeraldColor = Color(0xFF2FE0A8)
-private val GoldTone = Color(0xFFF0C879)
-private val PanelColor = Color(0xFF14211C)
-private val PanelRaisedColor = Color(0xFF1B2A24)
-private val HeaderColor = Color(0xFF050A08)
-private val LineColor = Color(0xFF2B3D35)
-private val AccentCyan = Color(0xFF61E6DF)
+private val ForestColor = Color(0xFFF4F6FA)
+private val Sage = Color(0xFF202633)
+private val CreamBg = Color(0xFF080A10)
+private val MutedText = Color(0xFF929BAA)
+private val InkColor = Color(0xFFE8EDF5)
+private val EmeraldColor = Color(0xFF25E6C8)
+private val GoldTone = Color(0xFFFFC86B)
+private val PanelColor = Color(0xFF141923)
+private val PanelRaisedColor = Color(0xFF1B2330)
+private val HeaderColor = Color(0xFF090C13)
+private val LineColor = Color(0xFF293343)
+private val AccentCyan = Color(0xFF39D9F2)
 
 @Composable
 fun LoadingScreen() {
-    Box(Modifier.fillMaxSize().background(CreamBg), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF172B39), CreamBg))), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            CircularProgressIndicator(color = ForestColor)
+            Surface(shape = RoundedCornerShape(28.dp), color = PanelColor, border = BorderStroke(1.dp, AccentCyan.copy(alpha = .3f)), shadowElevation = 20.dp) {
+                Box(Modifier.size(92.dp), contentAlignment = Alignment.Center) { Image(painterResource(R.drawable.pooya_monogram), null, Modifier.size(66.dp), contentScale = ContentScale.Fit) }
+            }
+            CircularProgressIndicator(color = AccentCyan, strokeWidth = 2.5.dp)
             Text("در حال اتصال امن به پنل مدیریت…", color = MutedText)
         }
     }
@@ -96,7 +110,7 @@ fun LoginScreen(
 
     Box(
         Modifier.fillMaxSize().background(
-            Brush.linearGradient(listOf(Color(0xFF07110E), Color(0xFF10251D), Color(0xFF080E0C)))
+            Brush.linearGradient(listOf(Color(0xFF070A11), Color(0xFF102633), Color(0xFF090C13)))
         ).padding(horizontal = 22.dp, vertical = 26.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -108,9 +122,9 @@ fun LoginScreen(
             Surface(
                 modifier = Modifier.size(104.dp),
                 shape = RoundedCornerShape(30.dp),
-                color = Color.Black,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = .12f)),
-                shadowElevation = 18.dp
+                color = Color(0xFF141B27),
+                border = BorderStroke(1.dp, AccentCyan.copy(alpha = .28f)),
+                shadowElevation = 24.dp
             ) {
                 Image(
                     painter = painterResource(R.drawable.pooya_monogram),
@@ -128,7 +142,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.elevatedCardColors(containerColor = PanelColor),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 14.dp)
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
             ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
                     Text("خوش برگشتی", color = ForestColor, fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -216,7 +230,7 @@ fun AdminHome(
         topBar = {
             Column(
                 Modifier.fillMaxWidth().background(
-                    Brush.horizontalGradient(listOf(HeaderColor, Color(0xFF12271F), HeaderColor))
+                    Brush.horizontalGradient(listOf(Color(0xFF080B12), Color(0xFF132532), Color(0xFF080B12)))
                 )
             ) {
                 Row(
@@ -228,8 +242,8 @@ fun AdminHome(
                         Surface(
                             modifier = Modifier.size(45.dp),
                             shape = RoundedCornerShape(15.dp),
-                            color = Color.Black,
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = .12f))
+                            color = Color(0xFF141B27),
+                            border = BorderStroke(1.dp, AccentCyan.copy(alpha = .28f))
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.pooya_monogram),
@@ -240,8 +254,8 @@ fun AdminHome(
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text("POOYA LABS", color = AccentCyan, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = 1.8.sp)
-                            Text("مدیریت سالن فُرم", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text("سلام، " + state.username, color = Color(0xFFB5C9BF), fontSize = 11.sp)
+                            Text("مدیریت سالن", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text("خوش اومدی، " + state.username, color = Color(0xFF9CAFC0), fontSize = 11.sp)
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -264,28 +278,47 @@ fun AdminHome(
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = PanelColor, tonalElevation = 0.dp, contentColor = InkColor) {
-                AdminTab.entries.forEach { tab ->
-                    val icon = when (tab) {
-                        AdminTab.BOOKINGS -> Icons.Default.Home
-                        AdminTab.CALENDAR -> Icons.Default.CalendarMonth
-                        AdminTab.SERVICES -> Icons.Default.ShoppingBag
-                        AdminTab.SCHEDULE -> Icons.Default.Schedule
-                        AdminTab.SETTINGS -> Icons.Default.Settings
-                    }
-                    NavigationBarItem(
-                        selected = selected == tab,
-                        onClick = { selected = tab },
-                        icon = { Icon(icon, null) },
-                        label = { Text(tab.label, fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AccentCyan,
-                            selectedTextColor = AccentCyan,
-                            unselectedIconColor = MutedText,
-                            unselectedTextColor = MutedText,
-                            indicatorColor = Color(0xFF24423A)
+            Surface(
+                color = Color(0xF0141923),
+                tonalElevation = 0.dp,
+                shadowElevation = 18.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = .055f))
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 5.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AdminTab.entries.forEach { tab ->
+                        val icon = when (tab) {
+                            AdminTab.BOOKINGS -> Icons.Default.Home
+                            AdminTab.CALENDAR -> Icons.Default.CalendarMonth
+                            AdminTab.SERVICES -> Icons.Default.ShoppingBag
+                            AdminTab.SCHEDULE -> Icons.Default.Schedule
+                            AdminTab.SETTINGS -> Icons.Default.Settings
+                        }
+                        val active = selected == tab
+                        val tint by androidx.compose.animation.animateColorAsState(
+                            if (active) AccentCyan else MutedText,
+                            animationSpec = tween(220), label = "navTint"
                         )
-                    )
+                        val pillWidth by animateDpAsState(if (active) 66.dp else 48.dp, tween(260), label = "navWidth")
+                        Column(
+                            Modifier.weight(1f).clickable { selected = tab }.padding(vertical = 2.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier.width(pillWidth).height(34.dp),
+                                color = if (active) AccentCyan.copy(alpha = .14f) else Color.Transparent,
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint, modifier = Modifier.size(21.dp)) }
+                            }
+                            Text(tab.label, color = tint, fontSize = 10.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium)
+                        }
+                    }
                 }
             }
         }
@@ -294,12 +327,21 @@ fun AdminHome(
             if (state.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = AccentCyan, trackColor = PanelColor)
             if (state.error.isNotBlank()) MessageStrip(state.error, true)
             if (state.message.isNotBlank()) MessageStrip(state.message, false)
-            when (selected) {
-                AdminTab.BOOKINGS -> BookingScreen(state, vm)
-                AdminTab.CALENDAR -> CalendarScreen(state, vm)
-                AdminTab.SERVICES -> ServicesScreen(state, vm)
-                AdminTab.SCHEDULE -> ScheduleScreen(state, vm)
-                AdminTab.SETTINGS -> SettingsScreen(state, vm, hasSavedCredentials, onClearSavedCredentials)
+            AnimatedContent(
+                targetState = selected,
+                transitionSpec = {
+                    (fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 18 }) togetherWith
+                        (fadeOut(tween(140)) + slideOutVertically(tween(180)) { -it / 24 })
+                },
+                label = "adminTabTransition"
+            ) { tab ->
+                when (tab) {
+                    AdminTab.BOOKINGS -> BookingScreen(state, vm)
+                    AdminTab.CALENDAR -> CalendarScreen(state, vm)
+                    AdminTab.SERVICES -> ServicesScreen(state, vm)
+                    AdminTab.SCHEDULE -> ScheduleScreen(state, vm)
+                    AdminTab.SETTINGS -> SettingsScreen(state, vm, hasSavedCredentials, onClearSavedCredentials)
+                }
             }
         }
     }
@@ -335,7 +377,16 @@ private fun SectionTitle(title: String, subtitle: String? = null, action: (@Comp
 
 @Composable
 private fun PageColumn(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val alpha by animateFloatAsState(if (entered) 1f else 0f, tween(320), label = "pageAlpha")
+    val offset by animateDpAsState(if (entered) 0.dp else 14.dp, tween(360), label = "pageOffset")
+    Column(
+        Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha; translationY = offset.toPx() }
+            .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        content = content
+    )
 }
 
 @Composable
