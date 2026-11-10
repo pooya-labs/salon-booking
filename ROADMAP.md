@@ -101,13 +101,16 @@ No independent penetration test or destructive production restore drill is claim
 
 ## Native Android manager — version 1.1.0
 
-The native Android manager implementation is feature-complete on the feature branch; the additional UX redesign is tracked separately in draft PR [#7](https://github.com/pooya-labs/salon-booking/pull/7). It is a companion owner app; the customer booking website, Apps Script deployment, Google Sheets database and Firebase project remain the existing production services.
+The native Android manager implementation and requested day/night UX redesign are tracked in PR [#7](https://github.com/pooya-labs/salon-booking/pull/7). It is a companion owner app; the customer booking website, Apps Script deployment, Google Sheets database and Firebase project remain the existing production services.
 
 ### Implemented
 - [x] Kotlin and Jetpack Compose Android app with Persian RTL interface.
-- [x] Full visual refresh: obsidian / graphite surfaces, restrained cyan-mint accents, floating animated navigation and screen transitions.
+- [x] Full visual refresh: obsidian / graphite dark theme and engineered cool off-white / ink / teal light theme.
+- [x] Persistent System / Light / Dark appearance selection with Android system-bar contrast adaptation.
+- [x] Floating animated navigation, login entrance and screen transitions.
 - [x] Animated secure-login entrance and consistent dark success/error feedback.
-- [x] UX direction and verification hold documented in [docs/ANDROID-UX-REDESIGN.md](docs/ANDROID-UX-REDESIGN.md).
+- [x] UX direction, day/night palette and deferred verification documented in [docs/ANDROID-UX-REDESIGN.md](docs/ANDROID-UX-REDESIGN.md).
+- [x] FCM notification implementation files left unchanged; their Git blob SHAs were verified identical to `main`.
 - [x] Premium Pooya Labs branding, launcher icon and notification large icon.
 - [x] Graphical weekly calendar, daily timeline, booking indicators and Jalali manual time-block entry.
 - [x] Existing owner workflows: bookings, manual bookings, services, weekly hours, exceptions, booking rules and notification settings.
