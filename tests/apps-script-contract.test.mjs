@@ -157,7 +157,7 @@ test('manager booking views expose customer names and phone numbers as tap-to-ca
   assert.match(adminClient, /tel:\$\{booking\.phone\}/)
   assert.match(calendarClient, /booking\.phone/)
   assert.match(calendarClient, /tel:\$\{booking\.phone\}/)
-  assert.match(backend, /name: item\.row\.name, phone: item\.row\.phone/)
+  assert.match(backend, /name: item\\.row\\.name \\|\\| '', phone: item\\.row\\.phone \\|\\| ''/)
 })
 
 test('Pages relay has bounded, recoverable iframe and request failures', () => {
