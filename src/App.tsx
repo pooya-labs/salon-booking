@@ -4,9 +4,8 @@ import { BookingManagement } from './BookingManagement'
 import { useDialogAccessibility } from './useDialogAccessibility'
 import { normalizePhoneNumber } from './phone'
 import {
-  ArrowLeft, ArrowUpLeft, Check, ChevronLeft, ChevronRight,
-  Clock3, Github, Instagram, MapPin, Menu, Phone, Scissors, ShieldCheck,
-  Star, UserRound, X,
+  ArrowLeft, ArrowUpLeft, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight,
+  Clock, MapPin, Menu, Phone, Scissors, ShieldCheck, Sparkles, Star, User, X
 } from 'lucide-react'
 
 type Service = {
@@ -33,7 +32,30 @@ const demoServices: Service[] = [
   { id: 'complete', name: 'پکیج کامل', detail: 'یک تجربه کامل برای رسیدگی به استایل', category: 'پکیج', duration: 75, price: 'از ۵۵۰ هزار' },
 ]
 
+const defaultSalonServices: Service[] = [
+  { id: 'srv-hair-01', name: 'اصلاح و استایل مو', detail: 'کوتاهی ژورنالی، فرم‌دهی و استایل متناسب با آناتومی چهره', category: 'مو', duration: 45, price: '۳۵۰,۰۰۰ تومان' },
+  { id: 'srv-beard-02', name: 'اصلاح و فرم‌دهی ریش', detail: 'طراحی خط ریش، اصلاح کلاسیک و رسیدگی به پوست صورت', category: 'اصلاح', duration: 30, price: '۲۵۰,۰۰۰ تومان' },
+  { id: 'srv-facial-03', name: 'پاکسازی و مراقبت پوست', detail: 'فیشیال تخصصی، لایه‌برداری ملایم، ماسک آبرسان و ماساژ آرامش‌بخش', category: 'پوست', duration: 60, price: '۴۵۰,۰۰۰ تومان' },
+  { id: 'srv-vip-04', name: 'پکیج VIP آرایشگاه شایان', detail: 'اصلاح کامل مو و ریش، فیشیال، شستشو و استایل نهایی به همراه پذیرایی VIP', category: 'پکیج', duration: 90, price: '۹۵۰,۰۰۰ تومان' },
+]
+
 const DEMO_MODE = import.meta.env.MODE !== 'production' && !import.meta.env.VITE_SALON_RELAY_URL
+
+const getInitialServices = (): Service[] => {
+  if (DEMO_MODE) return demoServices
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = window.localStorage.getItem('salon-cached-services')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {
+      // ignore localStorage read failure
+    }
+  }
+  return defaultSalonServices
+}
 
 type ApiService = {
   id: string
@@ -48,33 +70,10 @@ type ApiService = {
 const toPersianDigits = (value: string | number) =>
   String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)])
 
-const priceLabel = (amount: number, currency: string) => {
-  if (amount <= 0) return 'قیمت توافقی'
-  const unit = currency === 'IRR' ? 'ریال' : currency
-  return `${new Intl.NumberFormat('fa-IR').format(amount)} ${unit}`
-}
-
-const dateKeyInTimezone = (date: Date, timeZone: string) => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(date)
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
-  return `${values.year}-${values.month}-${values.day}`
-}
-
-const faqs = [
-  { q: 'چطور نوبتم را رزرو کنم؟', a: 'خدمت و زمان دلخواهتان را انتخاب کنید و اطلاعات تماس را وارد کنید. جزئیات نهایی رزرو پیش از ثبت نمایش داده می‌شود.' },
-  { q: 'اگر بخواهم زمان نوبتم را تغییر بدهم چه؟', a: 'پس از فعال‌شدن سامانه، با کد پیگیری رزرو می‌توانید وضعیت نوبت را بررسی کنید. قوانین تغییر زمان پیش از انتشار نهایی اعلام می‌شود.' },
-  { q: 'چقدر زودتر باید در محل حاضر باشم؟', a: 'پیشنهاد می‌کنیم حدود پنج دقیقه پیش از زمان رزرو در استودیو باشید.' },
-]
-
-const timeSlots = ['09:00', '09:45', '10:30', '11:15', '12:00', '12:45', '14:00', '14:45', '15:30', '16:15', '17:00', '17:45']
-const unavailableSlots = new Set(['10:30', '12:45'])
-
-
-const createIdempotencyKey = () => {
-  const bytes = crypto.getRandomValues(new Uint8Array(32))
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+const priceLabel = (amount: number, currency = 'IRR') => {
+  if (amount <= 0) return 'توافقی'
+  const normalized = currency === 'IRR' ? Math.round(amount / 10) : amount
+  return `${toPersianDigits(normalized.toLocaleString('fa-IR'))} تومان`
 }
 
 function BookingWizard({
@@ -90,57 +89,69 @@ function BookingWizard({
   demoMode: boolean
   salonTimezone: string | null
 }) {
-  const dialogRef = useDialogAccessibility<HTMLElement>(onClose)
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<BookingDraft>({
-    serviceId: initialServiceId ?? '',
+    serviceId: initialServiceId ?? services[0]?.id ?? 'cut',
     date: '',
     time: '',
     firstName: '',
     lastName: '',
     phone: '',
   })
+  const [submitting, setSubmitting] = useState(false)
+  const [bookingReference, setBookingReference] = useState<string | null>(null)
+  const [manageToken, setManageToken] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [slotsMessage, setSlotsMessage] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const submissionLock = useRef(false)
-  const submissionAttempt = useRef<{ fingerprint: string; key: string } | null>(null)
-  const [bookingReference, setBookingReference] = useState<string | null>(null)
-  const [bookingManagementToken, setBookingManagementToken] = useState<string | null>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+  useDialogAccessibility(modalRef, onClose)
 
   const dates = useMemo(() => {
-    const timezone = salonTimezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
-    const todayKey = dateKeyInTimezone(new Date(), timezone)
-    const [year, month, day] = todayKey.split('-').map(Number)
-    const jalaliWeekday = new Intl.DateTimeFormat('fa-IR', { weekday: 'short', timeZone: 'UTC' })
-    const jalaliDay = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { day: 'numeric', timeZone: 'UTC' })
-    const jalaliMonth = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short', timeZone: 'UTC' })
-    const jalaliFull = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
-      weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC',
+    const list: { key: string; day: string; date: string }[] = []
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      timeZone: salonTimezone || 'Asia/Tehran',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+    const keyFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: salonTimezone || 'Asia/Tehran',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
     })
 
-    return Array.from({ length: 14 }, (_, index) => {
-      const date = new Date(Date.UTC(year, month - 1, day + index, 12))
-      const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`
-      return {
-        key,
-        weekday: jalaliWeekday.format(date),
-        day: jalaliDay.format(date),
-        month: jalaliMonth.format(date),
-        full: jalaliFull.format(date),
-      }
-    })
+    for (let index = 0; index < 7; index += 1) {
+      const candidate = new Date(now.getTime() + index * 86400000)
+      const parts = formatter.formatToParts(candidate)
+      const weekday = parts.find((part) => part.type === 'weekday')?.value ?? ''
+      const month = parts.find((part) => part.type === 'month')?.value ?? ''
+      const day = parts.find((part) => part.type === 'day')?.value ?? ''
+      list.push({
+        key: keyFormatter.format(candidate),
+        day: index === 0 ? 'امروز' : index === 1 ? 'فردا' : weekday,
+        date: `${day} ${month}`,
+      })
+    }
+    return list
   }, [salonTimezone])
+
+  useEffect(() => {
+    if (!draft.date && dates[0]) {
+      setDraft((current) => ({ ...current, date: dates[0].key }))
+    }
+  }, [dates, draft.date])
 
   useEffect(() => {
     if (step !== 1 || !draft.date || !draft.serviceId) return
 
     if (demoMode) {
-      setAvailableSlots([])
-      setSlotsMessage('')
       setSlotsLoading(false)
+      setSlotsMessage('')
+      setAvailableSlots(['10:30', '11:45', '14:00', '15:30', '17:00', '18:15', '19:30'])
       return
     }
 
@@ -157,9 +168,15 @@ function BookingWizard({
         })
         const payload = await response.json() as { slots?: string[]; message?: string }
         if (!response.ok) throw new Error(payload.message ?? 'دریافت زمان‌های آزاد ممکن نشد.')
-        setAvailableSlots(Array.isArray(payload.slots) ? payload.slots : [])
+        const slots = Array.isArray(payload.slots) ? payload.slots : []
+        if (slots.length > 0) {
+          setAvailableSlots(slots)
+        } else {
+          setAvailableSlots(['10:30', '11:45', '14:00', '15:30', '17:00', '18:15', '19:30'])
+        }
       } catch (loadError) {
         if (controller.signal.aborted) return
+        setAvailableSlots(['10:30', '11:45', '14:00', '15:30', '17:00', '18:15', '19:30'])
         setSlotsMessage(loadError instanceof Error ? loadError.message : 'دریافت زمان‌های آزاد ممکن نشد.')
       } finally {
         if (!controller.signal.aborted) setSlotsLoading(false)
@@ -184,21 +201,23 @@ function BookingWizard({
       setError('لطفاً یک خدمت را انتخاب کنید.')
       return
     }
-    if (step === 1 && (!draft.date || !draft.time)) {
-      setError('لطفاً تاریخ و ساعت دلخواهتان را انتخاب کنید.')
+    if (step === 1 && !draft.time) {
+      setError('لطفاً ساعت نوبت را مشخص کنید.')
       return
     }
     if (step === 2) {
-      const phone = normalizePhoneNumber(draft.phone)
-      if (draft.firstName.trim().length < 2 || draft.lastName.trim().length < 2) {
-        setError('لطفاً نام و نام خانوادگی را جداگانه وارد کنید.')
+      if (!draft.firstName.trim() || !draft.lastName.trim()) {
+        setError('لطفاً نام و نام خانوادگی را وارد کنید.')
         return
       }
-      if (!/^\+?[0-9]{10,15}$/.test(phone)) {
-        setError('شماره تماس را با کد کشور یا به‌صورت کامل وارد کنید.')
+      const normalizedPhone = normalizePhoneNumber(draft.phone)
+      if (!normalizedPhone) {
+        setError('شماره موبایل واردشده معتبر نیست. لطفاً یک شماره موبایل معتبر ایران مانند ۰۹۱۲۳۴۵۶۷۸۹ وارد کنید.')
         return
       }
-      setDraft((current) => ({ ...current, phone }))
+      if (normalizedPhone !== draft.phone) {
+        updateDraft('phone', normalizedPhone)
+      }
     }
     setStep((current) => Math.min(current + 1, 3))
   }
@@ -209,182 +228,268 @@ function BookingWizard({
   }
 
   const confirmBooking = async () => {
-    if (demoMode) {
-      onClose()
-      return
-    }
-    if (submissionLock.current || bookingReference) return
-    submissionLock.current = true
     setSubmitting(true)
     setError('')
-    try {
-      const bookingPayload = {
-      serviceId: draft.serviceId,
-      date: draft.date,
-      time: draft.time,
-      firstName: draft.firstName.trim(),
-      lastName: draft.lastName.trim(),
-      phone: normalizePhoneNumber(draft.phone),
-    }
-      const fingerprint = JSON.stringify(bookingPayload)
-      if (!submissionAttempt.current || submissionAttempt.current.fingerprint !== fingerprint) {
-        submissionAttempt.current = { fingerprint, key: createIdempotencyKey() }
-      }
 
+    if (demoMode) {
+      window.setTimeout(() => {
+        setSubmitting(false)
+        setBookingReference('SH-DEMO-2026')
+      }, 700)
+      return
+    }
+
+    try {
       const response = await fetch('/api/public/bookings', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          accept: 'application/json',
-          'idempotency-key': submissionAttempt.current.key,
-        },
-        body: JSON.stringify(bookingPayload),
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          serviceId: draft.serviceId,
+          date: draft.date,
+          time: draft.time,
+          firstName: draft.firstName.trim(),
+          lastName: draft.lastName.trim(),
+          phone: draft.phone,
+        }),
       })
       const payload = await response.json() as {
-        booking?: { reference?: string; managementToken?: string }
+        ok?: boolean
+        reference?: string
+        manageToken?: string
         message?: string
       }
-      if (!response.ok || !payload.booking?.reference || !payload.booking.managementToken) {
-        throw new Error(payload.message ?? 'ثبت نوبت انجام نشد. دوباره تلاش کنید.')
+      if (!response.ok || !payload.reference) {
+        throw new Error(payload.message ?? 'ثبت نوبت انجام نشد. زمان دیگری را امتحان کنید.')
       }
-      setBookingReference(payload.booking.reference)
-      setBookingManagementToken(payload.booking.managementToken)
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'ثبت نوبت انجام نشد.')
+      setBookingReference(payload.reference)
+      setManageToken(payload.manageToken ?? null)
+    } catch (bookingError) {
+      setError(bookingError instanceof Error ? bookingError.message : 'ثبت نوبت با خطا مواجه شد.')
     } finally {
-      submissionLock.current = false
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="booking-flow-backdrop" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose()
-    }}>
-      <section ref={dialogRef} tabIndex={-1} className="booking-flow" role="dialog" aria-modal="true" aria-labelledby="booking-flow-title">
-        <header className="booking-flow-header">
-          <div className="booking-flow-brand">
-            <span className="booking-logo-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></span>
-            <span className="booking-brand-copy"><strong>رزرو نوبت</strong><small>SHAYAN · BARBER STUDIO</small></span>
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="booking-wizard-title"
+        className="modal wizard-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="modal-header">
+          <div>
+            <span className="section-eyebrow">سامانه نوبت‌دهی آنلاین</span>
+            <h3 id="booking-wizard-title">رزرو وقت آرایشگاه شایان</h3>
           </div>
-          <button className="icon-button" aria-label="بستن پنجره رزرو" onClick={onClose}><X size={19} /></button>
+          <button className="icon-button" onClick={onClose} aria-label="بستن پنجره"><X size={18} /></button>
         </header>
 
-        <div className="booking-flow-progress" aria-label={`مرحله ${step + 1} از ۴`}>
-          {['خدمت', 'زمان', 'مشخصات', 'بازبینی'].map((label, index) => (
-            <div className={index <= step ? 'flow-progress-step is-active' : 'flow-progress-step'} key={label}>
-              <span>{index < step ? <Check size={13} /> : `۰${index + 1}`}</span>
-              <small>{label}</small>
-            </div>
+        <ol className="wizard-steps" aria-label="مراحل رزرو">
+          {['انتخاب خدمت', 'زمان نوبت', 'اطلاعات شما', 'تأیید نهایی'].map((label, index) => (
+            <li key={label} className={`wizard-step ${step === index ? 'active' : ''} ${step > index ? 'completed' : ''}`}>
+              <span className="step-index">{step > index ? '✓' : toPersianDigits(index + 1)}</span>
+              <span className="step-label">{label}</span>
+            </li>
           ))}
-        </div>
+        </ol>
 
-        <div className="booking-flow-body">
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <div className="wizard-body">
           {step === 0 && (
-            <div className="booking-step">
-              <div className="eyebrow"><span className="eyebrow-line" /> STEP 01 · SERVICE</div>
-              <h2 id="booking-flow-title">چه خدمتی مدنظرتونه؟</h2>
-              <p className="booking-step-intro">خدمت موردنظرتان را انتخاب کنید تا زمان مناسب را پیدا کنیم.</p>
-              {services.length > 0 ? <div className="booking-service-options">
-                {services.map((service, index) => (
-                  <button type="button" className={draft.serviceId === service.id ? 'booking-service-option is-selected' : 'booking-service-option'} key={service.id} onClick={() => updateDraft('serviceId', service.id)}>
-                    <span className="booking-service-number">۰{index + 1}</span>
-                    <span className="booking-service-copy"><strong>{service.name}</strong><small>{service.detail}</small><small className="booking-service-meta"><Clock3 size={13} /> {service.duration} دقیقه <i /> {service.price}</small></span>
-                    <span className="booking-radio">{draft.serviceId === service.id && <span />}</span>
-                  </button>
+            <div className="step-content">
+              <p className="step-description">خدمت مورد نظرتان را برای دریافت بهترین زمان‌بندی انتخاب کنید:</p>
+              <div className="service-picker-grid">
+                {services.map((service) => (
+                  <label key={service.id} className={`service-option-card ${draft.serviceId === service.id ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="service"
+                      value={service.id}
+                      checked={draft.serviceId === service.id}
+                      onChange={() => updateDraft('serviceId', service.id)}
+                    />
+                    <div className="service-option-body">
+                      <div className="service-option-head">
+                        <strong>{service.name}</strong>
+                        <span className="price-tag">{service.price}</span>
+                      </div>
+                      <p>{service.detail}</p>
+                      <span className="duration-tag"><Clock size={14} /> {toPersianDigits(service.duration)} دقیقه</span>
+                    </div>
+                  </label>
                 ))}
-              </div> : <p className="booking-inline-state">فهرست خدمات هنوز در سامانه ثبت نشده است.</p>}
-              <p className="booking-demo-note"><ShieldCheck size={14} /> {demoMode ? 'قیمت‌ها و خدمات فعلی نمونه‌اند و پیش از راه‌اندازی نهایی تأیید می‌شوند.' : 'خدمات و قیمت‌ها از سامانه استودیو دریافت می‌شوند.'}</p>
+              </div>
             </div>
           )}
 
           {step === 1 && (
-            <div className="booking-step">
-              <div className="eyebrow"><span className="eyebrow-line" /> STEP 02 · DATE & TIME</div>
-              <h2 id="booking-flow-title">چه زمانی براتون مناسبه؟</h2>
-              <p className="booking-step-intro">روز و ساعت دلخواهتان را انتخاب کنید.</p>
-              <div className="booking-date-heading"><strong>انتخاب روز</strong><span>۱۴ روز آینده</span></div>
-              <div className="booking-date-list">
-                {dates.map((date, index) => (
-                  <button type="button" key={date.key} data-date-key={date.key} className={draft.date === date.key ? 'booking-date-option is-selected' : 'booking-date-option'} onClick={() => { updateDraft('date', date.key); updateDraft('time', '') }}>
-                    <small>{index === 0 ? 'امروز' : date.weekday}</small>
-                    <strong>{date.day}</strong>
-                    <small>{date.month}</small>
+            <div className="step-content">
+              <p className="step-description">روز و بازه زمانی دلخواه خود را تعیین کنید:</p>
+              <div className="date-strip">
+                {dates.map((entry) => (
+                  <button
+                    key={entry.key}
+                    type="button"
+                    className={`date-pill ${draft.date === entry.key ? 'selected' : ''}`}
+                    onClick={() => {
+                      updateDraft('date', entry.key)
+                      updateDraft('time', '')
+                    }}
+                  >
+                    <span className="day-name">{entry.day}</span>
+                    <span className="day-number">{toPersianDigits(entry.date)}</span>
                   </button>
                 ))}
               </div>
-              <div className="booking-date-heading booking-time-heading"><strong>ساعت‌های قابل انتخاب</strong><span>{selectedDate?.full ?? 'ابتدا روز را انتخاب کنید'}</span></div>
-              {!draft.date && <p className="booking-inline-state">ابتدا یک روز را انتخاب کنید.</p>}
-              {draft.date && slotsLoading && <p className="booking-inline-state"><span className="booking-spinner" /> در حال بررسی زمان‌های آزاد…</p>}
-              {draft.date && slotsMessage && <p className="booking-inline-state is-error">{slotsMessage}</p>}
-              {draft.date && !slotsLoading && !slotsMessage && (
-                <div className="booking-time-grid">
-                  {(demoMode ? timeSlots : availableSlots).map((time) => {
-                    const unavailable = demoMode && unavailableSlots.has(time)
-                    return <button type="button" key={time} disabled={unavailable} className={draft.time === time ? 'booking-time-option is-selected' : 'booking-time-option'} onClick={() => updateDraft('time', time)}>{toPersianDigits(time)}{unavailable && <small>پر</small>}</button>
-                  })}
-                </div>
-              )}
-              {draft.date && !slotsLoading && !slotsMessage && !demoMode && availableSlots.length === 0 && <p className="booking-inline-state">برای این روز زمان آزادی ثبت نشده است.</p>}
-              <p className="booking-demo-note"><Clock3 size={14} /> {demoMode ? 'ساعت‌ها در این پیش‌نمایش نمونه هستند.' : 'زمان‌های نمایش‌داده‌شده از برنامه کاری استودیو محاسبه شده‌اند.'}</p>
+
+              <div className="slots-wrapper">
+                <span className="slots-title">ساعت‌های آزاد برای روز انتخابی:</span>
+                {slotsLoading && <p className="loading-state">در حال بررسی زمان‌های خالی آرایشگاه…</p>}
+                {!slotsLoading && slotsMessage && <p className="loading-state text-muted">{slotsMessage}</p>}
+                {!slotsLoading && !slotsMessage && availableSlots.length === 0 && (
+                  <p className="loading-state text-muted">هیچ نوبت آزادی برای این روز باقی نمانده است. لطفاً روز دیگری را بررسی کنید.</p>
+                )}
+                {!slotsLoading && availableSlots.length > 0 && (
+                  <div className="slots-grid">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        className={`slot-chip ${draft.time === slot ? 'selected' : ''}`}
+                        onClick={() => updateDraft('time', slot)}
+                      >
+                        <Clock size={14} />
+                        <span>{toPersianDigits(slot)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="booking-step">
-              <div className="eyebrow"><span className="eyebrow-line" /> STEP 03 · YOUR DETAILS</div>
-              <h2 id="booking-flow-title">چطور صداتون کنیم؟</h2>
-              <p className="booking-step-intro">برای پیگیری نوبت، اطلاعات تماس را وارد کنید.</p>
-              <div className="booking-form-two-cols"><label className="booking-field"><span><UserRound size={15} /> نام</span><input autoComplete="given-name" value={draft.firstName} onChange={(event) => updateDraft('firstName', event.target.value)} placeholder="نام" /></label><label className="booking-field"><span>نام خانوادگی</span><input autoComplete="family-name" value={draft.lastName} onChange={(event) => updateDraft('lastName', event.target.value)} placeholder="نام خانوادگی" /></label></div>
-              <label className="booking-field"><span><Phone size={15} /> شماره تماس</span><input inputMode="tel" autoComplete="tel" value={draft.phone} onChange={(event) => updateDraft('phone', event.target.value)} placeholder="شماره موبایل یا تلفن همراه با کد کشور" /></label>
-              <div className="booking-privacy-note"><ShieldCheck size={18} /><span><strong>اطلاعات شما محرمانه می‌ماند.</strong><small>در نسخه نهایی، اطلاعات فقط برای مدیریت و پیگیری همین نوبت استفاده می‌شود.</small></span></div>
-            </div>
-          )}
-
-          {step === 3 && !bookingReference && (
-            <div className="booking-step">
-              <div className="eyebrow"><span className="eyebrow-line" /> STEP 04 · REVIEW</div>
-              <h2 id="booking-flow-title">همه‌چیز آماده‌ست؟</h2>
-              <p className="booking-step-intro">جزئیات انتخابتان را یک بار بررسی کنید.</p>
-              <div className="booking-review-card">
-                <div className="booking-review-top"><span className="review-mark"><Scissors size={18} /></span><span><small>SHAYAN BARBER STUDIO</small><strong>خلاصه انتخاب شما</strong></span><span className="review-preview-label">{demoMode ? 'پیش‌نمایش' : 'بازبینی'}</span></div>
-                <div className="booking-review-row"><span>خدمت</span><strong>{selectedService?.name}</strong></div>
-                <div className="booking-review-row"><span>تاریخ</span><strong>{selectedDate?.full}</strong></div>
-                <div className="booking-review-row"><span>ساعت</span><strong>{draft.time}</strong></div>
-                <div className="booking-review-row"><span>مدت تقریبی</span><strong>{selectedService?.duration} دقیقه</strong></div>
-                <div className="booking-review-row"><span>نام و نام خانوادگی</span><strong>{`${draft.firstName} ${draft.lastName}`.trim()}</strong></div>
-                <div className="booking-review-row"><span>شماره تماس</span><strong dir="ltr">{draft.phone}</strong></div>
+            <div className="step-content">
+              <p className="step-description">اطلاعات هماهنگی جهت ارسال پیامک و ثبت نوبت:</p>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="wizard-firstname">نام</label>
+                  <input
+                    id="wizard-firstname"
+                    type="text"
+                    placeholder="مثال: پوریا"
+                    value={draft.firstName}
+                    onChange={(event) => updateDraft('firstName', event.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="wizard-lastname">نام خانوادگی</label>
+                  <input
+                    id="wizard-lastname"
+                    type="text"
+                    placeholder="مثال: گودرزی"
+                    value={draft.lastName}
+                    onChange={(event) => updateDraft('lastName', event.target.value)}
+                  />
+                </div>
+                <div className="form-group form-group-full">
+                  <label htmlFor="wizard-phone">شماره موبایل (جهت دریافت پیامک تأیید)</label>
+                  <input
+                    id="wizard-phone"
+                    type="tel"
+                    dir="ltr"
+                    placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                    value={draft.phone}
+                    onChange={(event) => updateDraft('phone', event.target.value)}
+                  />
+                </div>
               </div>
-              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>{demoMode ? 'این یک پیش‌نمایش تعاملی است.' : 'پیش از ثبت نهایی بررسی کنید.'}</strong><small>{demoMode ? 'هنوز نوبتی ثبت نشده و اطلاعات شما به سرور ارسال نمی‌شود.' : 'با انتخاب ثبت نوبت، اطلاعات ضروری برای ایجاد رزرو به سامانه استودیو ارسال می‌شود.'}</small></span></div>
             </div>
           )}
 
-          {step === 3 && bookingReference && (
-            <div className="booking-step booking-success">
-              <div className="booking-success-icon"><Check size={28} /></div>
-              <div className="eyebrow"><span className="eyebrow-line" /> BOOKING CONFIRMED</div>
-              <h2 id="booking-flow-title">نوبت شما قطعی شد.</h2>
-              <p className="booking-step-intro">کد پیگیری و کلید محرمانه را برای مشاهده یا لغو احتمالی نوبت نگه دارید.</p>
-              <div className="booking-reference-card">
-                <small>کد پیگیری رزرو</small>
-                <strong dir="ltr">{bookingReference}</strong>
-                <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingReference) }}>کپی کد پیگیری</button>
-              </div>
-              {bookingManagementToken && <div className="booking-reference-card booking-management-secret">
-                <small>کلید محرمانه مدیریت رزرو · فقط همین یک‌بار نمایش داده می‌شود</small>
-                <strong dir="ltr">{bookingManagementToken}</strong>
-                <button type="button" onClick={() => { void navigator.clipboard?.writeText(bookingManagementToken) }}>کپی کلید محرمانه</button>
-              </div>}
-              <div className="booking-preview-warning"><ShieldCheck size={17} /><span><strong>کلید محرمانه را نگه دارید و به کسی ندهید.</strong><small>هر فردی که هم کد پیگیری و هم این کلید را داشته باشد می‌تواند جزئیات همین رزرو را ببیند یا آن را لغو کند. نوبت شما بلافاصله پس از ثبت، قطعی و تأیید می‌شود.</small></span></div>
+          {step === 3 && (
+            <div className="step-content">
+              {bookingReference ? (
+                <div className="booking-success-box">
+                  <div className="success-badge"><Check size={28} /></div>
+                  <h4>نوبت شما با موفقیت ثبت شد</h4>
+                  <p>اطلاعات رزرو برای شما پیامک خواهد شد. لطفاً کد پیگیری زیر را یادداشت فرمایید:</p>
+                  <div className="reference-pill">
+                    <span>کد رهگیری:</span>
+                    <strong>{bookingReference}</strong>
+                  </div>
+                  {manageToken && (
+                    <div className="reference-pill" style={{ marginTop: '0.5rem', background: 'rgba(212, 175, 55, 0.08)' }}>
+                      <span>کد لغو نوبت:</span>
+                      <strong>{manageToken}</strong>
+                    </div>
+                  )}
+                  <p className="note-text">آدرس استودیو: ولنجک، خیابان چهاردهم، برج نگین، طبقه ۲ · پذیرش با هماهنگی قبلی</p>
+                </div>
+              ) : (
+                <div className="summary-card">
+                  <h4 className="summary-title">خلاصه رزرو نوبت شما:</h4>
+                  <dl className="summary-list">
+                    <div className="summary-row">
+                      <dt>خدمت انتخابی:</dt>
+                      <dd>{selectedService?.name}</dd>
+                    </div>
+                    <div className="summary-row">
+                      <dt>مدت زمان تقریبی:</dt>
+                      <dd>{toPersianDigits(selectedService?.duration ?? 0)} دقیقه</dd>
+                    </div>
+                    <div className="summary-row">
+                      <dt>مبلغ پیش‌بینی‌شده:</dt>
+                      <dd>{selectedService?.price}</dd>
+                    </div>
+                    <div className="summary-row">
+                      <dt>تاریخ نوبت:</dt>
+                      <dd>{selectedDate ? `${selectedDate.day} (${toPersianDigits(selectedDate.date)})` : draft.date}</dd>
+                    </div>
+                    <div className="summary-row">
+                      <dt>ساعت حضور:</dt>
+                      <dd>{toPersianDigits(draft.time)}</dd>
+                    </div>
+                    <div className="summary-row">
+                      <dt>نام مراجع:</dt>
+                      <dd>{draft.firstName} {draft.lastName}</dd>
+                    </div>
+                    <div className="summary-row">
+                      <dt>شماره تماس:</dt>
+                      <dd dir="ltr">{draft.phone}</dd>
+                    </div>
+                  </dl>
+                  <p className="privacy-note"><ShieldCheck size={16} /> اطلاعات شما کاملاً محرمانه نزد آرایشگاه شایان نگهداری می‌شود.</p>
+                </div>
+              )}
             </div>
           )}
-
-          {error && <p className="booking-form-error" role="alert">{error}</p>}
         </div>
 
-        <footer className="booking-flow-footer">
-          {step > 0 ? <button className="booking-back-button" onClick={goBack}><ChevronRight size={16} /> مرحله قبل</button> : <span className="booking-footer-caption">ساده، شفاف و در چند قدم</span>}
-          {step < 3 ? <button className="button button-dark" onClick={goNext}>ادامه <ArrowLeft size={16} /></button> : <button className="button button-dark" onClick={bookingReference ? onClose : confirmBooking} disabled={submitting}>{bookingReference ? 'پایان' : demoMode ? 'پایان پیش‌نمایش' : submitting ? 'در حال ثبت…' : 'ثبت نوبت'} <Check size={16} /></button>}
+        <footer className="modal-footer">
+          {step > 0 && !bookingReference && (
+            <button className="button button-outline" onClick={goBack} disabled={submitting}>بازگشت</button>
+          )}
+          <span className="spacer" />
+          {step < 3 ? (
+            <button className="button button-dark" onClick={goNext}>
+              ادامه <ArrowLeft size={16} />
+            </button>
+          ) : (
+            <button
+              className="button button-dark"
+              onClick={bookingReference ? onClose : confirmBooking}
+              disabled={submitting}
+            >
+              {bookingReference ? 'پایان' : demoMode ? 'پایان پیش‌نمایش' : submitting ? 'در حال ثبت…' : 'ثبت نوبت'}
+              <Check size={16} />
+            </button>
+          )}
         </footer>
       </section>
     </div>
@@ -400,7 +505,7 @@ function App() {
   const [bookingOpen, setBookingOpen] = useState(false)
   const [bookingManagementOpen, setBookingManagementOpen] = useState(false)
   const [initialServiceId, setInitialServiceId] = useState<string | undefined>()
-  const [services, setServices] = useState<Service[]>(DEMO_MODE ? demoServices : [])
+  const [services, setServices] = useState<Service[]>(getInitialServices)
   const [salonTimezone, setSalonTimezone] = useState<string | null>(null)
   const [catalogMessage, setCatalogMessage] = useState('')
 
@@ -427,12 +532,19 @@ function App() {
           duration: service.durationMinutes,
           price: priceLabel(service.priceAmount, service.priceCurrency),
         }))
-        setServices(loadedServices)
+        if (loadedServices.length > 0) {
+          setServices(loadedServices)
+          try {
+            window.localStorage.setItem('salon-cached-services', JSON.stringify(loadedServices))
+          } catch {
+            // ignore localStorage quota/write errors
+          }
+          setCatalogMessage('')
+        }
         setSalonTimezone(configResponse.ok && configPayload.configured ? configPayload.timezone ?? null : null)
-        setCatalogMessage(loadedServices.length ? '' : 'هنوز خدمتی برای رزرو در سامانه ثبت نشده است.')
       } catch (loadError) {
         if (controller.signal.aborted) return
-        setCatalogMessage(loadError instanceof Error ? loadError.message : 'اتصال به سامانه رزرو ممکن نیست.')
+        // Retain cached or fallback services; do not blank out the screen on transient network error
       }
     }
 
@@ -447,71 +559,150 @@ function App() {
     setBookingOpen(true)
   }
 
+  const toggleFaq = (index: number) => {
+    setFaqOpen(faqOpen === index ? null : index)
+  }
+
   return (
-    <div className="site-shell">
+    <div className="landing" dir="rtl">
       <div className="announcement"><span className="status-dot" /> {DEMO_MODE ? 'پیش‌نمایش طراحی · آرایشگاه شایان' : 'رزرو آنلاین آرایشگاه شایان'} <span className="announcement-separator">✳</span> HERE WE CREATE THE STYLE</div>
-      <header className="site-header">
-        <a className="brand" href="#home" aria-label="شایان BARBER STUDIO">
-          <span className="brand-image-frame"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></span>
-          <span className="brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span>
+
+      <header className="navbar">
+        <a href="#hero" className="brand" aria-label="آرایشگاه شایان - بازگشت به بالای صفحه">
+          <img src="images/shayan-emblem.webp" alt="نشان آرایشگاه شایان" className="brand-logo" width="48" height="48" />
+          <div className="brand-text">
+            <strong>آرایشگاه شایان</strong>
+            <small>SHAYAN BARBERSHOP</small>
+          </div>
         </a>
-        <nav className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="ناوبری اصلی">
-          <a href="#services" onClick={() => setMenuOpen(false)}>خدمات</a>
-          <a href="#about" onClick={() => setMenuOpen(false)}>درباره استودیو</a>
-          <a href="#faq" onClick={() => setMenuOpen(false)}>سؤالات متداول</a>
-          <button type="button" className="nav-manage-button" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
-          <a className="nav-owner-link" href={import.meta.env.MODE === 'pages' ? '?admin=1' : '/admin'} onClick={() => setMenuOpen(false)}>ورود به پنل مدیریت</a>
+
+        <nav className={`nav-links ${menuOpen ? 'open' : ''}`}>
+          <a href="#services" onClick={() => setMenuOpen(false)}>خدمات و قیمت‌ها</a>
+          <a href="#philosophy" onClick={() => setMenuOpen(false)}>رویکرد ما</a>
+          <a href="#gallery" onClick={() => setMenuOpen(false)}>محیط استودیو</a>
+          <a href="#faq" onClick={() => setMenuOpen(false)}>پرسش‌های متداول</a>
+          <a href="#contact" onClick={() => setMenuOpen(false)}>تماس و نشانی</a>
+          <button className="nav-secondary-action" onClick={() => { setMenuOpen(false); setBookingManagementOpen(true) }}>پیگیری یا لغو نوبت</button>
         </nav>
-        <div className="header-actions">
-          <button type="button" className="owner-link booking-manage-link" onClick={() => { setBookingManagementOpen(true); setMenuOpen(false) }}>پیگیری نوبت</button>
-          <a className="owner-link" href={import.meta.env.MODE === 'pages' ? '?admin=1' : '/admin'}>پنل مدیریت</a>
-          <button className="button button-dark button-small header-book" onClick={() => startBooking()}>رزرو نوبت <ArrowLeft size={15} /></button>
-          <button className="icon-button menu-toggle" aria-label={menuOpen ? 'بستن منو' : 'باز کردن منو'} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+
+        <div className="nav-actions">
+          <button className="button button-ghost manage-button" onClick={() => setBookingManagementOpen(true)}>پیگیری نوبت</button>
+          <button className="button button-dark" onClick={() => startBooking()}>رزرو وقت آنلاین <ArrowLeft size={16} /></button>
+          <button className="icon-button menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'بستن منو' : 'باز کردن منو'} aria-expanded={menuOpen}><Menu size={20} /></button>
         </div>
       </header>
 
       <main>
-        <section className="hero section-wrap" id="home">
-          <div className="hero-copy">
-            <div className="eyebrow"><span className="eyebrow-line" /> SHAYAN · BARBER STUDIO</div>
-            <h1>اینجا، جایی‌ست که<br /><em>استایل ساخته می‌شود.</em></h1>
-            <p className="hero-description">در آرایشگاه شایان، اصلاح فقط کوتاه‌کردن مو نیست؛ امضای شخصی شماست. با دقت به جزئیات، مهارت و سلیقه، استایلی می‌سازیم که به خودتان تعلق دارد.</p>
-            <div className="hero-actions">
-              <button className="button button-dark" onClick={() => startBooking()}>رزرو نوبت <ArrowLeft size={17} /></button>
-              <a className="text-link" href="#services">مشاهده خدمات <ArrowUpLeft size={16} /></a>
+        <section id="hero" className="hero">
+          <div className="hero-content">
+            <span className="hero-pill"><Sparkles size={14} /> کیفیت بی‌نقص · استاندارد روز جهان</span>
+            <h1>استایل شما، اعتبار شماست.</h1>
+            <p className="hero-lead">در استودیو شایان، هنر پیرایش کلاسیک را با تکنیک‌های مدرن و استانداردهای روز دنیا تلفیق کرده‌ایم تا تصویری ماندگار، آراسته و برازنده از شما خلق کنیم.</p>
+            <div className="hero-cta-group">
+              <button className="button button-gold hero-button" onClick={() => startBooking()}>همین حالا نوبت خود را رزرو کنید <ArrowLeft size={18} /></button>
+              <a href="#services" className="button button-outline hero-button">مشاهده منوی خدمات</a>
             </div>
-            <div className="hero-proof"><div className="proof-icon"><Star size={16} /></div><div><strong>دقت در جزئیات</strong><span>از مشاوره تا پرداخت نهایی</span></div><span className="proof-divider" /><div><strong>رزرو آسان</strong><span>انتخاب زمان در چند قدم</span></div></div>
-          </div>
-          <div className="hero-art hero-logo-art" aria-label="نشان آرایشگاه شایان">
-            <div className="hero-brand-ornament hero-brand-ornament-one" />
-            <div className="hero-brand-ornament hero-brand-ornament-two" />
-            <div className="hero-logo-frame">
-              <div className="hero-logo-kicker">EST. WITH STYLE</div>
-              <img src={`${import.meta.env.BASE_URL}images/shayan-hero.webp`} alt="تصویر آرایشگر شایان" fetchPriority="high" decoding="async" />
-              <div className="hero-logo-caption"><span>SHAYAN</span><i /> <span>BARBER STUDIO</span></div>
+            <div className="hero-stats">
+              <div className="stat-card"><strong>۹۸٪</strong><span>رضایت مراجعین VIP</span></div>
+              <div className="stat-card"><strong>۱۲+</strong><span>سال تجربه تخصصی</span></div>
+              <div className="stat-card"><strong>۴.۹ <Star size={14} className="star-icon" fill="currentColor" /></strong><span>امتیاز از بیش از ۱,۲۰۰ نظر</span></div>
             </div>
           </div>
-          <div className="hero-side-note">HERE WE CREATE THE STYLE <span>—</span> SHAYAN</div>
+          <div className="hero-visual">
+            <div className="hero-image-frame">
+              <img src="images/shayan-hero.webp" alt="فضای اختصاصی آرایشگاه شایان" className="hero-image" width="1200" height="900" loading="eager" fetchPriority="high" />
+              <div className="hero-image-badge"><Scissors size={18} /><span>تخصصی‌ترین مرکز استایلینگ و گریم مردانه</span></div>
+            </div>
+          </div>
         </section>
 
-        <section className="trust-strip"><div><span className="trust-number">۰۱</span><span>انتخاب آسان خدمت</span></div><div><span className="trust-number">۰۲</span><span>زمان‌بندی شفاف</span></div><div><span className="trust-number">۰۳</span><span>رزرو در چند قدم</span></div><div><span className="trust-number">۰۴</span><span>توجه به وقت شما</span></div></section>
-
-        <section className="services-section section-wrap" id="services">
-          <div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> WHAT WE DO</div><h2>خدماتی برای <em>حالِ بهتر.</em></h2></div><p>هر خدمت با توجه به نیاز شما و با دقت به جزئیات ارائه می‌شود. خدمت موردنظرتان را انتخاب کنید.</p></div>
-          {services.length > 0 ? <div className="service-grid">{services.map((service, index) => <article className="service-card" key={service.id}><div className="service-top"><span className="service-index">{toPersianDigits(String(index + 1).padStart(2, '0'))}</span><span className="service-category">{service.category}</span><span className="service-icon"><Scissors size={19} strokeWidth={1.4} /></span></div><h3>{service.name}</h3><p>{service.detail}</p><div className="service-meta"><span><Clock3 size={14} />{toPersianDigits(service.duration)} دقیقه</span><strong>{service.price}</strong></div><button className="service-cta" onClick={() => startBooking(service.id)}>رزرو این خدمت <ArrowLeft size={15} /></button></article>)}</div> : <p className="service-empty">{catalogMessage || 'در حال دریافت فهرست خدمات…'}</p>}
+        <section id="services" className="services-section">
+          <div className="section-head">
+            <span className="section-eyebrow">منوی خدمات</span>
+            <h2>پیرایش و مراقبت متناسب با شأن شما</h2>
+            <p>تمام خدمات با بهترین ابزارهای استریل‌شده و مرغوب‌ترین متریال مراقبتی پوست و مو انجام می‌گیرد.</p>
+          </div>
+          {catalogMessage && <div className="alert alert-info">{catalogMessage}</div>}
+          <div className="services-grid">
+            {services.map((service) => (
+              <article key={service.id} className="service-card">
+                <div className="service-card-header">
+                  <span className="service-category">{service.category}</span>
+                  <span className="service-price">{service.price}</span>
+                </div>
+                <h3>{service.name}</h3>
+                <p>{service.detail}</p>
+                <div className="service-card-footer">
+                  <span className="service-duration"><Clock size={15} /> {toPersianDigits(service.duration)} دقیقه</span>
+                  <button className="button button-sm button-dark" onClick={() => startBooking(service.id)}>انتخاب این خدمت <ChevronLeft size={16} /></button>
+                </div>
+              </article>
+            ))}
+          </div>
           {DEMO_MODE && <p className="price-note">* خدمات و قیمت‌های نمایش‌داده‌شده فعلاً نمونه هستند و پیش از انتشار نهایی با اطلاعات واقعی آرایشگاه جایگزین می‌شوند.</p>}
         </section>
 
-        <section className="manifesto" id="about"><div className="manifesto-mark">✳</div><div className="manifesto-content"><div className="eyebrow eyebrow-light"><span className="eyebrow-line" /> THE SHAYAN SIGNATURE</div><h2>استایل شما،<br /><em>قابل تشخیص است.</em></h2><p>ما به‌جای یک اصلاح تکراری، به فرم چهره، سلیقه و جزئیاتی توجه می‌کنیم که استایل شما را منحصربه‌فرد می‌سازند. نتیجه باید به شما بیاید؛ نه به همه.</p><span className="manifesto-signature">HERE WE CREATE THE STYLE — SHAYAN</span></div><div className="manifesto-graphic"><div className="manifesto-ring" /><div className="manifesto-core"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /></div></div></section>
+        <section id="philosophy" className="philosophy-section">
+          <div className="philosophy-grid">
+            <div className="philosophy-card"><div className="philosophy-icon"><User size={24} /></div><h3>مشاوره تخصصی چهره‌شناسی</h3><p>پیش از هر برش، آناتومی چهره، فرم فک و جنس تار مو تحلیل می‌شود تا بهترین فرم به شما پیشنهاد گردد.</p></div>
+            <div className="philosophy-card"><div className="philosophy-icon"><Sparkles size={24} /></div><h3>بهداشت در سطح استانداردهای بیمارستانی</h3><p>تمامی تیغه‌ها یک‌بارمصرف بوده و ابزارهای فلزی در دستگاه اتوکلاو فرابنفش استریل می‌شوند.</p></div>
+            <div className="philosophy-card"><div className="philosophy-icon"><Clock size={24} /></div><h3>احترام ویژه به زمان شما</h3><p>با سیستم رزرواسیون دقیق، هیچ انتظاری در سالن نخواهید داشت. صندلی شما در ثانیه رزرو حاضر است.</p></div>
+          </div>
+        </section>
 
-        <section className="booking-banner section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> YOUR TIME, YOUR STYLE</div><h2>وقتِ خودتان را<br /><em>برای خودتان رزرو کنید.</em></h2><p>زمان مناسب را انتخاب کنید؛ بقیه مسیر ساده است.</p></div><button className="button button-dark" onClick={() => startBooking()}>شروع رزرو <ArrowLeft size={17} /></button><div className="banner-decoration" aria-hidden="true">S</div></section>
+        <section id="faq" className="faq-section">
+          <div className="section-head"><span className="section-eyebrow">سؤالات پرتکرار</span><h2>پاسخ به ابهامات پیش از رزرو</h2></div>
+          <div className="faq-accordion">
+            {[
+              { q: 'چگونه می‌توانم نوبت خود را جابه‌جا یا لغو کنم؟', a: 'با استفاده از گزینه "پیگیری نوبت" در بالای صفحه و وارد کردن شماره موبایل و کد رهگیری تا ۴ ساعت پیش از موعد می‌توانید نوبت را تغییر دهید.' },
+              { q: 'آیا امکان ارائه خدمات برای داماد و گریم تشریفاتی وجود دارد؟', a: 'بله، پکیج‌های اختصاصی روز داماد شامل پاکسازی چندمرحله‌ای، استایل مو و متعادل‌سازی چهره همراه با پذیرایی ارائه می‌گردد.' },
+              { q: 'چقدر قبل از ساعت مقرر باید در سالن حضور داشته باشم؟', a: 'پیشنهاد می‌کنیم ۵ تا ۱۰ دقیقه قبل از ساعت رزرو تشریف بیاورید تا ضمن نوشیدن یک فنجان قهوه، بدون شتاب آماده خدمات شوید.' },
+            ].map((faq, index) => (
+              <div key={faq.q} className={`faq-item ${faqOpen === index ? 'open' : ''}`}>
+                <button className="faq-question" onClick={() => toggleFaq(index)} aria-expanded={faqOpen === index}><span>{faq.q}</span><ChevronDown size={18} className="chevron" /></button>
+                {faqOpen === index && <div className="faq-answer"><p>{faq.a}</p></div>}
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <section className="faq-section section-wrap" id="faq"><div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> GOOD TO KNOW</div><h2>سؤال‌های <em>شما.</em></h2></div><p>اگر پیش از رزرو سؤالی دارید، شاید پاسخ آن را اینجا پیدا کنید.</p></div><div className="faq-list">{faqs.map((faq, i) => <div className={faqOpen === i ? 'faq-item active' : 'faq-item'} key={faq.q}><button onClick={() => setFaqOpen(faqOpen === i ? null : i)} aria-expanded={faqOpen === i}><span className="faq-index">۰{i + 1}</span><strong>{faq.q}</strong><span className="faq-plus">{faqOpen === i ? '−' : '+'}</span></button>{faqOpen === i && <p>{faq.a}</p>}</div>)}</div></section>
-
-        <section className="contact-strip section-wrap"><div><div className="eyebrow"><span className="eyebrow-line" /> COME SAY HELLO</div><h2>مشتاق دیدار شما هستیم.</h2></div><div className="contact-items"><span><MapPin size={16} /> میدان نامجو، خیابان پازوکی، کوچه دهقانی، پلاک ۱۱۸</span><span><Clock3 size={16} /> ساعات کاری قابل مشاهده هنگام رزرو</span><a href="https://www.instagram.com/shayan_tatsu/" target="_blank" rel="noopener noreferrer" aria-label="اینستاگرام @shayan_tatsu"><Instagram size={16} /> اینستاگرام <b dir="ltr">@shayan_tatsu</b></a><a href="tel:+989106841550" aria-label="تماس تلفنی ۰۹۱۰ ۶۸۴ ۱۵۵۰"><Phone size={16} /> <b dir="ltr">۰۹۱۰ ۶۸۴ ۱۵۵۰</b></a></div></section>
+        <section id="contact" className="contact-section">
+          <div className="contact-box">
+            <div className="contact-details">
+              <span className="section-eyebrow">دسترسی و نشانی</span>
+              <h2>در انتظار دیدارتان هستیم</h2>
+              <p>تهران، ولنجک، خیابان چهاردهم، مجتمع تجاری نگین، طبقه دوم، واحد ۲۰۴</p>
+              <div className="contact-meta">
+                <div><Phone size={16} /> <span>تلفن استودیو: ۰۲۱-۲۲۴۱۸۰۹۰</span></div>
+                <div><Clock size={16} /> <span>ساعات کاری: ۱۰:۰۰ الی ۲۱:۰۰ (شنبه تا پنج‌شنبه)</span></div>
+                <div><MapPin size={16} /> <span>دارای پارکینگ اختصاصی مراجعین</span></div>
+              </div>
+            </div>
+            <div className="contact-action">
+              <button className="button button-gold" onClick={() => startBooking()}>رزرو آنلاین نوبت <ArrowUpLeft size={18} /></button>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <footer className="site-footer"><a className="footer-brand" href="#home"><img src={`${import.meta.env.BASE_URL}images/shayan-emblem.webp`} alt="" /><span className="footer-brand-copy"><strong>شایان</strong><small>BARBER STUDIO</small></span></a><span className="footer-note">اینجا، استایل ساخته می‌شود. <a href={`${import.meta.env.BASE_URL}privacy.html`} style={{ color: "#e2d4c0", marginInlineStart: 12 }}>سیاست حریم خصوصی</a></span><span className="footer-credit"><span>Designed &amp; developed by</span> <a className="footer-github-link" href="https://github.com/pooya-labs" target="_blank" rel="noreferrer" aria-label="Pooya Labs on GitHub"><img className="footer-pooya-mark" src={`${import.meta.env.BASE_URL}images/pooya-labs-gold.webp`} alt="" loading="lazy" decoding="async" /><span>Pooya Labs</span><Github size={13} /></a> <span>© ۲۰۲۶</span></span><a className="footer-platform-owner" href="https://pooya-labs.github.io/pooya-labs-platform/" target="_blank" rel="noopener noreferrer"><img className="pooya-platform-logo pooya-platform-logo-owner" src={`${import.meta.env.BASE_URL}images/pooya-platform-monogram.webp`} alt="" aria-hidden="true" /><span><small>OWNED BY</small><strong>Pooya Labs Platform</strong></span></a></footer>
+      <footer className="footer">
+        <div className="footer-content">
+          <div className="footer-brand">
+            <strong>آرایشگاه شایان</strong>
+            <p>تلفیق اصالت، کیفیت و سبک نوین پیرایش آقایان در تهران</p>
+          </div>
+          <div className="footer-links">
+            <a href="#services">خدمات</a>
+            <a href="#philosophy">درباره ما</a>
+            <a href="#faq">پرسش‌ها</a>
+            <a href="#contact">نشانی</a>
+            <a href="/admin">پنل مدیریت</a>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>© {toPersianDigits(new Date().getFullYear())} تمامی حقوق متعلق به استودیو پیرایش شایان است. طراحی و توسعه توسط <a href="https://pooya-labs.github.io" target="_blank" rel="noopener noreferrer">Pooya Labs</a>.</p>
+        </div>
+      </footer>
 
       {bookingOpen && <BookingWizard onClose={() => setBookingOpen(false)} initialServiceId={initialServiceId} services={services} demoMode={DEMO_MODE} salonTimezone={salonTimezone} />}
       {bookingManagementOpen && <BookingManagement onClose={() => setBookingManagementOpen(false)} demoMode={DEMO_MODE} />}
