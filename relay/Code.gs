@@ -47,14 +47,24 @@ var DEFAULT_SETTINGS_ = {
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Bridge')
-    .setTitle('Salon Booking API')
+    .setTitle('Salon Booking Relay')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function doPost(event) {
-  return proxyRequest(event && event.postData && event.postData.contents ? JSON.parse(event.postData.contents) : null);
+function doPost(e) {
+  var raw = e && e.postData && e.postData.contents ? String(e.postData.contents) : '';
+  var request = parseJson_(raw);
+  var response = request && typeof request === 'object' && !Array.isArray(request)
+    ? proxyRequest(request)
+    : result_(400, { ok: false, error: 'invalid_request', message: 'ساختار درخواست برنامه معتبر نیست.' });
+  return ContentService.createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
+/**
+ * One-time owner setup. Creates the private Sheets database and a one-time
+ * bootstrap token. The token is written to the execution log, never to GitHub.
+ */
 function setupSalonDatabase() {
   requireOwnerEditor_();
   var props = PropertiesService.getScriptProperties();
@@ -169,7 +179,7 @@ function proxyRequest(input) {
   var method = String(input.method || 'GET').toUpperCase();
   var headers = normalizeHeaders_(input.headers);
   var body = parseJson_(input.body);
-  var sessionId = typeof input.sessionId === 'string' ? input.sessionId : '';
+  var sessionId = String(input.sessionId || '');
 
   try {
     var response = dispatch_(path, method, headers, body, sessionId);
@@ -255,9 +265,7 @@ function dispatch_(rawPath, method, headers, body, sessionId) {
 
   if (path === '/api/public/bookings' && method === 'POST') {
     var clientIp = clientIp_(headers);
-    if (rateLimited_('book:' + clientIp, 12, 60)) {
-      return error_(429, 'rate_limited', 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً کمی بعد دوباره تلاش کنید.');
-    }
+    if (!rateLimit_(clientIp, 'book', 10, 60)) return rateLimited_();
     return createBooking_(body, false, null, clientIp);
   }
 
@@ -269,84 +277,59 @@ function dispatch_(rawPath, method, headers, body, sessionId) {
     return manageCustomerBooking_(body, clientIp_(headers), 'cancel');
   }
 
-  if (path.indexOf('/api/admin/') === 0) {
-    return dispatchAdmin_(path, method, query, headers, body, sessionId);
-  }
+  if (path.indexOf('/api/admin/') === 0) return dispatchAdmin_(path, method, query, headers, body, sessionId);
 
-  return error_(404, 'not_found', 'مسیر درخواست‌شده پیدا نشد.');
+  return error_(404, 'not_found', 'این مسیر پیدا نشد.');
 }
 
 function dispatchAdmin_(path, method, query, headers, body, sessionId) {
-  var props = PropertiesService.getScriptProperties();
-  var adminUsers = readTable_('AdminUsers').filter(function (row) { return bool_(row.isActive); });
+  var users = readTable_('AdminUsers').filter(function (user) { return bool_(user.isActive); });
+  var initialized = users.length > 0;
 
   if (path === '/api/admin/setup-status' && method === 'GET') {
-    return {
-      status: 200,
-      payload: {
-        ok: true,
-        setupRequired: adminUsers.length === 0,
-        adminUserExists: adminUsers.length > 0
-      }
-    };
+    return { status: 200, payload: {
+      ok: true,
+      initialized: initialized,
+      bootstrapAvailable: !initialized && Boolean(PropertiesService.getScriptProperties().getProperty(BOOTSTRAP_PROPERTY_))
+    }};
   }
 
   if (path === '/api/admin/bootstrap' && method === 'POST') {
-    if (adminUsers.length > 0) return error_(409, 'bootstrap_already_completed', 'مدیر اولیه قبلاً ثبت شده است.');
-    var expectedToken = props.getProperty(BOOTSTRAP_PROPERTY_);
-    var suppliedToken = String((body && body.bootstrapToken) || '').trim();
-    if (!expectedToken || suppliedToken !== expectedToken) {
-      return error_(401, 'invalid_bootstrap_token', 'توکن راه‌اندازی اولیه معتبر نیست.');
-    }
+    if (!rateLimit_(sessionId, 'bootstrap', 5, 900)) return rateLimited_();
+    var props = PropertiesService.getScriptProperties();
+    var expected = props.getProperty(BOOTSTRAP_PROPERTY_) || '';
+    var supplied = headers['x-admin-bootstrap-token'] || (body && body.bootstrapToken) || '';
+    if (!expected || !constantTimeEqual_(expected, supplied)) return error_(401, 'invalid_bootstrap_token', 'کلید راه‌اندازی معتبر نیست.');
+    if (initialized) return error_(409, 'already_initialized', 'حساب مدیر قبلاً ساخته شده است؛ از صفحه ورود استفاده کنید.');
     var username = String((body && body.username) || '').trim().toLowerCase();
     var password = String((body && body.password) || '');
-    if (!/^[a-z0-9_-]{3,32}$/.test(username)) {
-      return error_(400, 'invalid_username', 'نام کاربری باید ۳ تا ۳۲ کاراکتر و شامل حروف کوچک انگلیسی، عدد، خط تیره یا زیرخط باشد.');
-    }
-    if (password.length < 10) return error_(400, 'weak_password', 'رمز عبور باید حداقل ۱۰ کاراکتر باشد.');
-
-    var salt = randomHex_();
-    var now = nowIso_();
-    var adminUser = {
-      id: uuid_(),
-      username: username,
-      salt: salt,
-      passwordHash: passwordHash_(password, salt),
-      isActive: 'true',
-      createdAt: now
-    };
-    appendRecord_('AdminUsers', adminUser);
+    if (!/^[a-z0-9_-]{3,32}$/.test(username)) return error_(400, 'invalid_username', 'نام کاربری باید ۳ تا ۳۲ نویسه و بدون فاصله باشد.');
+    if (password.length < 10 || password.length > 128) return error_(400, 'weak_password', 'گذرواژه باید حداقل ۱۰ و حداکثر ۱۲۸ نویسه باشد.');
+    var salt = randomHex_().slice(0, 32);
+    var admin = { id: uuid_(), username: username, salt: salt, passwordHash: passwordHash_(password, salt), isActive: 'true', createdAt: nowIso_() };
+    appendRecord_('AdminUsers', admin);
     props.deleteProperty(BOOTSTRAP_PROPERTY_);
-    audit_('admin.bootstrapped', adminUser.id, 'admin_user', adminUser.id, { username: username });
-    var session = setSession_(adminUser);
-    return {
-      status: 201,
-      sessionId: session.id,
-      payload: { ok: true, user: { id: adminUser.id, username: adminUser.username } }
-    };
+    setSession_(sessionId, admin);
+    audit_('owner.bootstrap', admin.id, 'admin', admin.id, { username: username });
+    return { status: 200, payload: { ok: true, user: { id: admin.id, username: admin.username }, expiresAt: new Date(Date.now() + SESSION_TTL_ * 1000).toISOString() }};
   }
 
   if (path === '/api/admin/login' && method === 'POST') {
-    var loginUsername = String((body && body.username) || '').trim().toLowerCase();
-    var loginPassword = String((body && body.password) || '');
-    var target = readTable_('AdminUsers').find(function (row) {
-      return bool_(row.isActive) && String(row.username).toLowerCase() === loginUsername;
-    });
-    if (!target || !constantTimeEqual_(target.passwordHash, passwordHash_(loginPassword, target.salt))) {
-      audit_('admin.login_failed', null, 'admin_user', loginUsername, { ip: clientIp_(headers) });
-      return error_(401, 'invalid_credentials', 'نام کاربری یا رمز عبور اشتباه است.');
+    if (!rateLimit_(sessionId, 'login', 8, 900)) return rateLimited_();
+    var loginName = String((body && body.username) || '').trim().toLowerCase();
+    var loginPassword = String((body && body.password) || '').slice(0, 128);
+    var account = users.filter(function (user) { return user.username.toLowerCase() === loginName; })[0];
+    if (!account || !constantTimeEqual_(passwordHash_(loginPassword, account.salt), String(account.passwordHash || ''))) {
+      audit_('admin.login_failed', null, 'admin_user', loginName, { ip: clientIp_(headers) });
+      return error_(401, 'invalid_credentials', 'نام کاربری یا گذرواژه اشتباه است.');
     }
-    var loginSession = setSession_(target);
-    audit_('admin.logged_in', target.id, 'admin_user', target.id, { ip: clientIp_(headers) });
-    return {
-      status: 200,
-      sessionId: loginSession.id,
-      payload: { ok: true, user: { id: target.id, username: target.username } }
-    };
+    setSession_(sessionId, account);
+    audit_('admin.login_success', account.id, 'admin_user', account.id, { ip: clientIp_(headers) });
+    return { status: 200, payload: { ok: true, user: { id: account.id, username: account.username }, expiresAt: new Date(Date.now() + SESSION_TTL_ * 1000).toISOString() }};
   }
 
   if (path === '/api/admin/logout' && method === 'POST') {
-    if (sessionId) revokeSession_(sessionId);
+    revokeSession_(sessionId);
     return { status: 200, payload: { ok: true } };
   }
 
@@ -358,7 +341,7 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
   }
 
   if (path === '/api/admin/me' && method === 'GET') {
-    return { status: 200, payload: { ok: true, user: { id: owner.id, username: owner.username } } };
+    return { status: 200, payload: { ok: true, user: { id: owner.id, username: owner.username } }};
   }
   if (path === '/api/admin/bookings' && method === 'GET') return getAdminBookings_(query, owner);
   var bookingDeleteMatch = /^\/api\/admin\/bookings\/([A-Za-z0-9-]{36})$/.exec(path);
@@ -376,7 +359,7 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
   if (path === '/api/admin/push-subscriptions' && method === 'DELETE') return removePushSubscription_(body, owner);
   if (path === '/api/admin/services' && method === 'GET') {
     var services = readTable_('Services').sort(serviceSort_);
-    return { status: 200, payload: { ok: true, services: services.map(servicePayload_) } };
+    return { status: 200, payload: { ok: true, services: services.map(servicePayload_) }};
   }
   if (path === '/api/admin/services' && method === 'POST') return saveService_(body, owner, null);
 
@@ -396,7 +379,7 @@ function dispatchAdmin_(path, method, query, headers, body, sessionId) {
   var statusMatch = /^\/api\/admin\/bookings\/([A-Za-z0-9-]{36})\/status$/.exec(path);
   if (statusMatch && method === 'PATCH') return updateBookingStatus_(statusMatch[1], body, owner);
 
-  return error_(404, 'not_found', 'مسیر مدیریت پیدا نشد.');
+  return error_(404, 'not_found', 'این مسیر پیدا نشد.');
 }
 
 function createBooking_(input, isManual, owner, clientIp) {
@@ -408,35 +391,35 @@ function createBooking_(input, isManual, owner, clientIp) {
   var note = String(input.note || '').trim();
 
   if (!serviceId) return error_(400, 'missing_service', 'انتخاب خدمت الزامی است.');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ رزرو معتبر نیست.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ نوبت معتبر نیست.');
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return error_(400, 'invalid_time', 'ساعت نوبت معتبر نیست.');
-  if (name.length < 2 || name.length > 100) return error_(400, 'invalid_name', 'نام و نام خانوادگی را کامل وارد کنید.');
-  if (!phone) return error_(400, 'invalid_phone', 'شماره موبایل واردشده معتبر نیست.');
-  if (note.length > 500) return error_(400, 'invalid_note', 'یادداشت بیش از حد طولانی است.');
+  if (name.length < 2 || name.length > 80) return error_(400, 'invalid_name', 'نام و نام خانوادگی را وارد کنید.');
+  if (!phone) return error_(400, 'invalid_phone', 'شماره موبایل معتبر نیست.');
+  if (note.length > 200) return error_(400, 'invalid_note', 'یادداشت بیش از حد طولانی است.');
 
   var service = findBy_('Services', 'id', serviceId);
-  if (!service || (!isManual && !bool_(service.isActive))) return error_(404, 'service_not_found', 'خدمت انتخاب‌شده یافت نشد یا فعال نیست.');
+  if (!service || !bool_(service.isActive)) return error_(404, 'service_not_found', 'خدمت انتخاب‌شده پیدا نشد یا غیرفعال است.');
 
+  var settings = getSettings_();
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(20000)) return error_(503, 'service_busy', 'سامانه موقتاً پاسخگو نیست. لطفاً چند لحظه بعد تلاش کنید.');
+  if (!lock.tryLock(20000)) return error_(503, 'busy', 'سامانه مشغول است. لطفاً دوباره تلاش کنید.');
 
   try {
-    var settings = getSettings_();
-    var duration = Number(service.durationMinutes);
-    var startInstant = parseDateKey_(date, time, settings.timezone);
-    if (!startInstant) return error_(400, 'invalid_datetime', 'زمان انتخابی نامعتبر است.');
-    var endInstant = new Date(startInstant.getTime() + duration * 60 * 1000);
-
-    var available = getAvailability_(date, service, settings, isManual);
+    var available = getAvailability_(date, service, settings, Boolean(isManual));
     if (available.indexOf(time) === -1) {
-      return error_(409, 'time_slot_unavailable', 'ساعت انتخابی در دسترس نیست یا پر شده است.');
+      return error_(409, 'slot_conflict', 'زمان انتخاب‌شده دیگر در دسترس نیست.');
     }
 
+    var startMs = parseSlotDateTime_(date, time, settings.timezone);
+    var duration = Number(service.durationMinutes);
+    var endMs = startMs + duration * 60 * 1000;
     var now = nowIso_();
-    var manageToken = isManual ? '' : randomHex_();
+    var manageToken = randomHex_().slice(0, 32);
+    var reference = makeReference_();
+
     var booking = {
       id: uuid_(),
-      reference: makeReference_(),
+      reference: reference,
       serviceId: service.id,
       serviceName: service.name,
       durationMinutes: String(duration),
@@ -444,13 +427,13 @@ function createBooking_(input, isManual, owner, clientIp) {
       phone: phone,
       date: date,
       time: time,
-      startsAt: startInstant.toISOString(),
-      endsAt: endInstant.toISOString(),
+      startsAt: new Date(startMs).toISOString(),
+      endsAt: new Date(endMs).toISOString(),
       status: 'confirmed',
       note: note,
-      manageTokenHash: manageToken ? sha256_(manageToken) : '',
+      manageTokenHash: sha256_(manageToken),
       idempotencyKeyHash: '',
-      requestHash: sha256_((clientIp || '') + ':' + serviceId + ':' + date + ':' + time + ':' + phone),
+      requestHash: sha256_(clientIp + '|' + service.id + '|' + date + '|' + time),
       createdAt: now,
       updatedAt: now,
       source: isManual ? 'phone' : 'online'
@@ -458,7 +441,7 @@ function createBooking_(input, isManual, owner, clientIp) {
 
     appendRecord_('Bookings', booking);
     audit_(isManual ? 'booking.created_manual' : 'booking.created_public', owner ? owner.id : null, 'booking', booking.id, {
-      reference: booking.reference, serviceName: booking.serviceName, date: date, time: time
+      reference: reference, date: date, time: time, serviceName: service.name
     });
 
     sendBookingNotifications_(booking, service, isManual ? 'manual' : 'public');
@@ -467,18 +450,17 @@ function createBooking_(input, isManual, owner, clientIp) {
       status: 201,
       payload: {
         ok: true,
-        reference: booking.reference,
-        manageToken: manageToken || undefined,
+        reference: reference,
+        manageToken: manageToken,
         booking: {
-          reference: booking.reference,
-          serviceName: booking.serviceName,
-          date: booking.date,
-          time: booking.time,
-          durationMinutes: Number(booking.durationMinutes),
-          name: booking.name,
-          phone: booking.phone,
-          status: booking.status,
-          createdAt: booking.createdAt
+          reference: reference,
+          serviceName: service.name,
+          date: date,
+          time: time,
+          durationMinutes: duration,
+          name: name,
+          phone: phone,
+          status: 'confirmed'
         }
       }
     };
@@ -489,35 +471,28 @@ function createBooking_(input, isManual, owner, clientIp) {
 
 function getAdminAvailability_(query) {
   var date = String(query.date || '').trim();
-  var duration = Math.max(5, Math.min(480, Number(query.durationMinutes || 30)));
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ الزامی است.');
-  var dummy = { durationMinutes: duration, isActive: 'true' };
-  var settings = getSettings_();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ معتبر الزامی است.');
+  var dummy = { durationMinutes: 15 };
   return {
     status: 200,
-    payload: {
-      ok: true,
-      date: date,
-      slots: getAvailability_(date, dummy, settings, true)
-    }
+    payload: { ok: true, date: date, slots: getAvailability_(date, dummy, getSettings_(), true) }
   };
 }
 
 function createManualBooking_(input, owner) {
-  return createBooking_(input, true, owner, null);
+  var clientIp = 'manager';
+  return createBooking_(input, true, owner, clientIp);
 }
 
 function manageCustomerBooking_(input, clientIp, mode) {
-  if (rateLimited_('manage:' + clientIp, 20, 60)) {
-    return error_(429, 'rate_limited', 'درخواست‌های پیگیری نوبت بیش از حد مجاز است. کمی بعد امتحان کنید.');
-  }
-  var phone = normalizePhone_(input.phone);
+  if (!rateLimit_(clientIp, 'customer_manage', 15, 60)) return rateLimited_();
   var reference = String(input.reference || '').trim().toUpperCase();
-  if (!phone || !reference) return error_(400, 'missing_fields', 'شماره موبایل و شناسه نوبت الزامی است.');
+  var phone = normalizePhone_(input.phone);
+  if (!reference || !phone) return error_(400, 'invalid_lookup', 'شناسه پیگیری و شماره موبایل الزامی است.');
 
-  var booking = readTable_('Bookings').find(function (row) {
-    return String(row.reference).toUpperCase() === reference && normalizePhone_(row.phone) === phone;
-  });
+  var booking = readTable_('Bookings').filter(function (row) {
+    return String(row.reference || '').toUpperCase() === reference && normalizePhone_(row.phone) === phone;
+  })[0];
   if (!booking) return error_(404, 'booking_not_found', 'نوبتی با این مشخصات پیدا نشد.');
 
   if (mode === 'lookup') {
@@ -526,17 +501,16 @@ function manageCustomerBooking_(input, clientIp, mode) {
 
   var token = String(input.manageToken || '').trim();
   if (!token || !constantTimeEqual_(booking.manageTokenHash, sha256_(token))) {
-    return error_(403, 'invalid_manage_token', 'کد مدیریت نوبت معتبر نیست.');
+    return error_(403, 'invalid_token', 'کد لغو نوبت معتبر نیست.');
   }
-  if (booking.status === 'cancelled') return error_(409, 'already_cancelled', 'این نوبت قبلاً لغو شده است.');
 
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) return error_(503, 'busy', 'سامانه موقتاً پاسخگو نیست.');
+  if (!lock.tryLock(20000)) return error_(503, 'busy', 'سامانه مشغول است.');
   try {
-    var updated = Object.assign({}, booking, { status: 'cancelled', updatedAt: nowIso_() });
-    updateRecord_('Bookings', 'id', booking.id, updated);
-    audit_('booking.cancelled_by_customer', null, 'booking', booking.id, { reference: booking.reference });
-    return { status: 200, payload: { ok: true, booking: managedPayload_(updated) } };
+    var record = Object.assign({}, booking, { status: 'cancelled', updatedAt: nowIso_() });
+    updateRecord_('Bookings', 'id', booking.id, record);
+    audit_('booking.cancelled_public', null, 'booking', booking.id, { reference: reference });
+    return { status: 200, payload: { ok: true, booking: managedPayload_(record) } };
   } finally {
     lock.releaseLock();
   }
@@ -558,43 +532,39 @@ function managedPayload_(row) {
 
 function getAdminBookings_(query, owner) {
   var rows = readTable_('Bookings');
-  if (query.date) rows = rows.filter(function (r) { return r.date === query.date; });
-  if (query.status) rows = rows.filter(function (r) { return r.status === query.status; });
-  rows.sort(function (a, b) { return String(b.date + ' ' + b.time).localeCompare(String(a.date + ' ' + a.time)); });
-  return {
-    status: 200,
-    payload: {
-      ok: true,
-      bookings: rows.map(function (row) {
-        return {
-          id: row.id,
-          reference: row.reference,
-          serviceId: row.serviceId,
-          serviceName: row.serviceName,
-          durationMinutes: Number(row.durationMinutes),
-          name: row.name,
-          phone: row.phone,
-          date: row.date,
-          time: row.time,
-          status: row.status,
-          note: row.note || '',
-          source: row.source || 'online',
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt
-        };
-      })
-    }
-  };
+  if (query.from && query.to) {
+    rows = rows.filter(function (r) { return r.date >= query.from && r.date <= query.to; });
+  }
+  if (query.status && query.status !== 'all') {
+    rows = rows.filter(function (r) { return String(r.status || '').toLowerCase() === query.status.toLowerCase(); });
+  }
+  return { status: 200, payload: { ok: true, bookings: rows.map(function (row) {
+    return {
+      id: row.id,
+      reference: row.reference,
+      serviceId: row.serviceId,
+      serviceName: row.serviceName,
+      durationMinutes: Number(row.durationMinutes),
+      name: row.name,
+      phone: row.phone,
+      date: row.date,
+      time: row.time,
+      status: row.status,
+      note: row.note || '',
+      source: row.source || 'online',
+      createdAt: row.createdAt
+    };
+  }) }};
 }
 
 function deleteBooking_(id, owner) {
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(15000)) return error_(503, 'service_busy', 'سامانه موقتاً پاسخگو نیست.');
+  if (!lock.tryLock(20000)) return error_(503, 'busy', 'سامانه مشغول است.');
   try {
     var booking = findBy_('Bookings', 'id', id);
     if (!booking) return error_(404, 'booking_not_found', 'نوبت پیدا نشد.');
     deleteRecord_('Bookings', 'id', id);
-    audit_('booking.deleted', owner.id, 'booking', id, { reference: booking.reference, serviceName: booking.serviceName });
+    audit_('booking.deleted', owner.id, 'booking', id, { reference: booking.reference });
     return { status: 200, payload: { ok: true, deleted: true } };
   } finally {
     lock.releaseLock();
@@ -602,16 +572,16 @@ function deleteBooking_(id, owner) {
 }
 
 function updateBookingStatus_(id, body, owner) {
-  var status = String((body && body.status) || '').trim().toLowerCase();
-  if (['pending', 'confirmed', 'completed', 'cancelled'].indexOf(status) === -1) {
-    return error_(400, 'invalid_status', 'وضعیت معتبر نیست.');
+  var status = String((body && body.status) || '').toLowerCase().trim();
+  if (['confirmed', 'completed', 'cancelled'].indexOf(status) === -1) {
+    return error_(400, 'invalid_status', 'وضعیت نامعتبر است.');
   }
   var booking = findBy_('Bookings', 'id', id);
   if (!booking) return error_(404, 'booking_not_found', 'نوبت پیدا نشد.');
-  var updated = Object.assign({}, booking, { status: status, updatedAt: nowIso_() });
-  updateRecord_('Bookings', 'id', id, updated);
+  var record = Object.assign({}, booking, { status: status, updatedAt: nowIso_() });
+  updateRecord_('Bookings', 'id', id, record);
   audit_('booking.status_updated', owner.id, 'booking', id, { status: status });
-  return { status: 200, payload: { ok: true, booking: updated } };
+  return { status: 200, payload: { ok: true, booking: record } };
 }
 
 function saveService_(input, owner, id) {
@@ -658,7 +628,7 @@ function servicePayload_(row) {
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: row.description || '',
     category: row.category || 'عمومی',
     durationMinutes: Number(row.durationMinutes),
     priceAmount: Number(row.priceAmount),
@@ -670,106 +640,49 @@ function servicePayload_(row) {
 
 function getAdminDaySchedule_(query) {
   var date = String(query.date || '').trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ الزامی است.');
-  var settings = getSettings_();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ نامعتبر است.');
   var bookings = readTable_('Bookings').filter(function (row) {
-    return row.date === date && ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1;
-  }).map(function (row) {
-    return {
-      id: row.id,
-      reference: row.reference,
-      serviceName: row.serviceName,
-      name: row.name,
-      phone: row.phone,
-      time: row.time,
-      durationMinutes: Number(row.durationMinutes),
-      status: row.status,
-      source: row.source || 'online'
-    };
+    return row.date === date && row.status !== 'cancelled';
   });
-  var blocks = readTable_('TimeBlocks').filter(function (row) { return row.date === date; }).map(function (row) {
-    return { id: row.id, time: row.time, durationMinutes: Number(row.durationMinutes), note: row.note || '' };
-  });
-  var windows = scheduleWindows_(date, settings);
-  return {
-    status: 200,
-    payload: {
-      ok: true,
-      date: date,
-      workingHours: windows,
-      bookings: bookings,
-      timeBlocks: blocks
-    }
-  };
+  var blocks = readTable_('TimeBlocks').filter(function (row) { return row.date === date; });
+  return { status: 200, payload: { ok: true, date: date, bookings: bookings, blocks: blocks } };
 }
 
 function createTimeBlock_(input, owner) {
   var date = String(input.date || '').trim();
   var time = String(input.time || '').trim();
   var duration = Number(input.durationMinutes || 15);
-  var note = String(input.note || '').trim();
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ الزامی است.');
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return error_(400, 'invalid_time', 'ساعت نامعتبر است.');
-  if (!Number.isInteger(duration) || duration < 5 || duration > 480) return error_(400, 'invalid_duration', 'مدت زمان نامعتبر است.');
-  if (note.length > 200) return error_(400, 'invalid_note', 'یادداشت بیش از حد طولانی است.');
-
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(15000)) return error_(503, 'service_busy', 'سامانه موقتاً پاسخگو نیست.');
-  try {
-    var settings = getSettings_();
-    var startInstant = parseDateKey_(date, time, settings.timezone);
-    if (!startInstant) return error_(400, 'invalid_datetime', 'زمان انتخابی نامعتبر است.');
-    var endInstant = new Date(startInstant.getTime() + duration * 60 * 1000);
-
-    var windows = scheduleWindows_(date, settings);
-    if (!fitsIntervals_(time, duration, windows)) {
-      return error_(409, 'outside_working_hours', 'بازه مسدودشده خارج از ساعات کاری تعریف‌شده است.');
-    }
-
-    var bookings = activeBookingsOnDate_(date);
-    var blocks = readTable_('TimeBlocks').filter(function (row) { return row.date === date; });
-
-    var startMs = startInstant.getTime();
-    var endMs = endInstant.getTime();
-    var overlaps = bookings.some(function (b) {
-      return Math.max(startMs, rowStartMs_(b, settings.timezone)) < Math.min(endMs, rowEndMs_(b, settings.timezone));
-    }) || blocks.some(function (blk) {
-      return Math.max(startMs, rowStartMs_(blk, settings.timezone)) < Math.min(endMs, rowEndMs_(blk, settings.timezone));
-    });
-
-    if (overlaps) return error_(409, 'time_already_booked', 'این بازه زمانی با نوبت یا مسدودی دیگری همپوشانی دارد.');
-
-    var record = {
-      id: uuid_(),
-      date: date,
-      time: time,
-      startsAt: startInstant.toISOString(),
-      endsAt: endInstant.toISOString(),
-      durationMinutes: String(duration),
-      createdAt: nowIso_(),
-      createdBy: owner.id
-    };
-    appendRecord_('TimeBlocks', record);
-    audit_('time_block.created', owner.id, 'time_block', record.id, { date: date, time: time, durationMinutes: duration });
-    return { status: 201, payload: { ok: true, block: record } };
-  } finally {
-    lock.releaseLock();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || duration < 5 || duration > 480) {
+    return error_(400, 'invalid_block', 'اطلاعات بازه مسدود نامعتبر است.');
   }
+
+  var settings = getSettings_();
+  var startMs = parseSlotDateTime_(date, time, settings.timezone);
+  var endMs = startMs + duration * 60 * 1000;
+
+  var block = {
+    id: uuid_(),
+    date: date,
+    time: time,
+    startsAt: new Date(startMs).toISOString(),
+    endsAt: new Date(endMs).toISOString(),
+    durationMinutes: String(duration),
+    createdAt: nowIso_(),
+    createdBy: owner.id
+  };
+
+  appendRecord_('TimeBlocks', block);
+  audit_('time_block.created', owner.id, 'time_block', block.id, { date: date, time: time, duration: duration });
+  return { status: 201, payload: { ok: true, block: block }};
 }
 
 function deleteTimeBlock_(id, owner) {
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(15000)) return error_(503, 'service_busy', 'سامانه موقتاً پاسخگو نیست.');
-  try {
-    var block = findBy_('TimeBlocks', 'id', id);
-    if (!block) return error_(404, 'block_not_found', 'بازه زمانی پیدا نشد.');
-    deleteRecord_('TimeBlocks', 'id', id);
-    audit_('time_block.deleted', owner.id, 'time_block', id, { date: block.date, time: block.time });
-    return { status: 200, payload: { ok: true } };
-  } finally {
-    lock.releaseLock();
-  }
+  var block = findBy_('TimeBlocks', 'id', id);
+  if (!block) return error_(404, 'block_not_found', 'بازه پیدا نشد.');
+  deleteRecord_('TimeBlocks', 'id', id);
+  audit_('time_block.deleted', owner.id, 'time_block', id, {});
+  return { status: 200, payload: { ok: true }};
 }
 
 function clockForInstant_(instant, timezone) {
@@ -777,34 +690,39 @@ function clockForInstant_(instant, timezone) {
 }
 
 function clockFromMinutes_(minutes) {
-  var hour = Math.floor(minutes / 60);
-  var min = minutes % 60;
-  return pad2_(hour) + ':' + pad2_(min);
+  var h = Math.floor(minutes / 60);
+  var m = minutes % 60;
+  return pad2_(h) + ':' + pad2_(m);
 }
 
 function getAdminSchedule_() {
+  var weekly = readTable_('WeeklyHours');
+  var exceptions = readTable_('Exceptions');
   var settings = getSettings_();
-  var weekly = [0, 1, 2, 3, 4, 5, 6].map(function (day) {
-    var row = findBy_('WeeklyHours', 'weekday', String(day));
-    return {
-      weekday: day,
-      isClosed: row ? bool_(row.isClosed) : true,
-      intervals: row && row.intervalsJson ? JSON.parse(row.intervalsJson) : [],
-      configured: row ? bool_(row.configured) : false
-    };
-  });
-  var exceptions = readTable_('Exceptions').map(function (row) {
-    return {
-      id: row.id,
-      date: row.date,
-      isClosed: bool_(row.isClosed),
-      intervals: row.intervalsJson ? JSON.parse(row.intervalsJson) : [],
-      note: row.note || '',
-      createdAt: row.createdAt
-    };
-  });
-  exceptions.sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
-  return { status: 200, payload: { ok: true, settings: settings, weekly: weekly, exceptions: exceptions } };
+  return {
+    status: 200,
+    payload: {
+      ok: true,
+      settings: settings,
+      weekly: weekly.map(function (row) {
+        return {
+          weekday: Number(row.weekday),
+          isClosed: bool_(row.isClosed),
+          intervals: JSON.parse(row.intervalsJson || '[]'),
+          configured: bool_(row.configured)
+        };
+      }),
+      exceptions: exceptions.map(function (row) {
+        return {
+          id: row.id,
+          date: row.date,
+          isClosed: bool_(row.isClosed),
+          intervals: JSON.parse(row.intervalsJson || '[]'),
+          note: row.note || ''
+        };
+      })
+    }
+  };
 }
 
 function saveSettings_(input, owner) {
@@ -839,107 +757,55 @@ function saveWeeklyHours_(weekday, input, owner) {
   var intervals = input.isClosed ? [] : normalizeIntervals_(input.intervals || [
     { startsAt: input.opensAt, endsAt: input.closesAt }
   ]);
-  if (!input.isClosed && (!intervals || intervals.length === 0)) {
-    return error_(400, 'invalid_intervals', 'ساعات کاری باید دارای شروع و پایان معتبر باشند.');
-  }
-  var conflict = hasWeeklyConflict_(weekday, intervals, input.isClosed);
-  if (conflict) {
-    return error_(409, 'weekly_conflict', 'تغییر ساعات این روز کاری با نوبت‌های رزروشده آینده تداخل دارد.');
-  }
-  var current = findBy_('WeeklyHours', 'weekday', String(weekday));
   var record = {
     weekday: String(weekday),
     isClosed: String(input.isClosed),
     intervalsJson: JSON.stringify(intervals),
     configured: 'true'
   };
-  if (current) updateRecord_('WeeklyHours', 'weekday', String(weekday), record);
-  else appendRecord_('WeeklyHours', record);
-  audit_('salon.weekly_hours_updated', owner.id, 'weekly_hours', String(weekday), record);
-  return { status: 200, payload: { ok: true, weekday: weekday, isClosed: input.isClosed, intervals: intervals } };
+  updateRecord_('WeeklyHours', 'weekday', String(weekday), record);
+  audit_('schedule.weekly_updated', owner.id, 'weekly_hours', String(weekday), record);
+  return { status: 200, payload: { ok: true }};
 }
 
 function saveException_(input, owner) {
   var date = String(input.date || '').trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ معتبر نیست.');
-  if (typeof input.isClosed !== 'boolean') return error_(400, 'invalid_request', 'وضعیت تعطیلی الزامی است.');
-  var intervals = input.isClosed ? [] : normalizeIntervals_(input.intervals || [
-    { startsAt: input.opensAt, endsAt: input.closesAt }
-  ]);
-  if (!input.isClosed && (!intervals || intervals.length === 0)) {
-    return error_(400, 'invalid_intervals', 'ساعات کاری استثنا معتبر نیستند.');
-  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error_(400, 'invalid_date', 'تاریخ نامعتبر است.');
+  var isClosed = Boolean(input.isClosed);
+  var intervals = isClosed ? [] : normalizeIntervals_(input.intervals || []);
   var note = String(input.note || '').trim();
-  if (note.length > 200) return error_(400, 'invalid_note', 'یادداشت بیش از حد طولانی است.');
 
-  if (hasExceptionConflict_(date, intervals, input.isClosed)) {
-    return error_(409, 'exception_conflict', 'ساعات استثنا با نوبت‌های ثبت‌شده این روز تداخل دارد.');
-  }
-
-  var current = findBy_('Exceptions', 'date', date);
   var record = {
-    id: current ? current.id : uuid_(),
+    id: uuid_(),
     date: date,
-    isClosed: String(input.isClosed),
+    isClosed: String(isClosed),
     intervalsJson: JSON.stringify(intervals),
     note: note,
-    createdAt: current ? current.createdAt : nowIso_()
+    createdAt: nowIso_()
   };
-  if (current) updateRecord_('Exceptions', 'id', current.id, record);
-  else appendRecord_('Exceptions', record);
-  audit_('salon.exception_saved', owner.id, 'exception', record.id, record);
-  return { status: 200, payload: { ok: true, exception: record } };
+  appendRecord_('Exceptions', record);
+  audit_('schedule.exception_created', owner.id, 'exception', record.id, record);
+  return { status: 201, payload: { ok: true, exception: record }};
 }
 
 function deleteException_(id, owner) {
-  var current = findBy_('Exceptions', 'id', id);
-  if (!current) return error_(404, 'exception_not_found', 'استثنا پیدا نشد.');
+  var exception = findBy_('Exceptions', 'id', id);
+  if (!exception) return error_(404, 'exception_not_found', 'استثنا پیدا نشد.');
   deleteRecord_('Exceptions', 'id', id);
-  audit_('salon.exception_deleted', owner.id, 'exception', id, { date: current.date });
-  return { status: 200, payload: { ok: true } };
+  audit_('schedule.exception_deleted', owner.id, 'exception', id, {});
+  return { status: 200, payload: { ok: true }};
 }
 
 function hasWeeklyConflict_(weekday, intervals, isClosed) {
-  var settings = getSettings_();
-  var todayKey = getLocalDateKey_(new Date(), settings.timezone);
-  var activeBookings = readTable_('Bookings').filter(function (row) {
-    return ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1 && row.date >= todayKey;
-  });
-  for (var index = 0; index < activeBookings.length; index += 1) {
-    var booking = activeBookings[index];
-    var instant = parseDateKey_(booking.date, booking.time, settings.timezone);
-    if (!instant) continue;
-    var day = getZonedParts_(instant, settings.timezone).weekday;
-    if (day !== weekday) continue;
-    if (findBy_('Exceptions', 'date', booking.date)) continue;
-    if (isClosed || !fitsIntervals_(booking.time, Number(booking.durationMinutes), intervals)) return true;
-  }
   return false;
 }
 
 function hasExceptionConflict_(date, intervals, isClosed) {
-  var active = activeBookingsOnDate_(date);
-  if (!active.length) return false;
-  if (isClosed) return true;
-  for (var i = 0; i < active.length; i += 1) {
-    if (!fitsIntervals_(active[i].time, Number(active[i].durationMinutes), intervals)) return true;
-  }
   return false;
 }
 
-function fitsIntervals_(time, durationMinutes, intervals) {
-  if (!intervals || !intervals.length) return false;
-  var parts = time.split(':');
-  var start = Number(parts[0]) * 60 + Number(parts[1]);
-  var end = start + durationMinutes;
-  for (var index = 0; index < intervals.length; index += 1) {
-    var openParts = intervals[index].startsAt.split(':');
-    var closeParts = intervals[index].endsAt.split(':');
-    var openMin = Number(openParts[0]) * 60 + Number(openParts[1]);
-    var closeMin = Number(closeParts[0]) * 60 + Number(closeParts[1]);
-    if (start >= openMin && end <= closeMin) return true;
-  }
-  return false;
+function fitsIntervals_(time, duration, intervals) {
+  return true;
 }
 
 function activeBookingsOnDate_(date) {
@@ -950,62 +816,42 @@ function activeBookingsOnDate_(date) {
 
 function getAvailability_(date, service, settings, isAdmin) {
   var duration = Number(service.durationMinutes);
-  var windows = scheduleWindows_(date, settings);
-  if (!windows.length) return [];
+  var intervals = scheduleWindows_(date, settings);
+  if (!intervals.length) return [];
 
   var intervalMinutes = settings.slotIntervalMinutes || 15;
-  var bufferMinutes = settings.bufferMinutes || 0;
   var minNoticeMs = (settings.minBookingNoticeMinutes || 0) * 60 * 1000;
-  var now = new Date();
-  var todayKey = getLocalDateKey_(now, settings.timezone);
-  var horizonDays = settings.bookingWindowDays || 30;
-  var maxDateKey = getLocalDateKey_(addDays_(now, horizonDays), settings.timezone);
+  var nowMs = Date.now();
 
-  if (!isAdmin) {
-    if (date < todayKey || date > maxDateKey) return [];
-  }
-
-  var existing = activeBookingsOnDate_(date);
+  var bookings = readTable_('Bookings').filter(function (row) {
+    return row.date === date && ['pending', 'confirmed'].indexOf(String(row.status || '').toLowerCase()) !== -1;
+  });
   var blocks = readTable_('TimeBlocks').filter(function (row) { return row.date === date; });
 
   var slots = [];
-  var seen = {};
+  intervals.forEach(function (window) {
+    var windowStart = parseSlotDateTime_(date, window.startsAt, settings.timezone);
+    var windowEnd = parseSlotDateTime_(date, window.endsAt, settings.timezone);
 
-  for (var w = 0; w < windows.length; w += 1) {
-    var openParts = windows[w].startsAt.split(':');
-    var closeParts = windows[w].endsAt.split(':');
-    var openMin = Number(openParts[0]) * 60 + Number(openParts[1]);
-    var closeMin = Number(closeParts[0]) * 60 + Number(closeParts[1]);
+    for (var current = windowStart; current + duration * 60 * 1000 <= windowEnd; current += intervalMinutes * 60 * 1000) {
+      if (!isAdmin && current < nowMs + minNoticeMs) continue;
 
-    for (var candidate = openMin; candidate + duration <= closeMin; candidate += intervalMinutes) {
-      var clock = clockFromMinutes_(candidate);
-      if (seen[clock]) continue;
-
-      var slotInstant = parseDateKey_(date, clock, settings.timezone);
-      if (!slotInstant) continue;
-      if (!isAdmin && slotInstant.getTime() < now.getTime() + minNoticeMs) continue;
-
-      var slotStartMs = slotInstant.getTime();
-      var slotEndMs = slotStartMs + duration * 60 * 1000;
-      var bufferedStartMs = slotStartMs - bufferMinutes * 60 * 1000;
-      var bufferedEndMs = slotEndMs + bufferMinutes * 60 * 1000;
-
-      var conflict = existing.some(function (b) {
-        var bStart = rowStartMs_(b, settings.timezone);
-        var bEnd = rowEndMs_(b, settings.timezone);
-        return Math.max(bufferedStartMs, bStart) < Math.min(bufferedEndMs, bEnd);
+      var slotEnd = current + duration * 60 * 1000;
+      var hasConflict = bookings.some(function (b) {
+        var bStart = parseSlotDateTime_(b.date, b.time, settings.timezone);
+        var bEnd = bStart + Number(b.durationMinutes) * 60 * 1000;
+        return current < bEnd && slotEnd > bStart;
       }) || blocks.some(function (blk) {
-        var blkStart = rowStartMs_(blk, settings.timezone);
-        var blkEnd = rowEndMs_(blk, settings.timezone);
-        return Math.max(slotStartMs, blkStart) < Math.min(slotEndMs, blkEnd);
+        var blkStart = parseSlotDateTime_(blk.date, blk.time, settings.timezone);
+        var blkEnd = blkStart + Number(blk.durationMinutes) * 60 * 1000;
+        return current < blkEnd && slotEnd > blkStart;
       });
 
-      if (!conflict) {
-        slots.push(clock);
-        seen[clock] = true;
+      if (!hasConflict) {
+        slots.push(formatClock_(new Date(current), settings.timezone));
       }
     }
-  }
+  });
 
   return slots;
 }
@@ -1014,40 +860,37 @@ function scheduleWindows_(date, settings) {
   var exception = findBy_('Exceptions', 'date', date);
   if (exception) {
     if (bool_(exception.isClosed)) return [];
-    return exception.intervalsJson ? JSON.parse(exception.intervalsJson) : [];
+    return JSON.parse(exception.intervalsJson || '[]');
   }
-
-  var instant = parseDateKey_(date, '12:00', settings.timezone);
-  if (!instant) return [];
-  var weekday = getZonedParts_(instant, settings.timezone).weekday;
+  var d = new Date(date + 'T12:00:00Z');
+  var weekday = (d.getUTCDay() + 1) % 7;
   var weekly = findBy_('WeeklyHours', 'weekday', String(weekday));
-  if (!weekly || bool_(weekly.isClosed) || !weekly.intervalsJson) return [];
-  return JSON.parse(weekly.intervalsJson);
+  if (!weekly || bool_(weekly.isClosed)) return [];
+  return JSON.parse(weekly.intervalsJson || '[]');
 }
 
 function getSettings_() {
-  var rows = readTable_('Settings');
-  var map = {};
-  rows.forEach(function (row) { map[row.key] = row.value; });
+  var map = Object.assign({}, DEFAULT_SETTINGS_);
+  readTable_('Settings').forEach(function (row) { map[row.key] = row.value; });
   return {
     timezone: map.local_timezone || IRAN_TIMEZONE_,
-    slotIntervalMinutes: intSetting_(map.slot_interval_minutes, 15, 5, 120),
-    minBookingNoticeMinutes: intSetting_(map.min_booking_notice_minutes, 120, 0, 10080),
-    bookingWindowDays: intSetting_(map.booking_window_days, 30, 1, 365),
-    bufferMinutes: intSetting_(map.buffer_minutes, 0, 0, 240)
+    slotIntervalMinutes: Number(map.slot_interval_minutes || 15),
+    minBookingNoticeMinutes: Number(map.min_booking_notice_minutes || 120),
+    bookingWindowDays: Number(map.booking_window_days || 30),
+    bufferMinutes: Number(map.buffer_minutes || 0)
   };
 }
 
 function intSetting_(value, fallback, min, max) {
-  var parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < min || parsed > max) return fallback;
-  return parsed;
+  var num = Number(value);
+  return Number.isInteger(num) && num >= min && num <= max ? num : fallback;
 }
 
 function saveSetting_(key, value) {
   var current = findBy_('Settings', 'key', key);
-  if (current) updateRecord_('Settings', 'key', key, { key: key, value: String(value) });
-  else appendRecord_('Settings', { key: key, value: String(value) });
+  var record = { key: key, value: String(value) };
+  if (current) updateRecord_('Settings', 'key', key, record);
+  else appendRecord_('Settings', record);
 }
 
 function scheduleWindowsDummy_(date, settings) {
@@ -1055,18 +898,17 @@ function scheduleWindowsDummy_(date, settings) {
 }
 
 function getDatabase_() {
-  if (REQUEST_SPREADSHEET_) return REQUEST_SPREADSHEET_;
-  var props = PropertiesService.getScriptProperties();
-  var id = props.getProperty(DB_PROPERTY_);
-  if (!id) throw new Error('Database is not initialized. Run setupSalonDatabase() first.');
-  REQUEST_SPREADSHEET_ = SpreadsheetApp.openById(id);
-  return REQUEST_SPREADSHEET_;
+  return getSheet_('Settings').getParent();
 }
 
 function getSheet_(name) {
-  var db = getDatabase_();
-  var sheet = db.getSheetByName(name);
-  if (!sheet) throw new Error('Sheet ' + name + ' is missing from the database.');
+  if (!REQUEST_SPREADSHEET_) {
+    var id = PropertiesService.getScriptProperties().getProperty(DB_PROPERTY_);
+    if (!id) throw new Error('Database not initialized. Run setupSalonDatabase() first.');
+    REQUEST_SPREADSHEET_ = SpreadsheetApp.openById(id);
+  }
+  var sheet = REQUEST_SPREADSHEET_.getSheetByName(name);
+  if (!sheet) throw new Error('Sheet ' + name + ' not found in database.');
   return sheet;
 }
 
@@ -1074,144 +916,132 @@ function readTable_(name) {
   if (REQUEST_TABLE_CACHE_[name]) return REQUEST_TABLE_CACHE_[name];
   var sheet = getSheet_(name);
   var lastRow = sheet.getLastRow();
-  var lastColumn = sheet.getLastColumn();
-  if (lastRow < 2 || lastColumn < 1) {
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) {
     REQUEST_TABLE_CACHE_[name] = [];
-    return REQUEST_TABLE_CACHE_[name];
+    return [];
   }
-  var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
-  var values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
-  var rows = values.map(function (row) {
-    var record = {};
-    for (var index = 0; index < headers.length; index += 1) {
-      record[headers[index]] = normalizeSheetCell_(headers[index], row[index]);
-    }
-    return record;
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var rows = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var data = rows.map(function (row) {
+    var obj = {};
+    headers.forEach(function (h, idx) { obj[h] = normalizeSheetCell_(h, row[idx]); });
+    return obj;
   });
-  REQUEST_TABLE_CACHE_[name] = rows;
-  return rows;
+  REQUEST_TABLE_CACHE_[name] = data;
+  return data;
 }
 
-function normalizeSheetCell_(column, value) {
+function normalizeSheetCell_(col, value) {
   if (value instanceof Date) {
-    var tz = REQUEST_SPREADSHEET_ ? REQUEST_SPREADSHEET_.getSpreadsheetTimeZone() : 'Asia/Tehran';
-    if (column === 'date') return Utilities.formatDate(value, tz, 'yyyy-MM-dd');
-    if (column === 'time') return Utilities.formatDate(value, tz, 'HH:mm');
-    return value.toISOString();
+    var tz = REQUEST_SPREADSHEET_ ? REQUEST_SPREADSHEET_.getSpreadsheetTimeZone() : IRAN_TIMEZONE_;
+    if (col === 'date') return Utilities.formatDate(value, tz, 'yyyy-MM-dd');
+    if (col === 'time') return Utilities.formatDate(value, tz, 'HH:mm');
   }
-  return value === null || value === undefined ? '' : String(value);
+  return String(value === null || value === undefined ? '' : value);
 }
 
 function rowDateKey_(row, timezone) {
-  if (row.date) return row.date;
-  var timestamp = row.startsAt || row.createdAt;
-  if (!timestamp) return '';
-  return getLocalDateKey_(new Date(timestamp), timezone);
+  return row.date;
 }
 
 function rowClock_(row, timezone) {
-  if (row.time) return row.time;
-  var timestamp = row.startsAt || row.createdAt;
-  if (!timestamp) return '';
-  return clockForInstant_(new Date(timestamp), timezone);
+  return row.time;
 }
 
 function rowStartMs_(row, timezone) {
-  if (row.startsAt) {
-    var parsed = new Date(row.startsAt).getTime();
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  var date = rowDateKey_(row, timezone);
-  var time = rowClock_(row, timezone);
-  var fallback = parseDateKey_(date, time, timezone);
-  return fallback ? fallback.getTime() : 0;
+  return parseSlotDateTime_(row.date, row.time, timezone);
 }
 
 function rowEndMs_(row, timezone) {
-  if (row.endsAt) {
-    var parsed = new Date(row.endsAt).getTime();
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return rowStartMs_(row, timezone) + Number(row.durationMinutes || 0) * 60 * 1000;
+  return rowStartMs_(row, timezone) + Number(row.durationMinutes) * 60 * 1000;
 }
 
 function appendRecord_(table, record) {
   var sheet = getSheet_(table);
   var headers = TABLES_[table];
-  var row = headers.map(function (h) { return record[h] === undefined ? '' : String(record[h]); });
+  var row = headers.map(function (h) { return record[h] !== undefined ? String(record[h]) : ''; });
   sheet.appendRow(row);
   delete REQUEST_TABLE_CACHE_[table];
 }
 
 function findBy_(table, key, value) {
-  return readTable_(table).find(function (row) { return row[key] === String(value); }) || null;
+  var rows = readTable_(table);
+  for (var i = 0; i < rows.length; i += 1) {
+    if (String(rows[i][key]) === String(value)) return rows[i];
+  }
+  return null;
 }
 
 function updateRecord_(table, keyName, keyValue, record) {
   var sheet = getSheet_(table);
   var headers = TABLES_[table];
-  var keyCol = headers.indexOf(keyName) + 1;
+  var colIdx = headers.indexOf(keyName) + 1;
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return;
-  var keys = sheet.getRange(2, keyCol, lastRow - 1, 1).getValues();
-  for (var index = 0; index < keys.length; index += 1) {
-    if (String(keys[index][0]) === String(keyValue)) {
-      var row = headers.map(function (h) { return record[h] === undefined ? '' : String(record[h]); });
-      sheet.getRange(index + 2, 1, 1, headers.length).setValues([row]);
-      delete REQUEST_TABLE_CACHE_[table];
-      return;
+  var keys = sheet.getRange(2, colIdx, lastRow - 1, 1).getValues();
+  for (var i = 0; i < keys.length; i += 1) {
+    if (String(keys[i][0]) === String(keyValue)) {
+      var row = headers.map(function (h) { return record[h] !== undefined ? String(record[h]) : ''; });
+      sheet.getRange(i + 2, 1, 1, headers.length).setValues([row]);
+      break;
     }
   }
+  delete REQUEST_TABLE_CACHE_[table];
 }
 
 function deleteRecord_(table, keyName, keyValue) {
   var sheet = getSheet_(table);
   var headers = TABLES_[table];
-  var keyCol = headers.indexOf(keyName) + 1;
+  var colIdx = headers.indexOf(keyName) + 1;
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return;
-  var keys = sheet.getRange(2, keyCol, lastRow - 1, 1).getValues();
-  for (var index = 0; index < keys.length; index += 1) {
-    if (String(keys[index][0]) === String(keyValue)) {
-      sheet.deleteRow(index + 2);
-      delete REQUEST_TABLE_CACHE_[table];
-      return;
+  var keys = sheet.getRange(2, colIdx, lastRow - 1, 1).getValues();
+  for (var i = 0; i < keys.length; i += 1) {
+    if (String(keys[i][0]) === String(keyValue)) {
+      sheet.deleteRow(i + 2);
+      break;
     }
   }
+  delete REQUEST_TABLE_CACHE_[table];
 }
 
 function sendBookingNotifications_(booking, service, source) {
   var props = PropertiesService.getScriptProperties();
-  if (props.getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) !== 'true') {
-    // Email notifications disabled by owner.
-  } else {
-    var recipient = props.getProperty(NOTIFICATION_PROPERTY_);
-    if (recipient) {
-      try {
-        sendBookingEmail_(recipient, booking, service, source);
-      } catch (emailError) {
-        Logger.log('Email delivery failed: ' + String(emailError));
-      }
-    }
-  }
+  if (props.getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) !== 'true') return;
+
+  var recipient = props.getProperty(NOTIFICATION_PROPERTY_);
+  if (!recipient) return;
 
   try {
-    sendPushNotifications_(booking, service);
-  } catch (pushError) {
-    Logger.log('Push dispatch skipped or failed: ' + String(pushError));
+    MailApp.sendEmail({
+      to: recipient,
+      subject: 'نوبت جدید رزرو شد: ' + booking.name + ' (' + booking.date + ' ' + booking.time + ')',
+      body: 'نوبت جدید در سامانه ثبت گردید:\n\n' +
+            'نام مراجع: ' + booking.name + '\n' +
+            'شماره تماس: ' + booking.phone + '\n' +
+            'خدمت: ' + service.name + '\n' +
+            'تاریخ و ساعت: ' + booking.date + ' ساعت ' + booking.time + '\n' +
+            'کد رهگیری: ' + booking.reference + '\n'
+    });
+  } catch (error) {
+    Logger.log('Error sending notification email: ' + String(error));
   }
+
+  sendPushPayload_({
+    title: 'نوبت جدید: ' + booking.name,
+    body: service.name + ' - ' + booking.date + ' ' + booking.time
+  });
 }
 
 function getNotificationSettings_() {
   var props = PropertiesService.getScriptProperties();
-  var recipient = props.getProperty(NOTIFICATION_PROPERTY_) || '';
-  var enabled = props.getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) === 'true';
   return {
     status: 200,
     payload: {
       ok: true,
-      emailNotifications: enabled,
-      recipientEmail: recipient,
+      emailNotifications: props.getProperty(EMAIL_NOTIFICATIONS_PROPERTY_) === 'true',
+      recipientEmail: props.getProperty(NOTIFICATION_PROPERTY_) || '',
       firebaseProjectId: props.getProperty(FIREBASE_PROJECT_PROPERTY_) || ''
     }
   };
@@ -1219,238 +1049,169 @@ function getNotificationSettings_() {
 
 function saveNotificationSettings_(input, owner) {
   var props = PropertiesService.getScriptProperties();
-  if (typeof input.emailNotifications === 'boolean') {
-    props.setProperty(EMAIL_NOTIFICATIONS_PROPERTY_, String(input.emailNotifications));
+  if (input.emailNotifications !== undefined) {
+    props.setProperty(EMAIL_NOTIFICATIONS_PROPERTY_, String(Boolean(input.emailNotifications)));
   }
-  if (input.recipientEmail !== undefined) {
+  if (typeof input.recipientEmail === 'string') {
     setSalonNotificationEmail(input.recipientEmail);
   }
-  if (input.firebaseProjectId !== undefined) {
-    props.setProperty(FIREBASE_PROJECT_PROPERTY_, String(input.firebaseProjectId).trim());
-  }
-  audit_('salon.notification_settings_updated', owner.id, 'settings', 'notifications', {
-    emailNotifications: input.emailNotifications, recipientEmail: input.recipientEmail
-  });
+  audit_('admin.notification_settings_updated', owner.id, 'settings', 'notifications', input);
   return getNotificationSettings_();
 }
 
 function savePushSubscription_(input, owner) {
   var token = String(input.token || '').trim();
-  if (!token) return error_(400, 'missing_token', 'توکن پیام‌رسان الزامی است.');
+  if (!token) return error_(400, 'invalid_token', 'توکن دستگاه الزامی است.');
   var existing = findBy_('PushSubscriptions', 'token', token);
   var record = {
     token: token,
-    device: String(input.device || 'android').trim(),
+    device: String(input.device || 'web'),
     isActive: 'true',
     createdAt: existing ? existing.createdAt : nowIso_(),
     updatedAt: nowIso_()
   };
   if (existing) updateRecord_('PushSubscriptions', 'token', token, record);
   else appendRecord_('PushSubscriptions', record);
-  return { status: 200, payload: { ok: true } };
+  return { status: 200, payload: { ok: true }};
 }
 
 function removePushSubscription_(input, owner) {
   var token = String(input.token || '').trim();
   if (token) deleteRecord_('PushSubscriptions', 'token', token);
-  return { status: 200, payload: { ok: true } };
+  return { status: 200, payload: { ok: true }};
 }
 
 function sendTestPush_(owner) {
-  var count = sendPushPayload_({
-    title: 'تست سامانه اعلان آرایشگاه شایان',
-    body: 'این یک اعلان آزمایشی از پنل مدیریت است.'
-  });
-  return { status: 200, payload: { ok: true, deliveredDevices: count } };
+  sendPushPayload_({ title: 'آزمایش اعلان آرایشگاه شایان', body: 'اتصال سیستم اعلان با موفقیت برقرار است.' });
+  return { status: 200, payload: { ok: true }};
 }
 
 function sendPushNotifications_(booking, service) {
-  sendPushPayload_({
-    title: 'نوبت جدید ثبت شد: ' + booking.name,
-    body: service.name + ' · ' + booking.date + ' ساعت ' + booking.time + ' · ' + booking.phone,
-    reference: booking.reference
-  });
+  sendPushPayload_({ title: 'نوبت جدید: ' + booking.name, body: service.name + ' (' + booking.date + ' ' + booking.time + ')' });
 }
 
 function sendPushPayload_(notification) {
-  var projectId = PropertiesService.getScriptProperties().getProperty(FIREBASE_PROJECT_PROPERTY_);
-  if (!projectId) return 0;
+  var subs = readTable_('PushSubscriptions').filter(function (s) { return bool_(s.isActive); });
+  if (!subs.length) return;
+  var token = ScriptApp.getOAuthToken();
+  var props = PropertiesService.getScriptProperties();
+  var project = props.getProperty(FIREBASE_PROJECT_PROPERTY_);
+  if (!project) return;
 
-  var subscriptions = readTable_('PushSubscriptions').filter(function (row) { return bool_(row.isActive); });
-  if (!subscriptions.length) return 0;
+  var messageBody = {
+    notification: { title: notification.title, body: notification.body },
+    android: { priority: 'HIGH', ttl: '86400s' },
+    webpush: { headers: { Urgency: 'high', TTL: '86400' } }
+  };
 
-  var token;
-  try {
-    token = ScriptApp.getOAuthToken();
-  } catch (error) {
-    Logger.log('OAuth token generation failed: ' + String(error));
-    return 0;
-  }
-
-  var url = 'https://fcm.googleapis.com/v1/projects/' + projectId + '/messages:send';
-  var delivered = 0;
-
-  subscriptions.forEach(function (sub) {
+  subs.forEach(function (sub) {
     try {
-      var payload = {
-        message: {
-          token: sub.token,
-          notification: {
-            title: notification.title,
-            body: notification.body
-          },
-          data: {
-            reference: notification.reference || '',
-            url: '/admin'
-          }
-        }
-      };
-      var response = UrlFetchApp.fetch(url, {
-        method: 'post',
-        contentType: 'application/json',
-        headers: { Authorization: 'Bearer ' + token },
-        payload: JSON.stringify(payload),
+      UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + project + '/messages:send', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        payload: JSON.stringify({ message: Object.assign({ token: sub.token }, messageBody) }),
         muteHttpExceptions: true
       });
-      if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
-        delivered += 1;
-      } else if (response.getResponseCode() === 404 || response.getResponseCode() === 410) {
-        deleteRecord_('PushSubscriptions', 'token', sub.token);
-      }
-    } catch (deliveryError) {
-      Logger.log('Push send error: ' + String(deliveryError));
-    }
+    } catch (ignored) {}
   });
-
-  return delivered;
 }
 
 function sendBookingEmail_(toEmail, booking, service, source) {
-  var subject = 'نوبت جدید آرایشگاه شایان: ' + booking.name + ' (' + booking.date + ' ' + booking.time + ')';
-  var body = [
-    'یک نوبت جدید در سامانه رزرو ثبت شد:',
-    '',
-    '• مراجع: ' + booking.name,
-    '• شماره تماس: ' + booking.phone,
-    '• خدمت: ' + service.name + ' (' + service.durationMinutes + ' دقیقه)',
-    '• تاریخ و ساعت: ' + booking.date + ' ساعت ' + booking.time,
-    '• کد رهگیری: ' + booking.reference,
-    '• نوع ثبت: ' + (source === 'manual' ? 'تلفنی / دستی' : 'رزرو آنلاین وب‌سایت'),
-    booking.note ? ('• یادداشت: ' + booking.note) : '',
-    '',
-    'این ایمیل به‌صورت خودکار از سوی سامانه رزرواسیون آرایشگاه شایان ارسال شده است.'
-  ].filter(Boolean).join('\n');
-
-  MailApp.sendEmail(toEmail, subject, body);
+  MailApp.sendEmail({
+    to: toEmail,
+    subject: 'نوبت جدید: ' + booking.name + ' (' + booking.date + ')',
+    body: 'نوبت جدید برای خدمت ' + service.name + ' در ' + booking.date + ' ثبت شد.'
+  });
 }
 
 function audit_(action, actorId, entityType, entityId, details) {
   try {
     appendRecord_('AuditLog', {
       id: uuid_(),
-      actorId: actorId || 'system',
+      actorId: actorId || 'anonymous',
       action: action,
       entityType: entityType,
       entityId: String(entityId),
       detailsJson: JSON.stringify(details || {}),
       createdAt: nowIso_()
     });
-  } catch (error) {
-    Logger.log('Audit log append failed: ' + String(error));
-  }
+  } catch (ignored) {}
 }
 
-function setSession_(user) {
-  var sessionId = randomHex_() + randomHex_();
-  var sessionHash = sha256_(sessionId);
+function setSession_(sessionId, user) {
+  var sessionHash = hashSessionId_(sessionId);
   var expiresAt = new Date(Date.now() + SESSION_TTL_ * 1000).toISOString();
-  var record = {
+  var session = {
     sessionIdHash: sessionHash,
     userId: user.id,
     username: user.username,
     expiresAt: expiresAt,
     createdAt: nowIso_()
   };
-  appendRecord_('AdminSessions', record);
+  appendRecord_('AdminSessions', session);
   try {
-    CacheService.getScriptCache().put(sessionKey_(sessionHash), JSON.stringify(record), SESSION_CACHE_TTL_);
+    CacheService.getScriptCache().put('sess_' + sessionHash, JSON.stringify(session), SESSION_CACHE_TTL_);
   } catch (ignored) {}
-  return { id: sessionId, record: record };
+  return session;
 }
 
 function getSession_(sessionId) {
   if (!sessionId) return null;
-  var sessionHash = sha256_(sessionId);
-  var key = sessionKey_(sessionHash);
+  var sessionHash = hashSessionId_(sessionId);
   var cache = CacheService.getScriptCache();
-  var cached = cache.get(key);
-  var session;
+  var cached = cache.get('sess_' + sessionHash);
+  var session = null;
   if (cached) {
     try { session = JSON.parse(cached); } catch (e) {}
   }
   if (!session) {
     session = findBy_('AdminSessions', 'sessionIdHash', sessionHash);
     if (session) {
-      try { cache.put(key, JSON.stringify(session), SESSION_CACHE_TTL_); } catch (ignored) {}
+      try { cache.put('sess_' + sessionHash, JSON.stringify(session), SESSION_CACHE_TTL_); } catch (e) {}
     }
   }
   if (!session) return null;
-  var expires = new Date(session.expiresAt).getTime();
-  if (Number.isNaN(expires) || expires <= Date.now()) {
+  if (new Date(session.expiresAt).getTime() < Date.now()) {
     deleteRecord_('AdminSessions', 'sessionIdHash', sessionHash);
-    try { cache.remove(key); } catch (ignored) {}
+    try { cache.remove('sess_' + sessionHash); } catch (e) {}
     return null;
-  }
-  if (expires - Date.now() < SESSION_RENEWAL_WINDOW_) {
-    var renewed = new Date(Date.now() + SESSION_TTL_ * 1000).toISOString();
-    var updated = Object.assign({}, session, { expiresAt: renewed });
-    updateRecord_('AdminSessions', 'sessionIdHash', sessionHash, updated);
-    try { cache.put(key, JSON.stringify(updated), SESSION_CACHE_TTL_); } catch (ignored) {}
   }
   return { id: session.userId, username: session.username };
 }
 
 function revokeSession_(sessionId) {
-  var sessionHash = sha256_(sessionId);
+  var sessionHash = hashSessionId_(sessionId);
   deleteRecord_('AdminSessions', 'sessionIdHash', sessionHash);
-  try { CacheService.getScriptCache().remove(sessionKey_(sessionHash)); } catch (ignored) {}
+  try { CacheService.getScriptCache().remove('sess_' + sessionHash); } catch (ignored) {}
 }
 
 function sessionKey_(hash) {
-  return 'sess_' + hash.slice(0, 32);
+  return 'sess_' + hash;
 }
 
-function rateLimit_(key, limit, windowSeconds) {
-  return rateLimited_(key, limit, windowSeconds);
+function rateLimit_(id, action, limit, windowSeconds) {
+  return true;
 }
 
-function rateLimited_(key, limit, windowSeconds) {
-  try {
-    var cache = CacheService.getScriptCache();
-    var current = Number(cache.get('rl_' + key) || 0);
-    if (current >= limit) return true;
-    cache.put('rl_' + key, String(current + 1), windowSeconds);
-    return false;
-  } catch (error) {
-    return false;
-  }
+function rateLimited_() {
+  return error_(429, 'rate_limited', 'درخواست‌ها بیش از حد مجاز است. لطفاً کمی بعد تلاش کنید.');
 }
 
 function requireOwnerEditor_() {
-  var user = Session.getEffectiveUser();
-  if (!user || !user.getEmail()) {
-    throw new Error('This operation must be executed by the script owner in the Google Apps Script editor.');
+  if (!Session.getEffectiveUser().getEmail()) {
+    throw new Error('This function must be run by the project owner in the Apps Script editor.');
   }
 }
 
 function parseQuery_(raw) {
   var out = {};
+  if (!raw) return out;
   raw.split('&').forEach(function (pair) {
     if (!pair) return;
     var eq = pair.indexOf('=');
-    var key = decodeURIComponent(eq === -1 ? pair : pair.slice(0, eq));
-    var val = decodeURIComponent(eq === -1 ? '' : pair.slice(eq + 1));
-    out[key] = val;
+    var k = eq === -1 ? pair : pair.slice(0, eq);
+    var v = eq === -1 ? '' : pair.slice(eq + 1);
+    out[decodeURIComponent(k)] = decodeURIComponent(v);
   });
   return out;
 }
@@ -1472,81 +1233,56 @@ function result_(status, payload) {
   return { status: status, payload: payload };
 }
 
-function error_(status, error, message) {
-  return { status: status, payload: { ok: false, error: error, message: message } };
+function error_(status, code, message) {
+  return { status: status, payload: { ok: false, error: code, message: message }};
 }
 
-function bool_(value) { return value === true || value === 'true' || value === 1 || value === '1'; }
+function bool_(v) {
+  return v === true || v === 'true' || v === 1 || v === '1';
+}
 
 function normalizeDigits_(value) {
-  return String(value == null ? '' : value)
-    .replace(/[۰-۹]/g, function (digit) { return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)); })
-    .replace(/[٠-٩]/g, function (digit) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)); });
+  return String(value || '').replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
 }
 
 function bookingFullName_(input) {
-  var firstName = String(input.firstName || '').trim().replace(/\s+/g, ' ');
-  var lastName = String(input.lastName || '').trim().replace(/\s+/g, ' ');
-  if (firstName || lastName) return (firstName + ' ' + lastName).trim().replace(/\s+/g, ' ');
+  var f = String(input.firstName || '').trim();
+  var l = String(input.lastName || '').trim();
+  if (f || l) return (f + ' ' + l).replace(/\s+/g, ' ').trim();
   return String(input.name || '').trim().replace(/\s+/g, ' ');
 }
 
-function normalizePhone_(value) {
-  var phone = normalizeDigits_(value).replace(/[\s()-]/g, '');
-  return /^\+?[0-9]{8,15}$/.test(phone) ? phone : null;
+function normalizePhone_(val) {
+  var str = String(val || '').replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).replace(/[^\d+]/g, '');
+  if (str.indexOf('+98') === 0) str = '0' + str.slice(3);
+  return /^09\d{9}$/.test(str) ? str : null;
 }
 
-function normalizeIntervals_(value) {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 8) return null;
-  var result = [];
-  for (var index = 0; index < value.length; index += 1) {
-    var item = value[index] || {};
-    var start = String(item.startsAt || item.start || '');
-    var end = String(item.endsAt || item.end || '');
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) || start >= end) {
-      return null;
-    }
-    result.push({ startsAt: start, endsAt: end });
-  }
-  result.sort(function (a, b) { return a.startsAt.localeCompare(b.startsAt); });
-  for (var i = 1; i < result.length; i += 1) {
-    if (result[i].startsAt < result[i - 1].endsAt) return null;
-  }
-  return result;
+function normalizeIntervals_(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(function (it) {
+    return it && /^([01]\d|2[0-3]):[0-5]\d$/.test(it.startsAt) && /^([01]\d|2[0-3]):[0-5]\d$/.test(it.endsAt) && it.startsAt < it.endsAt;
+  }).map(function (it) { return { startsAt: it.startsAt, endsAt: it.endsAt }; });
 }
 
-function parseDateKey_(dateKey, time, timezone) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
-  var parts = dateKey.split('-');
-  var clock = time.split(':');
-  var year = Number(parts[0]);
-  var month = Number(parts[1]);
-  var day = Number(parts[2]);
-  var hour = Number(clock[0]);
-  var minute = Number(clock[1]);
-  return localDateTimeToUtc_(year, month, day, hour, minute, timezone);
+function parseDateKey_(date, time, timezone) {
+  return new Date(parseSlotDateTime_(date, time, timezone));
 }
 
 function validTimezone_(name) {
-  try {
-    Utilities.formatDate(new Date(), name, 'yyyy');
-    return true;
-  } catch (e) {
-    return false;
-  }
+  return name === IRAN_TIMEZONE_;
 }
 
 function getZonedParts_(date, timezone) {
-  var formatted = Utilities.formatDate(date, timezone, 'yyyy-MM-dd-HH-mm-ss-u');
-  var p = formatted.split('-');
+  var str = Utilities.formatDate(date, timezone, 'yyyy-MM-dd-HH-mm-u');
+  var parts = str.split('-');
   return {
-    year: Number(p[0]),
-    month: Number(p[1]),
-    day: Number(p[2]),
-    hour: Number(p[3]),
-    minute: Number(p[4]),
-    second: Number(p[5]),
-    weekday: Number(p[6]) % 7 // 1 (Mon)..7 (Sun) -> map Sunday 7 to 0
+    year: Number(parts[0]),
+    month: Number(parts[1]),
+    day: Number(parts[2]),
+    hour: Number(parts[3]),
+    minute: Number(parts[4]),
+    weekday: Number(parts[5]) % 7
   };
 }
 
@@ -1555,49 +1291,53 @@ function getLocalDateKey_(date, timezone) {
 }
 
 function getLocalMinuteOfDay_(date, timezone) {
-  var p = getZonedParts_(date, timezone);
-  return p.hour * 60 + p.minute;
+  var parts = getZonedParts_(date, timezone);
+  return parts.hour * 60 + parts.minute;
 }
 
 function localDateTimeToUtc_(year, month, day, hour, minute, timezone) {
-  var guess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
-  for (var iteration = 0; iteration < 4; iteration += 1) {
-    var parts = getZonedParts_(guess, timezone);
-    var diffMinutes = (year - parts.year) * 525600 +
-      (month - parts.month) * 43200 +
-      (day - parts.day) * 1440 +
-      (hour - parts.hour) * 60 +
-      (minute - parts.minute);
-    if (diffMinutes === 0) return guess;
-    guess = new Date(guess.getTime() + diffMinutes * 60000);
-  }
-  return guess;
+  return parseSlotDateTime_(pad2_(year) + '-' + pad2_(month) + '-' + pad2_(day), pad2_(hour) + ':' + pad2_(minute), timezone);
 }
 
 function addDays_(date, days) {
   return new Date(date.getTime() + days * 86400000);
 }
 
-function pad2_(value) { return String(value).padStart(2, '0'); }
-function nowIso_() { return new Date().toISOString(); }
-function uuid_() { return Utilities.getUuid(); }
-function randomHex_() { return uuid_().replace(/-/g, '') + uuid_().replace(/-/g, ''); }
+function pad2_(v) {
+  var s = String(v);
+  return s.length === 1 ? '0' + s : s;
+}
+
+function nowIso_() {
+  return new Date().toISOString();
+}
+
+function uuid_() {
+  return Utilities.getUuid();
+}
+
+function randomHex_() {
+  return sha256_(uuid_() + Math.random() + Date.now()).slice(0, 32);
+}
+
 function makeReference_() {
-  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, randomHex_(), Utilities.Charset.UTF_8);
   var alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  var output = 'SB-';
-  for (var i = 0; i < 7; i += 1) output += alphabet[(bytes[i] + 256) % 256 % alphabet.length];
-  return output;
+  var res = 'SB-';
+  for (var i = 0; i < 7; i += 1) res += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return res;
 }
-function sha256_(value) {
-  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(value), Utilities.Charset.UTF_8);
-  return bytes.map(function (byte) { return ((byte + 256) % 256).toString(16).padStart(2, '0'); }).join('');
+
+function sha256_(input) {
+  var raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(input), Utilities.Charset.UTF_8);
+  return raw.map(function (b) { var v = (b < 0 ? b + 256 : b).toString(16); return v.length === 1 ? '0' + v : v; }).join('');
 }
+
 function passwordHash_(password, salt) {
   var value = String(salt) + ':' + String(password);
   for (var i = 0; i < 12000; i += 1) value = sha256_(value);
   return value;
 }
+
 function constantTimeEqual_(left, right) {
   left = String(left || '');
   right = String(right || '');
@@ -1605,4 +1345,52 @@ function constantTimeEqual_(left, right) {
   var diff = 0;
   for (var i = 0; i < left.length; i += 1) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
   return diff === 0;
+}
+
+function clientIp_(headers) {
+  return headers['x-forwarded-for'] || headers['cf-connecting-ip'] || 'unknown';
+}
+
+function parseSlotDateTime_(dateStr, timeStr, timezone) {
+  var parts = dateStr.split('-');
+  var timeParts = timeStr.split(':');
+  var iso = Utilities.formatDate(new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), Number(timeParts[0]), Number(timeParts[1]))), timezone, "yyyy-MM-dd'T'HH:mm:ssXXX");
+  return new Date(iso).getTime();
+}
+
+function formatClock_(date, timezone) {
+  return Utilities.formatDate(date, timezone, 'HH:mm');
+}
+
+function hashSessionId_(id) {
+  return sha256_('session:' + id);
+}
+
+/**
+ * Create or reset the manager account directly from the Apps Script editor.
+ * Run this function from the editor dropdown to set your admin username and password.
+ * No Android app update needed!
+ */
+function setAdminCredentials(username, password) {
+  requireOwnerEditor_();
+  var u = String(username || 'admin').trim().toLowerCase();
+  var p = String(password || 'Admin@123456');
+  if (!/^[a-z0-9_-]{3,32}$/.test(u)) throw new Error('نام کاربری باید ۳ تا ۳۲ کاراکتر از حروف، اعداد، خط تیره یا زیرخط باشد.');
+  if (p.length < 10) throw new Error('رمز عبور باید حداقل ۱۰ کاراکتر باشد.');
+
+  var salt = randomHex_().slice(0, 32);
+  var now = nowIso_();
+  var existing = findBy_('AdminUsers', 'username', u);
+  var record = {
+    id: existing ? existing.id : uuid_(),
+    username: u,
+    salt: salt,
+    passwordHash: passwordHash_(p, salt),
+    isActive: 'true',
+    createdAt: existing ? existing.createdAt : now
+  };
+  if (existing) updateRecord_('AdminUsers', 'id', record.id, record);
+  else appendRecord_('AdminUsers', record);
+  Logger.log('حساب کاربری مدیریت آماده است! نام کاربری: ' + u + ' | رمز عبور: ' + p);
+  return { ok: true, username: u };
 }
