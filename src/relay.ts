@@ -117,7 +117,7 @@ if (relayUrl && typeof window !== 'undefined') {
 
       loadTimeout = window.setTimeout(() => {
         fail('پاسخی از درگاه ارتباطی دریافت نشد.')
-      }, 20000)
+      }, 45000)
     })
 
     return frameReady
@@ -167,7 +167,7 @@ if (relayUrl && typeof window !== 'undefined') {
           bridgeOrigin = ''
           staleFrame?.remove()
           reject(new Error('پل ارتباطی Google Apps Script آماده نشد. نسخهٔ Web App را بررسی و دوباره منتشر کنید.'))
-        }, 25000)
+        }, 45000)
       })
     }
 
@@ -214,7 +214,7 @@ if (relayUrl && typeof window !== 'undefined') {
           pending.delete(id)
           cleanup()
           reject(new Error('پاسخی از سامانه رزرو دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.'))
-        }, 30000)
+        }, 45000)
         request.signal.addEventListener('abort', pendingRequest.abortHandler, { once: true })
         pending.set(id, pendingRequest)
 
